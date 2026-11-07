@@ -1709,6 +1709,16 @@ function openTutorial(i = 0){
   if (target){
     const r = target.getBoundingClientRect();
     if (r.top < 70 || r.bottom > window.innerHeight - 200) target.scrollIntoView({ block: r.height > window.innerHeight * .55 ? "start" : "center", inline: "nearest", behavior: reduce ? "auto" : "smooth" });
+    // On phones the menu scrolls sideways: bring an off-screen tab into view.
+    if (r.left < 8 || r.right > window.innerWidth - 8){
+      for (let el = target.parentElement; el && el !== document.body; el = el.parentElement){
+        if (el.scrollWidth > el.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)){
+          const er = el.getBoundingClientRect();
+          el.scrollTo({ left: el.scrollLeft + (r.left - er.left) - (er.width - r.width) / 2, behavior: reduce ? "auto" : "smooth" });
+          break;
+        }
+      }
+    }
   }
   place(); setTimeout(place, reduce ? 0 : 380);
   if (tourPos){ window.removeEventListener("resize", tourPos); window.removeEventListener("scroll", tourPos, true); }
