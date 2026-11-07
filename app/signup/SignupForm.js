@@ -51,7 +51,6 @@ export default function SignupForm() {
       <h1>Create your account</h1>
       <p className="lead">Start your journal. Your trades stay private to you.</p>
       <OAuthButtons />
-      <div className="or">or with email</div>
       <div className="field"><label htmlFor="name">Your name</label><input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={60} /></div>
       <div className="field">
         <label htmlFor="email">Email</label>

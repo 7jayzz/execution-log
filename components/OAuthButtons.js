@@ -16,6 +16,9 @@ const Apple = () => (
   </svg>
 );
 
+// Turn providers on in Vercel with NEXT_PUBLIC_OAUTH_PROVIDERS=google,apple once they're enabled in Supabase.
+export const OAUTH = (process.env.NEXT_PUBLIC_OAUTH_PROVIDERS || "").split(",").map((s) => s.trim().toLowerCase()).filter((p) => p === "google" || p === "apple");
+
 export default function OAuthButtons({ next = "/dashboard" }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
@@ -32,11 +35,15 @@ export default function OAuthButtons({ next = "/dashboard" }) {
       setError(`${provider === "google" ? "Google" : "Apple"} sign-in isn't available right now. Use your email instead.`);
     }
   };
+  if (!OAUTH.length) return null;
   return (
+    <>
     <div className="oauth">
-      <button type="button" className="btn" onClick={() => go("google")} disabled={!!busy}><Google /> {busy === "google" ? "Opening Google…" : "Continue with Google"}</button>
-      <button type="button" className="btn" onClick={() => go("apple")} disabled={!!busy}><Apple /> {busy === "apple" ? "Opening Apple…" : "Continue with Apple"}</button>
+      {OAUTH.includes("google") && <button type="button" className="btn" onClick={() => go("google")} disabled={!!busy}><Google /> {busy === "google" ? "Opening Google…" : "Continue with Google"}</button>}
+      {OAUTH.includes("apple") && <button type="button" className="btn" onClick={() => go("apple")} disabled={!!busy}><Apple /> {busy === "apple" ? "Opening Apple…" : "Continue with Apple"}</button>}
       {error && <span className="err">{error}</span>}
     </div>
+    <div className="or">or with email</div>
+    </>
   );
 }

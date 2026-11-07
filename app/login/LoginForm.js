@@ -43,7 +43,6 @@ export default function LoginForm({ next = "/dashboard", reason = "", initialEma
       <p className="lead">Welcome back. Log in to open your journal.</p>
       {reason === "idle" && <div className="box info">You were logged out after 10 minutes of inactivity.</div>}
       <OAuthButtons next={next} />
-      <div className="or">or with email</div>
       <div className="field"><label htmlFor="email">Email</label><input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
       <PasswordField id="pw" label="Password" value={pw} onChange={setPw} autoComplete="current-password" />
       {unconfirmed && (
