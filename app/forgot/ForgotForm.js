@@ -13,7 +13,7 @@ export default function ForgotForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setError("Enter a valid email address.");
     setBusy(true);
     const supabase = createClient();
-    await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/auth/confirm` });
+    await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password` });
     setBusy(false);
     setSent(true); // Same message either way, so nobody can check which emails have accounts.
   };

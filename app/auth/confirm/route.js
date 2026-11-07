@@ -8,6 +8,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
+  const code = searchParams.get("code");
   const allowed = ["email", "signup", "recovery", "email_change", "invite", "magiclink"];
   if (token_hash && allowed.includes(type)) {
     const supabase = createClient();
@@ -16,6 +17,19 @@ export async function GET(request) {
       if (type === "recovery") return NextResponse.redirect(`${SITE_URL}/reset-password`);
       await afterLogin(data.user);
       const dest = new URL(safeNext(searchParams.get("next")), SITE_URL);
+      dest.searchParams.set("welcome", "1");
+      return NextResponse.redirect(dest.toString());
+    }
+  }
+  // Supabase's default email templates send a one-time code instead (works in the browser you signed up in).
+  if (code) {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      const next = safeNext(searchParams.get("next"));
+      if (next === "/reset-password") return NextResponse.redirect(`${SITE_URL}/reset-password`);
+      await afterLogin(data.user);
+      const dest = new URL(next, SITE_URL);
       dest.searchParams.set("welcome", "1");
       return NextResponse.redirect(dest.toString());
     }
