@@ -9,6 +9,15 @@ import { SITE_URL } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
+  try {
+    return await startCheckout(request);
+  } catch (e) {
+    console.error("Checkout failed", e);
+    return NextResponse.redirect(`${SITE_URL}/pricing?error=checkout`, { status: 303 });
+  }
+}
+
+async function startCheckout(request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${SITE_URL}/login?next=/pricing`, { status: 303 });

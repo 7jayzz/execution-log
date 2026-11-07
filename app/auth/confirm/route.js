@@ -5,6 +5,15 @@ import { SITE_URL, safeNext } from "@/lib/site";
 
 // Links in the confirmation and password-reset emails land here.
 export async function GET(request) {
+  try {
+    return await confirm(request);
+  } catch (e) {
+    console.error("Confirm link failed", e);
+    return NextResponse.redirect(`${SITE_URL}/login?error=link`);
+  }
+}
+
+async function confirm(request) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
