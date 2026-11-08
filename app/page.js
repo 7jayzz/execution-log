@@ -64,6 +64,22 @@ export default async function Home() {
           </div>
           <Preview />
         </section>
+        <section className="why" aria-labelledby="why-title">
+          <div className="why-lead">
+            <span className="kicker">Why The Execution Log exists</span>
+            <h2 className="h2" id="why-title">Trading isn't just about making money. It's about understanding <em>how you make decisions.</em></h2>
+          </div>
+          <div className="why-body">
+            <p>Every entry, every exit, every mistake and every winning trade tells a story. Most traders never get to read it, because the lessons end up scattered across screenshots, spreadsheets and memory.</p>
+            <p>The Execution Log brings those details together in one place, so you can spot the patterns behind your results, improve your execution and become a more disciplined trader.</p>
+            <ol className="why-steps">
+              <li><b>Record</b><span>Every trade, with the context behind it: your plan, your mood, your mistakes.</span></li>
+              <li><b>Recognise</b><span>The patterns in your decisions that you can't see one trade at a time.</span></li>
+              <li><b>Refine</b><span>Turn those lessons into rules, and trade them with discipline.</span></li>
+            </ol>
+            <p className="why-close">Your trades already tell the story. We help you read it.</p>
+          </div>
+        </section>
         <section className="section">
           <h2 className="h2">Built for how you actually trade</h2>
           <div className="grid3">
