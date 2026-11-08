@@ -416,6 +416,20 @@ details.adv[open] summary{margin-bottom:10px}
 .tpl-free{position:absolute;top:10px;inset-inline-end:10px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--win);border:1px solid color-mix(in srgb,var(--win) 45%,transparent);border-radius:5px;padding:1px 6px}
 @media (max-width:820px){.notes-wrap{grid-template-columns:1fr}.notes-list{position:static;max-height:none}.notes-wrap.open .notes-list{display:none}.notes-wrap:not(.open) .notes-ed{display:none}.note-back{display:inline-flex}}
 @media (max-width:480px){.tpl-grid{grid-template-columns:1fr}.note-title{font-size:22px}.note-bar .btn.small{padding:6px 9px;font-size:12px}.note-body{min-height:62vh;padding:12px;font-size:13px}}
+.side-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.side-row .tier-chip{margin-top:0}
+.bell{position:relative;width:32px;height:32px;border-radius:50%;border:1px solid var(--line-2);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink);padding:0;flex:none}
+.bell svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bell:hover{border-color:var(--accent)}
+.bell-n[hidden]{display:none}
+.bell-n{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--loss);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;box-shadow:0 0 0 2px var(--bg)}
+.al-act{display:inline-block;margin-left:8px;background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;white-space:nowrap}
+.al-act:hover{text-decoration:underline}
+.al-more{align-self:flex-start}
+.nf-list{gap:10px}
+.nf-empty{display:flex;flex-direction:column;gap:6px;padding:28px 6px;text-align:center;align-items:center}
+.switch-row.is-soon{opacity:.75}
+.soon-tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle}
 .tier-chip{align-self:flex-start;margin-top:8px;border:1px dashed var(--line-2);background:transparent;border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
 .tier-chip.pro{color:#7AA2FF;border-color:#7AA2FF66}.tier-chip.elite{color:#C792FF;border-color:#C792FF66}
 .tier-pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--muted);vertical-align:2px}
@@ -725,7 +739,8 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
       <div class="brand-text"><h1>The Execution <em>Log</em></h1></div>
     </div>
     <div class="side-tag" data-i18n="tagline">Every trade. Every lesson.</div>
-    <button type="button" class="tier-chip" id="tierChip"></button>
+    <div class="side-row"><button type="button" class="tier-chip" id="tierChip"></button>
+      <button type="button" class="bell" id="bellBtn" aria-label="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-n" id="bellN" hidden></span></button></div>
     <nav class="nav" aria-label="Main">
       <button type="button" data-view="dashboard" data-i18n-title="navDash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span data-i18n="navDash">Dashboard</span></button>
       <button type="button" data-view="trades" data-i18n-title="navTrades"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span data-i18n="navTrades">Trades</span></button>
@@ -928,6 +943,8 @@ const PRO_I18N = {"en": {"navInsights": "Insights", "navElite": "Elite"}, "es": 
 Object.entries(PRO_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
 const OPEN_I18N = {"en": {"openPos": "Open positions", "statusLbl": "Status", "statusClosed": "Closed", "statusOpen": "Still open", "tp": "Take profit", "mapTp": "Target", "mapNow": "Now", "openLbl": "Live", "curPrice": "Current price", "floating": "if closed now", "toStop": "{d} to stop", "toTarget": "{d} to target", "closeTrade": "Close trade", "closeH": "Close position", "closedMsg": "Trade closed", "openedMsg": "Position opened", "markHint": "Type the current price from MT5 and everything updates.", "openedAt": "Opened {d}", "statusStopped": "Stopped out", "stoppedHint": "Exit set to your stop loss."}, "es": {"openPos": "Posiciones abiertas", "statusLbl": "Estado", "statusClosed": "Cerrada", "statusOpen": "Sigue abierta", "tp": "Take profit", "mapTp": "Objetivo", "mapNow": "Ahora", "openLbl": "En vivo", "curPrice": "Precio actual", "floating": "si cierras ahora", "toStop": "{d} hasta el stop", "toTarget": "{d} hasta el objetivo", "closeTrade": "Cerrar operación", "closeH": "Cerrar posición", "closedMsg": "Operación cerrada", "openedMsg": "Posición abierta", "markHint": "Escribe el precio actual de MT5 y todo se actualiza.", "openedAt": "Abierta {d}", "statusStopped": "Stop tocado", "stoppedHint": "Salida fijada en tu stop loss."}, "pt": {"openPos": "Posições abertas", "statusLbl": "Status", "statusClosed": "Fechada", "statusOpen": "Ainda aberta", "tp": "Take profit", "mapTp": "Alvo", "mapNow": "Agora", "openLbl": "Ao vivo", "curPrice": "Preço atual", "floating": "se fechar agora", "toStop": "{d} até o stop", "toTarget": "{d} até o alvo", "closeTrade": "Fechar operação", "closeH": "Fechar posição", "closedMsg": "Operação fechada", "openedMsg": "Posição aberta", "markHint": "Digite o preço atual do MT5 e tudo se atualiza.", "openedAt": "Aberta {d}", "statusStopped": "Stop atingido", "stoppedHint": "Saída definida no seu stop loss."}, "fr": {"openPos": "Positions ouvertes", "statusLbl": "Statut", "statusClosed": "Clôturé", "statusOpen": "Toujours ouvert", "tp": "Take profit", "mapTp": "Objectif", "mapNow": "Actuel", "openLbl": "En direct", "curPrice": "Prix actuel", "floating": "si clôturé maintenant", "toStop": "{d} jusqu’au stop", "toTarget": "{d} jusqu’à l’objectif", "closeTrade": "Clôturer le trade", "closeH": "Clôturer la position", "closedMsg": "Trade clôturé", "openedMsg": "Position ouverte", "markHint": "Saisissez le prix actuel de MT5 et tout se met à jour.", "openedAt": "Ouvert {d}", "statusStopped": "Stoppé", "stoppedHint": "Sortie fixée à votre stop loss."}, "de": {"openPos": "Offene Positionen", "statusLbl": "Status", "statusClosed": "Geschlossen", "statusOpen": "Noch offen", "tp": "Take Profit", "mapTp": "Ziel", "mapNow": "Jetzt", "openLbl": "Live", "curPrice": "Aktueller Kurs", "floating": "wenn jetzt geschlossen", "toStop": "{d} bis zum Stop", "toTarget": "{d} bis zum Ziel", "closeTrade": "Trade schließen", "closeH": "Position schließen", "closedMsg": "Trade geschlossen", "openedMsg": "Position eröffnet", "markHint": "Gib den aktuellen Kurs aus MT5 ein, dann aktualisiert sich alles.", "openedAt": "Eröffnet {d}", "statusStopped": "Ausgestoppt", "stoppedHint": "Ausstieg auf deinen Stop-Loss gesetzt."}, "it": {"openPos": "Posizioni aperte", "statusLbl": "Stato", "statusClosed": "Chiuso", "statusOpen": "Ancora aperto", "tp": "Take profit", "mapTp": "Obiettivo", "mapNow": "Ora", "openLbl": "Live", "curPrice": "Prezzo attuale", "floating": "se chiudi ora", "toStop": "{d} allo stop", "toTarget": "{d} all’obiettivo", "closeTrade": "Chiudi trade", "closeH": "Chiudi posizione", "closedMsg": "Trade chiuso", "openedMsg": "Posizione aperta", "markHint": "Scrivi il prezzo attuale da MT5 e tutto si aggiorna.", "openedAt": "Aperto {d}", "statusStopped": "Stop colpito", "stoppedHint": "Uscita impostata sul tuo stop loss."}, "tr": {"openPos": "Açık pozisyonlar", "statusLbl": "Durum", "statusClosed": "Kapandı", "statusOpen": "Hâlâ açık", "tp": "Kâr al", "mapTp": "Hedef", "mapNow": "Şimdi", "openLbl": "Canlı", "curPrice": "Güncel fiyat", "floating": "şimdi kapatırsan", "toStop": "Stopa {d}", "toTarget": "Hedefe {d}", "closeTrade": "İşlemi kapat", "closeH": "Pozisyonu kapat", "closedMsg": "İşlem kapatıldı", "openedMsg": "Pozisyon açıldı", "markHint": "MT5'teki güncel fiyatı yaz, her şey güncellensin.", "openedAt": "Açılış {d}", "statusStopped": "Stop oldu", "stoppedHint": "Çıkış, zarar durdura ayarlandı."}, "ar": {"openPos": "الصفقات المفتوحة", "statusLbl": "الحالة", "statusClosed": "مغلقة", "statusOpen": "ما زالت مفتوحة", "tp": "جني الربح", "mapTp": "الهدف", "mapNow": "الآن", "openLbl": "مباشر", "curPrice": "السعر الحالي", "floating": "لو أُغلقت الآن", "toStop": "{d} حتى الوقف", "toTarget": "{d} حتى الهدف", "closeTrade": "إغلاق الصفقة", "closeH": "إغلاق الصفقة", "closedMsg": "أُغلقت الصفقة", "openedMsg": "فُتحت الصفقة", "markHint": "اكتب السعر الحالي من MT5 ليتحدّث كل شيء.", "openedAt": "فُتحت {d}", "statusStopped": "ضُرب الوقف", "stoppedHint": "تم ضبط الخروج على وقف الخسارة."}, "hi": {"openPos": "खुली पोज़ीशन", "statusLbl": "स्थिति", "statusClosed": "बंद", "statusOpen": "अभी खुली है", "tp": "टेक प्रॉफ़िट", "mapTp": "लक्ष्य", "mapNow": "अभी", "openLbl": "लाइव", "curPrice": "मौजूदा कीमत", "floating": "अभी बंद करें तो", "toStop": "स्टॉप तक {d}", "toTarget": "लक्ष्य तक {d}", "closeTrade": "ट्रेड बंद करें", "closeH": "पोज़ीशन बंद करें", "closedMsg": "ट्रेड बंद हुआ", "openedMsg": "पोज़ीशन खुली", "markHint": "MT5 से मौजूदा कीमत लिखें, सब अपडेट हो जाएगा।", "openedAt": "{d} को खुली", "statusStopped": "स्टॉप हिट", "stoppedHint": "एग्ज़िट आपके स्टॉप लॉस पर सेट है।"}, "id": {"openPos": "Posisi terbuka", "statusLbl": "Status", "statusClosed": "Ditutup", "statusOpen": "Masih terbuka", "tp": "Take profit", "mapTp": "Target", "mapNow": "Sekarang", "openLbl": "Live", "curPrice": "Harga saat ini", "floating": "jika ditutup sekarang", "toStop": "{d} ke stop", "toTarget": "{d} ke target", "closeTrade": "Tutup trade", "closeH": "Tutup posisi", "closedMsg": "Trade ditutup", "openedMsg": "Posisi dibuka", "markHint": "Ketik harga saat ini dari MT5 dan semuanya ikut berubah.", "openedAt": "Dibuka {d}", "statusStopped": "Kena stop", "stoppedHint": "Exit diatur ke stop loss Anda."}, "zh": {"openPos": "持仓", "statusLbl": "状态", "statusClosed": "已平仓", "statusOpen": "仍持仓", "tp": "止盈", "mapTp": "目标", "mapNow": "现价", "openLbl": "实时", "curPrice": "当前价格", "floating": "如果现在平仓", "toStop": "距止损 {d}", "toTarget": "距目标 {d}", "closeTrade": "平仓", "closeH": "平仓", "closedMsg": "已平仓", "openedMsg": "已开仓", "markHint": "输入 MT5 中的当前价格，所有数据随之更新。", "openedAt": "开仓于 {d}", "statusStopped": "止损出场", "stoppedHint": "出场价已设为止损价。"}, "ja": {"openPos": "保有中のポジション", "statusLbl": "状態", "statusClosed": "決済済み", "statusOpen": "保有中", "tp": "利確", "mapTp": "目標", "mapNow": "現在", "openLbl": "ライブ", "curPrice": "現在価格", "floating": "今決済した場合", "toStop": "ストップまで {d}", "toTarget": "目標まで {d}", "closeTrade": "決済する", "closeH": "ポジションを決済", "closedMsg": "決済しました", "openedMsg": "ポジションを記録しました", "markHint": "MT5 の現在価格を入力すると、すべて更新されます。", "openedAt": "{d} に新規", "statusStopped": "損切り", "stoppedHint": "決済価格を損切り価格に設定しました。"}};
 Object.entries(OPEN_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
+const NOTIF_I18N = {"en": {"nfTitle": "Notifications", "nfEmpty": "You're all caught up.", "nfEmptyD": "Reminders and alerts about your trading will show up here.", "nfSettings": "Notification settings", "nfViewAll": "View all ({n})", "nfDismiss": "Dismiss", "nfUnj": "You've got {n} trades waiting to be journalled. Complete your entries while the details are fresh.", "nfUnj1": "You've got 1 trade waiting to be journalled. Complete it while the details are fresh.", "nfDaily": "You haven't finished your trading journal today. Take a few minutes to record your trades.", "nfJournalNow": "Journal now", "nfWeekly": "Your weekly trading review is ready. See your performance, execution and biggest lessons.", "nfStartReview": "Start review", "nfMonthly": "Your {m} report is ready. See how the month went and what to take into the next one.", "nfOpenReport": "View report", "nfGoalMonth": "You're {p}% of the way towards your monthly trading goal.", "nfGoalWeek": "You're {p}% of the way towards your weekly trading goal.", "nfViewGoals": "View goals", "nfPsych": "Have you reviewed your emotional state and trading discipline this week?", "nfLogMood": "Add your mood", "nfProp": "Your prop firm evaluation has {n} days remaining.", "nfProp1": "Your prop firm evaluation ends tomorrow.", "nfProp0": "Your prop firm evaluation ends today.", "nfViewRules": "View rules", "nWhatH": "What to notify me about", "nWhereH": "Where to notify me", "nWhenH": "Timing", "nInApp": "In the app", "nInAppD": "The bell at the top and the alerts on your dashboard. Always on.", "nEmail": "Email", "nEmailD": "Reminders and reports sent to your inbox.", "nPush": "Push notifications", "nPushD": "Alerts on your phone or computer, once you allow them.", "nSoon": "Coming soon", "nDailyTime": "Daily reminder time", "nDailyTimeD": "Only on days you've traded and haven't finished your journal.", "nWeekDay": "Weekly review day", "nWeekDayD": "Only in weeks you've traded.", "nQuiet": "Quiet hours", "nQuietD": "No email or push notifications between these times.", "nQuietFrom": "From", "nQuietTo": "To", "nTz": "Timezone", "nTzD": "Used for reminder times and when your trading day starts.", "nNote": "Every notification shows in the app. Email and push notifications are coming soon and will follow these settings.", "nJournal": "Journal reminders", "nJournalD": "Trades waiting to be journalled, plus a daily reminder only on days you've traded.", "nWeekly": "Weekly review", "nWeeklyD": "A nudge to review your week, only in weeks you've traded.", "nMonthly": "Monthly report", "nMonthlyD": "Your report for last month, at the start of each month.", "nRisk": "Risk warnings", "nRiskD": "Loss limits, drawdown and RuleGuard warnings before you break a rule.", "nGoals": "Goal progress", "nGoalsD": "When you're close to a goal, and when you hit it.", "nPsych": "Psychology reminders", "nPsychD": "A weekly check-in on your mood and discipline, in weeks you've traded.", "nProp": "Prop firm updates", "nPropD": "How many days are left on your evaluation. Set the end date in RuleGuard.", "nDaily": "Daily summary", "nDailyD": "Today's trades, P&L and win rate.", "nProduct": "Product announcements", "nProductD": "New features and updates to The Execution Log.", "rgEnd": "Evaluation end date (optional)"}};
+Object.entries(NOTIF_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
 const FOMO_I18N = {"en": {"fFomo": "This was a FOMO trade (fear of missing out)", "dFomo": "Avoid FOMO trades", "fomoShort": "FOMO trade"}, "es": {"fFomo": "Fue una operación por FOMO (miedo a perdérmela)", "dFomo": "Evitar operaciones por FOMO", "fomoShort": "Operación por FOMO"}, "pt": {"fFomo": "Foi uma operação por FOMO (medo de ficar de fora)", "dFomo": "Evitar operações por FOMO", "fomoShort": "Operação por FOMO"}, "fr": {"fFomo": "C’était un trade FOMO (peur de rater le mouvement)", "dFomo": "Éviter les trades FOMO", "fomoShort": "Trade FOMO"}, "de": {"fFomo": "Das war ein FOMO-Trade (Angst, etwas zu verpassen)", "dFomo": "Keine FOMO-Trades", "fomoShort": "FOMO-Trade"}, "it": {"fFomo": "Era un trade FOMO (paura di perdere l’occasione)", "dFomo": "Evitare i trade FOMO", "fomoShort": "Trade FOMO"}, "tr": {"fFomo": "Bu bir FOMO işlemiydi (kaçırma korkusu)", "dFomo": "FOMO işlemlerinden kaçın", "fomoShort": "FOMO işlemi"}, "ar": {"fFomo": "كانت صفقة FOMO (الخوف من تفويت الفرصة)", "dFomo": "تجنّب صفقات FOMO", "fomoShort": "صفقة FOMO"}, "hi": {"fFomo": "यह FOMO ट्रेड था (मौका छूटने का डर)", "dFomo": "FOMO ट्रेड से बचें", "fomoShort": "FOMO ट्रेड"}, "id": {"fFomo": "Ini trade FOMO (takut ketinggalan)", "dFomo": "Hindari trade FOMO", "fomoShort": "Trade FOMO"}, "zh": {"fFomo": "这是一笔 FOMO 交易（害怕错过）", "dFomo": "避免 FOMO 交易", "fomoShort": "FOMO 交易"}, "ja": {"fFomo": "FOMOトレードだった（乗り遅れる不安）", "dFomo": "FOMOトレードをしない", "fomoShort": "FOMOトレード"}};
 Object.entries(FOMO_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
 const COMM_I18N = {"en": {"commission": "Commission", "swap": "Swap", "commAuto": "{r} per lot × {l} lots, from your account settings.", "commNone": "Set your commission per lot in the account settings and this fills in automatically.", "swapHint": "Copy it from MT5. Negative means you paid it.", "grossPnl": "Gross P&L", "costsLine": "Costs: {c} commission · {s} swap", "commRatesH": "Commission per lot (round turn)", "commRatesHint": "What your broker charges to open and close 1 lot, in your account currency. To find it in MT5, open the History tab and divide a closed trade's commission by its lot size.", "g_other": "Other", "applyPast": "Apply to past trades without commission", "appliedN": "Commission added to {n} trades", "noneToApply": "All trades already have a commission", "brokerPnl": "Broker profit before costs ({ccy}, optional)", "brokerPh": "MT5 Profit column", "costsPv": "Gross {g} · commission {c} · swap {s}"}, "es": {"commission": "Comisión", "swap": "Swap", "commAuto": "{r} por lote × {l} lotes, según los ajustes de tu cuenta.", "commNone": "Fija tu comisión por lote en los ajustes de la cuenta y se rellenará sola.", "swapHint": "Cópialo de MT5. Negativo significa que lo pagaste.", "grossPnl": "P&L bruto", "costsLine": "Costes: {c} comisión · {s} swap", "commRatesH": "Comisión por lote (ida y vuelta)", "commRatesHint": "Lo que cobra tu bróker por abrir y cerrar 1 lote, en la divisa de tu cuenta. En MT5, abre la pestaña Historial y divide la comisión de una operación cerrada entre su tamaño de lote.", "g_other": "Otros", "applyPast": "Aplicar a operaciones pasadas sin comisión", "appliedN": "Comisión añadida a {n} operaciones", "noneToApply": "Todas las operaciones ya tienen comisión", "brokerPnl": "Beneficio del bróker antes de costes ({ccy}, opcional)", "brokerPh": "Columna Beneficio de MT5", "costsPv": "Bruto {g} · comisión {c} · swap {s}"}, "pt": {"commission": "Comissão", "swap": "Swap", "commAuto": "{r} por lote × {l} lotes, das configurações da conta.", "commNone": "Defina sua comissão por lote nas configurações da conta e isto será preenchido sozinho.", "swapHint": "Copie do MT5. Negativo significa que você pagou.", "grossPnl": "P&L bruto", "costsLine": "Custos: {c} comissão · {s} swap", "commRatesH": "Comissão por lote (ida e volta)", "commRatesHint": "O que a corretora cobra para abrir e fechar 1 lote, na moeda da conta. No MT5, abra a aba Histórico e divida a comissão de uma operação fechada pelo tamanho do lote.", "g_other": "Outros", "applyPast": "Aplicar a operações antigas sem comissão", "appliedN": "Comissão adicionada a {n} operações", "noneToApply": "Todas as operações já têm comissão", "brokerPnl": "Lucro da corretora antes dos custos ({ccy}, opcional)", "brokerPh": "Coluna Lucro do MT5", "costsPv": "Bruto {g} · comissão {c} · swap {s}"}, "fr": {"commission": "Commission", "swap": "Swap", "commAuto": "{r} par lot × {l} lots, d’après les réglages du compte.", "commNone": "Indiquez votre commission par lot dans les réglages du compte pour la remplir automatiquement.", "swapHint": "Copiez-le depuis MT5. Négatif signifie que vous l’avez payé.", "grossPnl": "P&L brut", "costsLine": "Coûts : {c} commission · {s} swap", "commRatesH": "Commission par lot (aller-retour)", "commRatesHint": "Ce que votre courtier facture pour ouvrir et fermer 1 lot, dans la devise du compte. Dans MT5, ouvrez l’onglet Historique et divisez la commission d’un trade clôturé par sa taille de lot.", "g_other": "Autres", "applyPast": "Appliquer aux anciens trades sans commission", "appliedN": "Commission ajoutée à {n} trades", "noneToApply": "Tous les trades ont déjà une commission", "brokerPnl": "Profit du courtier avant coûts ({ccy}, facultatif)", "brokerPh": "Colonne Profit de MT5", "costsPv": "Brut {g} · commission {c} · swap {s}"}, "de": {"commission": "Kommission", "swap": "Swap", "commAuto": "{r} pro Lot × {l} Lots, aus deinen Kontoeinstellungen.", "commNone": "Lege deine Kommission pro Lot in den Kontoeinstellungen fest, dann wird sie automatisch ausgefüllt.", "swapHint": "Aus MT5 übernehmen. Negativ heißt, du hast ihn bezahlt.", "grossPnl": "Brutto-P&L", "costsLine": "Kosten: {c} Kommission · {s} Swap", "commRatesH": "Kommission pro Lot (Round Turn)", "commRatesHint": "Was dein Broker für Eröffnen und Schließen von 1 Lot berechnet, in Kontowährung. In MT5 im Tab Historie die Kommission eines geschlossenen Trades durch seine Lotgröße teilen.", "g_other": "Sonstige", "applyPast": "Auf alte Trades ohne Kommission anwenden", "appliedN": "Kommission zu {n} Trades hinzugefügt", "noneToApply": "Alle Trades haben bereits eine Kommission", "brokerPnl": "Broker-Gewinn vor Kosten ({ccy}, optional)", "brokerPh": "MT5-Spalte Gewinn", "costsPv": "Brutto {g} · Kommission {c} · Swap {s}"}, "it": {"commission": "Commissione", "swap": "Swap", "commAuto": "{r} per lotto × {l} lotti, dalle impostazioni del conto.", "commNone": "Imposta la commissione per lotto nelle impostazioni del conto e verrà compilata in automatico.", "swapHint": "Copialo da MT5. Negativo significa che l’hai pagato.", "grossPnl": "P&L lordo", "costsLine": "Costi: {c} commissione · {s} swap", "commRatesH": "Commissione per lotto (andata e ritorno)", "commRatesHint": "Quanto addebita il broker per aprire e chiudere 1 lotto, nella valuta del conto. In MT5 apri la scheda Storico e dividi la commissione di un trade chiuso per la sua dimensione.", "g_other": "Altro", "applyPast": "Applica ai trade passati senza commissione", "appliedN": "Commissione aggiunta a {n} trade", "noneToApply": "Tutti i trade hanno già una commissione", "brokerPnl": "Profitto del broker prima dei costi ({ccy}, facoltativo)", "brokerPh": "Colonna Profitto di MT5", "costsPv": "Lordo {g} · commissione {c} · swap {s}"}, "tr": {"commission": "Komisyon", "swap": "Swap", "commAuto": "Lot başına {r} × {l} lot, hesap ayarlarından.", "commNone": "Hesap ayarlarında lot başına komisyonu belirle, burası otomatik dolsun.", "swapHint": "MT5'ten kopyala. Negatif, ödediğin anlamına gelir.", "grossPnl": "Brüt K/Z", "costsLine": "Maliyetler: {c} komisyon · {s} swap", "commRatesH": "Lot başına komisyon (açılış + kapanış)", "commRatesHint": "Aracı kurumunun 1 lotu açıp kapatmak için aldığı ücret, hesap para biriminde. MT5'te Geçmiş sekmesini aç ve kapanmış bir işlemin komisyonunu lot büyüklüğüne böl.", "g_other": "Diğer", "applyPast": "Komisyonsuz eski işlemlere uygula", "appliedN": "{n} işleme komisyon eklendi", "noneToApply": "Tüm işlemlerde zaten komisyon var", "brokerPnl": "Maliyet öncesi aracı kurum kârı ({ccy}, isteğe bağlı)", "brokerPh": "MT5 Kâr sütunu", "costsPv": "Brüt {g} · komisyon {c} · swap {s}"}, "ar": {"commission": "العمولة", "swap": "السواب", "commAuto": "{r} لكل لوت × {l} لوت، من إعدادات حسابك.", "commNone": "حدّد العمولة لكل لوت في إعدادات الحساب وستُملأ تلقائيًا.", "swapHint": "انسخه من MT5. القيمة السالبة تعني أنك دفعته.", "grossPnl": "الربح/الخسارة الإجمالي", "costsLine": "التكاليف: {c} عمولة · {s} سواب", "commRatesH": "العمولة لكل لوت (فتح وإغلاق)", "commRatesHint": "ما يتقاضاه وسيطك لفتح وإغلاق لوت واحد بعملة حسابك. في MT5 افتح تبويب السجل واقسم عمولة صفقة مغلقة على حجم اللوت.", "g_other": "أخرى", "applyPast": "تطبيق على الصفقات السابقة بلا عمولة", "appliedN": "أضيفت العمولة إلى {n} صفقات", "noneToApply": "كل الصفقات لديها عمولة بالفعل", "brokerPnl": "ربح الوسيط قبل التكاليف ({ccy}، اختياري)", "brokerPh": "عمود الربح في MT5", "costsPv": "الإجمالي {g} · العمولة {c} · السواب {s}"}, "hi": {"commission": "कमीशन", "swap": "स्वैप", "commAuto": "{r} प्रति लॉट × {l} लॉट, खाते की सेटिंग्स से।", "commNone": "खाते की सेटिंग्स में प्रति लॉट कमीशन तय करें, यह अपने आप भर जाएगा।", "swapHint": "MT5 से कॉपी करें। नेगेटिव का मतलब आपने चुकाया।", "grossPnl": "ग्रॉस P&L", "costsLine": "लागत: {c} कमीशन · {s} स्वैप", "commRatesH": "प्रति लॉट कमीशन (आना-जाना)", "commRatesHint": "1 लॉट खोलने और बंद करने का ब्रोकर का शुल्क, खाते की करेंसी में। MT5 में History टैब खोलें और किसी बंद ट्रेड का कमीशन उसके लॉट साइज़ से भाग दें।", "g_other": "अन्य", "applyPast": "बिना कमीशन वाले पुराने ट्रेड पर लागू करें", "appliedN": "{n} ट्रेड में कमीशन जोड़ा गया", "noneToApply": "सभी ट्रेड में पहले से कमीशन है", "brokerPnl": "लागत से पहले ब्रोकर मुनाफ़ा ({ccy}, वैकल्पिक)", "brokerPh": "MT5 Profit कॉलम", "costsPv": "ग्रॉस {g} · कमीशन {c} · स्वैप {s}"}, "id": {"commission": "Komisi", "swap": "Swap", "commAuto": "{r} per lot × {l} lot, dari pengaturan akun.", "commNone": "Atur komisi per lot di pengaturan akun agar terisi otomatis.", "swapHint": "Salin dari MT5. Negatif berarti Anda membayarnya.", "grossPnl": "P&L kotor", "costsLine": "Biaya: {c} komisi · {s} swap", "commRatesH": "Komisi per lot (buka + tutup)", "commRatesHint": "Biaya broker untuk membuka dan menutup 1 lot, dalam mata uang akun. Di MT5, buka tab History lalu bagi komisi trade yang sudah ditutup dengan ukuran lotnya.", "g_other": "Lainnya", "applyPast": "Terapkan ke trade lama tanpa komisi", "appliedN": "Komisi ditambahkan ke {n} trade", "noneToApply": "Semua trade sudah punya komisi", "brokerPnl": "Profit broker sebelum biaya ({ccy}, opsional)", "brokerPh": "Kolom Profit MT5", "costsPv": "Kotor {g} · komisi {c} · swap {s}"}, "zh": {"commission": "佣金", "swap": "隔夜利息", "commAuto": "每手 {r} × {l} 手，来自账户设置。", "commNone": "在账户设置中填写每手佣金，这里就会自动填写。", "swapHint": "从 MT5 复制。负数表示你支付了。", "grossPnl": "毛盈亏", "costsLine": "成本：佣金 {c} · 隔夜利息 {s}", "commRatesH": "每手佣金（开仓+平仓）", "commRatesHint": "券商开平 1 手收取的费用，以账户币种计。在 MT5 中打开“历史”标签，用一笔已平仓交易的佣金除以其手数即可。", "g_other": "其他", "applyPast": "应用到没有佣金的历史交易", "appliedN": "已为 {n} 笔交易添加佣金", "noneToApply": "所有交易都已有佣金", "brokerPnl": "扣除成本前的券商盈利（{ccy}，可选）", "brokerPh": "MT5 盈利列", "costsPv": "毛额 {g} · 佣金 {c} · 隔夜利息 {s}"}, "ja": {"commission": "手数料", "swap": "スワップ", "commAuto": "1ロットあたり {r} × {l} ロット（口座設定より）。", "commNone": "口座設定で1ロットあたりの手数料を設定すると自動入力されます。", "swapHint": "MT5 からコピーしてください。マイナスは支払ったことを意味します。", "grossPnl": "総損益", "costsLine": "コスト：手数料 {c} · スワップ {s}", "commRatesH": "1ロットあたりの手数料（往復）", "commRatesHint": "1ロットの新規と決済でブローカーが請求する額（口座通貨）。MT5 の履歴タブで、決済済みトレードの手数料をロット数で割ると分かります。", "g_other": "その他", "applyPast": "手数料のない過去のトレードに適用", "appliedN": "{n}件のトレードに手数料を追加しました", "noneToApply": "すべてのトレードに手数料が入っています", "brokerPnl": "コスト前のブローカー損益（{ccy}、任意）", "brokerPh": "MT5 の損益列", "costsPv": "総額 {g} · 手数料 {c} · スワップ {s}"}};
@@ -1238,7 +1255,7 @@ function bindRiskNote(pctId, balFn, noteId, ccyFn){
 }
 
 /* ---------- Render ---------- */
-function render(){ checkLockOnLoad(); renderHeader(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
+function render(){ checkLockOnLoad(); renderHeader(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderBell(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
 
 function renderHeader(){ const a = activeAcct();
   $("#pageTitle").textContent = t(VIEWS[state.view] || "navDash");
@@ -2245,11 +2262,12 @@ function openRules(){
       <div class="f"><label for="rg-daily">Max daily loss (%)</label><input id="rg-daily" type="number" step="any" value="${esc(r.dailyPct ?? "")}" placeholder="5"></div>
       <div class="f"><label for="rg-dbase">Daily loss is measured from</label><select id="rg-dbase"><option value="day" ${r.dailyBase !== "start" ? "selected" : ""}>Balance at start of day</option><option value="start" ${r.dailyBase === "start" ? "selected" : ""}>Starting balance</option></select></div>
       <div class="f"><label for="rg-max">Max total drawdown (%)</label><input id="rg-max" type="number" step="any" value="${esc(r.maxPct ?? "")}" placeholder="10"></div>
+      <div class="f"><label for="rg-end">${esc(t("rgEnd"))}</label><input id="rg-end" type="date" value="${esc(r.endDate || "")}"></div>
       <div class="f"><label for="rg-ddt">Drawdown type</label><select id="rg-ddt"><option value="static" ${r.ddType !== "trailing" ? "selected" : ""}>Static (from starting balance)</option><option value="trailing" ${r.ddType === "trailing" ? "selected" : ""}>Trailing (from highest balance)</option></select></div>
     </div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">${esc(t("saveChanges"))}</button></div></div></form>`);
   $("#rgF").onsubmit = async e => { e.preventDefault(); const v = id => $("#" + id).value;
-    const rules = { on: $("#rg-on").checked, targetPct: num(v("rg-target")), minDays: num(v("rg-days")), dailyPct: num(v("rg-daily")), dailyBase: v("rg-dbase"), maxPct: num(v("rg-max")), ddType: v("rg-ddt") };
+    const rules = { on: $("#rg-on").checked, targetPct: num(v("rg-target")), minDays: num(v("rg-days")), dailyPct: num(v("rg-daily")), dailyBase: v("rg-dbase"), maxPct: num(v("rg-max")), ddType: v("rg-ddt"), endDate: /^\d{4}-\d{2}-\d{2}$/.test(v("rg-end")) ? v("rg-end") : "" };
     const list = accountsList().map(x => x.id === a.id ? { ...x, rules } : x);
     close(); if (await saveCfg({ accounts: list })) toast("RuleGuard saved"); };
 }
@@ -3425,8 +3443,9 @@ async function setAccent(hex, persist = true){
 /* ---------- Settings page ---------- */
 const SET_TABS = [["profile","setProfile"],["general","setGeneral"],["notifications","setNotify"],["security","setSecurity"],["billing","setBilling"],["data","setData"]];
 state.setTab = "profile";
-const NOTIFY = [["daily","nDaily","nDailyD",false],["weekly","nWeekly","nWeeklyD",true],["monthly","nMonthly","nMonthlyD",true],
-  ["goals","nGoals","nGoalsD",true],["risk","nRisk","nRiskD",true],["journal","nJournal","nJournalD",true],["product","nProduct","nProductD",false]];
+const NOTIFY = [["journal","nJournal","nJournalD",true],["weekly","nWeekly","nWeeklyD",true],["monthly","nMonthly","nMonthlyD",true],
+  ["risk","nRisk","nRiskD",true],["goals","nGoals","nGoalsD",true],["psych","nPsych","nPsychD",true],["prop","nProp","nPropD",true],
+  ["daily","nDaily","nDailyD",false],["product","nProduct","nProductD",false]];
 const notifyOn = k => { const v = state.settings?.notify?.[k]; return typeof v === "boolean" ? v : NOTIFY.find(n => n[0] === k)[3]; };
 const privacy = () => state.settings?.privacy || {};
 const remembers = () => privacy().remember !== false;
@@ -3472,12 +3491,46 @@ function renderSetGeneral(body){
   $("#langSel").onchange = async e => { await setLang(e.target.value); renderSettings(); };
 }
 
+const nset = (k, d) => { const v = state.settings?.notify?.[k]; return v === undefined || v === null || v === "" ? d : v; };
+const detectedTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } };
+// Current date, minutes past midnight and weekday (0 = Monday) in the trader's chosen timezone.
+function nowTz(){
+  const d = new Date(), tz = nset("tz", detectedTz());
+  try {
+    const p = new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short" }).formatToParts(d);
+    const g = k => p.find(x => x.type === k)?.value;
+    return { date: `${g("year")}-${g("month")}-${g("day")}`, mins: (+g("hour")) * 60 + (+g("minute")), dow: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(g("weekday")) };
+  } catch { return { date: localToday(), mins: d.getHours() * 60 + d.getMinutes(), dow: (d.getDay() + 6) % 7 }; }
+}
+const dayName = i => { try { return new Intl.DateTimeFormat(lang, { weekday: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, 0, 1 + i))); } catch { return ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][i]; } };
 function renderSetNotify(body){
-  body.innerHTML = `<section class="panel"><div class="panel-head"><h2>${esc(t("setNotify"))}</h2></div>
+  const tzs = (() => { try { return Intl.supportedValuesOf("timeZone"); } catch { return []; } })(), curTz = nset("tz", detectedTz());
+  const tzList = tzs.includes(curTz) ? tzs : [curTz, ...tzs];
+  const soonRow = (title, desc) => `<div class="switch-row is-soon"><span class="sw-text"><b>${esc(title)} <span class="soon-tag">${esc(t("nSoon"))}</span></b><span class="hint">${esc(desc)}</span></span><input type="checkbox" class="switch" disabled aria-label="${esc(title)}"></div>`;
+  body.innerHTML = `<section class="panel"><div class="panel-head"><h2>${esc(t("nWhatH"))}</h2></div>
     <div class="set-note">${esc(t("nNote"))}</div>
-    <div class="switch-list">${NOTIFY.map(([k, l, d]) => switchRow("n-" + k, t(l), t(d), notifyOn(k))).join("")}</div></section>`;
-  NOTIFY.forEach(([k]) => { $("#n-" + k).onchange = async e => {
-    await saveCfg({ notify: { ...(state.settings?.notify || {}), [k]: e.target.checked } }); toast(t("prefSaved")); }; });
+    <div class="switch-list">${NOTIFY.map(([k, l, d]) => switchRow("n-" + k, t(l), t(d), notifyOn(k))).join("")}</div></section>
+    <section class="panel"><div class="panel-head"><h2>${esc(t("nWhenH"))}</h2></div>
+      <div class="fgrid">
+        <div class="f"><label for="n-time">${esc(t("nDailyTime"))}</label><input id="n-time" type="time" value="${esc(nset("dailyTime", "20:00"))}"><span class="hint">${esc(t("nDailyTimeD"))}</span></div>
+        <div class="f"><label for="n-wday">${esc(t("nWeekDay"))}</label><select id="n-wday">${[0,1,2,3,4,5,6].map(i => `<option value="${i}" ${+nset("weekDay", 4) === i ? "selected" : ""}>${esc(dayName(i))}</option>`).join("")}</select><span class="hint">${esc(t("nWeekDayD"))}</span></div>
+        <div class="f"><label for="n-qfrom">${esc(t("nQuiet"))}: ${esc(t("nQuietFrom"))}</label><input id="n-qfrom" type="time" value="${esc(nset("quietFrom", "22:00"))}"></div>
+        <div class="f"><label for="n-qto">${esc(t("nQuiet"))}: ${esc(t("nQuietTo"))}</label><input id="n-qto" type="time" value="${esc(nset("quietTo", "07:00"))}"></div>
+        <div class="f full"><span class="hint" style="margin-top:-4px">${esc(t("nQuietD"))}</span></div>
+        <div class="f full"><label for="n-tz">${esc(t("nTz"))}</label><select id="n-tz">${tzList.map(z => `<option value="${esc(z)}" ${z === curTz ? "selected" : ""}>${esc(z.replace(/_/g, " "))}</option>`).join("")}</select><span class="hint">${esc(t("nTzD"))}</span></div>
+      </div></section>
+    <section class="panel"><div class="panel-head"><h2>${esc(t("nWhereH"))}</h2></div>
+      <div class="switch-list">
+        <div class="switch-row"><span class="sw-text"><b>${esc(t("nInApp"))}</b><span class="hint">${esc(t("nInAppD"))}</span></span><input type="checkbox" class="switch" checked disabled aria-label="${esc(t("nInApp"))}"></div>
+        ${soonRow(t("nEmail"), t("nEmailD"))}${soonRow(t("nPush"), t("nPushD"))}
+      </div></section>`;
+  const saveN = async patch => { await saveCfg({ notify: { ...(state.settings?.notify || {}), ...patch } }); toast(t("prefSaved")); renderBell(); };
+  NOTIFY.forEach(([k]) => { $("#n-" + k).onchange = e => saveN({ [k]: e.target.checked }); });
+  $("#n-time").onchange = e => e.target.value && saveN({ dailyTime: e.target.value });
+  $("#n-wday").onchange = e => saveN({ weekDay: +e.target.value });
+  $("#n-qfrom").onchange = e => e.target.value && saveN({ quietFrom: e.target.value });
+  $("#n-qto").onchange = e => e.target.value && saveN({ quietTo: e.target.value });
+  $("#n-tz").onchange = e => saveN({ tz: e.target.value });
 }
 
 function renderSetSecurity(body){
@@ -4013,7 +4066,7 @@ async function deleteEverything(){
 function computeAlerts(){
   const a = activeAcct(); if (!a) return [];
   const g = a.goals || {}, has = k => num(g[k]) != null && +g[k] > 0, out = [], d = goalData(a), P = perfData(a), today = localToday();
-  const add = (lvl, key, text) => out.push({ lvl, key: key + ":" + today, text });
+  const add = (lvl, key, text, act) => out.push({ lvl, key: key + ":" + today, text, act });
   if (notifyOn("risk")){
     if (has("dailyLossLimit") && d.day <= -g.dailyLossLimit) add("bad", "dll", t("alDailyLimit", { v: money(-g.dailyLossLimit) }));
     if (has("maxLoss") && -d.month >= .75 * g.maxLoss) add(-d.month >= g.maxLoss ? "bad" : "warn", "mloss", t("alMonthLoss", { p: Math.round(-d.month / g.maxLoss * 100) + "%" }));
@@ -4027,27 +4080,83 @@ function computeAlerts(){
     if (has("monthly") && d.month >= g.monthly) add("good", "gmonth", t("alGoalMonth"));
     if (has("growth") && d.bal >= g.growth) add("good", "ggrowth", t("alGoalGrowth"));
   }
-  if (notifyOn("journal")){
-    const wk = acctTrades(a).filter(x => x.date >= isoAdd(today, -6) && x.date <= today && !String(x.notes || "").trim()).length;
-    if (wk) add("info", "jn", t("alJournal", { n: tradeCount(wk) }));
-    const dow = (new Date(today + "T00:00:00Z").getUTCDay() + 6) % 7;
-    if (g.d_review === true && dow >= 4 && !(a.reviews || {})[weekStartOf(today)]) add("info", "rev", t("alReview"));
+  if (notifyOn("goals")){
+    const prog = (k, cur, msg) => { if (has(k) && cur >= .75 * g[k] && cur < g[k]) add("info", "gp-" + k, t(msg, { p: Math.floor(cur / g[k] * 100) }), { label: t("nfViewGoals"), run: () => setView("goals") }); };
+    prog("weekly", d.week, "nfGoalWeek"); prog("monthly", d.month, "nfGoalMonth");
   }
+  smartNotifs(a, add);
   const sumLine = (key, label, from) => { const ts = acctTrades(a).filter(x => x.date >= from && x.date <= today); if (!ts.length) return;
     const s = stats(ts); add("info", key, t("alSummary", { p: label, n: tradeCount(s.n), v: money(s.net), w: (s.winRate * 100).toFixed(0) + "%" })); };
   if (notifyOn("daily")) sumLine("sday", t("today"), today);
-  if (notifyOn("weekly")) sumLine("sweek", t("thisWeek"), weekStartOf(today));
-  if (notifyOn("monthly")) sumLine("smonth", t("thisMonth"), today.slice(0, 7) + "-01");
+
   let dis = []; try { dis = JSON.parse(ls.get("tel-dismiss") || "[]"); } catch {}
   if (notifyOn("risk")) ruleAlerts().forEach(([lvl, key, text]) => add(lvl, key, text));
   return out.filter(x => !dis.includes(x.key));
 }
+// A closed trade counts as journalled once it has any of: notes, a grade, a mood or a setup.
+const isJournalled = x => !!(String(x.notes || "").trim() || x.grade || x.mood || String(x.setup || "").trim());
+function unjournalled(a){ const today = localToday(); return acctTrades(a).filter(x => !isOpen(x) && x.date >= isoAdd(today, -13) && x.date <= today && !isJournalled(x)).sort((x, y) => (y.date + (y.timeOut || "")).localeCompare(x.date + (x.timeOut || ""))); }
+// Reminders tied to what the trader actually did. Nothing fires on days or weeks with no trades.
+function smartNotifs(a, add){
+  const now = nowTz(), today = localToday(), ws = weekStartOf(today), all = acctTrades(a);
+  const week = all.filter(x => x.date >= ws && x.date <= today && !isOpen(x));
+  if (notifyOn("journal")){
+    const unj = unjournalled(a), todays = unj.filter(x => x.date === today);
+    const [hh, mm] = String(nset("dailyTime", "20:00")).split(":").map(Number);
+    const go = list => ({ label: t("nfJournalNow"), run: () => openTrade(list[0]) });
+    if (todays.length && now.mins >= (hh || 0) * 60 + (mm || 0)) add("info", "jday", t("nfDaily"), go(todays));
+    else if (unj.length) add("info", "unj" + unj.length, unj.length === 1 ? t("nfUnj1") : t("nfUnj", { n: unj.length }), go(unj));
+  }
+  if (notifyOn("weekly") && week.length && now.dow >= +nset("weekDay", 4) && !(a.reviews || {})[ws])
+    add("info", "wrev-" + ws, t("nfWeekly"), { label: t("nfStartReview"), run: () => newNote("weekly") });
+  if (notifyOn("monthly") && +today.slice(8, 10) <= 3){
+    const lm = isoAdd(today.slice(0, 7) + "-01", -1).slice(0, 7);
+    if (all.some(x => x.date.slice(0, 7) === lm)){
+      let m = lm; try { m = new Intl.DateTimeFormat(lang, { month: "long", timeZone: "UTC" }).format(new Date(lm + "-15T00:00:00Z")); } catch {}
+      add("info", "mrep-" + lm, t("nfMonthly", { m }), { label: t("nfOpenReport"), run: () => setView("analytics") });
+    }
+  }
+  if (notifyOn("psych") && week.length && now.dow >= 3 && !week.some(x => x.mood))
+    add("info", "psy-" + ws, t("nfPsych"), { label: t("nfLogMood"), run: () => openTrade(week[0]) });
+  const end = a.rules?.endDate;
+  if (notifyOn("prop") && end && /^\d{4}-\d{2}-\d{2}$/.test(end)){
+    const n = Math.round((Date.parse(end + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 864e5);
+    if (n >= 0 && n <= 7) add(n <= 2 ? "warn" : "info", "prop-" + end, n === 0 ? t("nfProp0") : n === 1 ? t("nfProp1") : t("nfProp", { n }), hasTier("pro") ? { label: t("nfViewRules"), run: () => openRules() } : undefined);
+  }
+}
+const lsList = k => { try { const v = JSON.parse(ls.get(k) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
+function dismissAlert(key){ ls.set("tel-dismiss", JSON.stringify([...lsList("tel-dismiss"), key].slice(-80))); renderAlerts(); renderBell(); }
+const alertHtml = (x, cls = "") => `<div class="alert ${x.lvl} ${cls}" role="status"><span class="al-dot"></span><span class="al-text">${esc(x.text)}${x.act ? `<button type="button" class="al-act" data-a="${esc(x.key)}">${esc(x.act.label)} →</button>` : ""}</span><button type="button" class="al-x" data-k="${esc(x.key)}" aria-label="${esc(t("nfDismiss"))}">✕</button></div>`;
+function bindAlertBtns(host, list, before){
+  host.querySelectorAll(".al-x").forEach(b => b.onclick = () => { dismissAlert(b.dataset.k); if (before) before(true); });
+  host.querySelectorAll(".al-act").forEach(b => b.onclick = () => { const x = list.find(y => y.key === b.dataset.a); if (!x) return; if (before) before(); dismissAlert(x.key); x.act.run(); });
+}
+const DASH_ALERTS = 3, LVL_RANK = { bad: 0, warn: 1, good: 2, info: 3 };
 function renderAlerts(){
   const host = $("#alerts"); if (!host) return;
-  const list = computeAlerts();
-  host.innerHTML = list.length ? `<div class="alerts">${list.map(x => `<div class="alert ${x.lvl}" role="status"><span class="al-dot"></span><span class="al-text">${esc(x.text)}</span><button type="button" class="al-x" data-k="${esc(x.key)}" aria-label="${esc(t("close"))}">✕</button></div>`).join("")}</div>` : "";
-  host.querySelectorAll(".al-x").forEach(b => b.onclick = () => { let dis = []; try { dis = JSON.parse(ls.get("tel-dismiss") || "[]"); } catch {}
-    dis = [...dis, b.dataset.k].slice(-60); ls.set("tel-dismiss", JSON.stringify(dis)); renderAlerts(); });
+  const list = computeAlerts().sort((x, y) => LVL_RANK[x.lvl] - LVL_RANK[y.lvl]), shown = list.slice(0, DASH_ALERTS);
+  host.innerHTML = list.length ? `<div class="alerts">${shown.map(x => alertHtml(x)).join("")}${list.length > DASH_ALERTS ? `<button type="button" class="btn small al-more" id="alMore">${esc(t("nfViewAll", { n: list.length }))}</button>` : ""}</div>` : "";
+  bindAlertBtns(host, shown);
+  const more = $("#alMore"); if (more) more.onclick = openNotifs;
+}
+function renderBell(){
+  const b = $("#bellBtn"); if (!b) return;
+  const seen = lsList("tel-seen"), unread = computeAlerts().filter(x => !seen.includes(x.key)).length, n = $("#bellN");
+  n.hidden = !unread; n.textContent = unread > 9 ? "9+" : String(unread);
+  b.setAttribute("aria-label", unread ? `${t("nfTitle")} (${unread})` : t("nfTitle"));
+}
+function openNotifs(){
+  const list = computeAlerts().sort((x, y) => LVL_RANK[x.lvl] - LVL_RANK[y.lvl]);
+  ls.set("tel-seen", JSON.stringify([...new Set([...lsList("tel-seen"), ...list.map(x => x.key)])].slice(-200)));
+  renderBell();
+  const body = () => { const l = computeAlerts().sort((x, y) => LVL_RANK[x.lvl] - LVL_RANK[y.lvl]);
+    return l.length ? `<div class="alerts nf-list">${l.map(x => alertHtml(x)).join("")}</div>` : `<div class="nf-empty"><b>${esc(t("nfEmpty"))}</b><span class="hint">${esc(t("nfEmptyD"))}</span></div>`; };
+  const close = showDrawer(`<div class="drawer nf-drawer"><div class="panel-head"><h2>${esc(t("nfTitle"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <div id="nfBody">${body()}</div>
+    <div class="drawer-foot"><button type="button" class="btn small" id="nfSet">${esc(t("nfSettings"))}</button><div></div></div></div>`);
+  const bind = () => { const host = $("#nfBody"); bindAlertBtns(host, computeAlerts(), keep => { if (keep) { host.innerHTML = body(); bind(); } else close(); }); };
+  bind();
+  $("#nfSet").onclick = () => { close(); state.setTab = "notifications"; setView("settings"); };
 }
 
 /* ---------- Screenshots ---------- */
@@ -4173,6 +4282,7 @@ $("#setBtn").onclick = () => setView("settings");
 document.querySelectorAll("#chartSeg button").forEach(b => b.onclick = () => { state.chartMode = b.dataset.cm; if (remembers()) ls.set("tel-chart", b.dataset.cm); renderChart(); });
 $("#cashBtn").onclick = () => openCash();
 $("#tutBtn").onclick = () => openTutorial(0);
+$("#bellBtn").onclick = () => openNotifs();
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => setView(b.dataset.go));
 window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS[v] && v !== state.view) setView(v, false); });
