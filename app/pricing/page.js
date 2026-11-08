@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import BillingTerms from "@/components/BillingTerms";
 import PlanCards from "@/components/PlanCards";
 import CompareTable from "@/components/CompareTable";
 import { createClient } from "@/lib/supabase/server";
@@ -36,6 +37,7 @@ export default async function Pricing({ searchParams }) {
           {searchParams?.error === "plan" && <div className="box bad">That plan isn't available. Please pick one of the plans below.</div>}
           {active && <div className="ctas"><Link href="/dashboard" className="btn primary big">Open my dashboard</Link><a href="/api/billing-portal" className="btn big">Manage billing</a></div>}
           <PlanCards mode={user ? "checkout" : "signup"} trial={trial && !active} current={current} />
+          <BillingTerms />
           <CompareTable />
           <p className="hint">Payments are handled securely by Stripe.</p>
         </section>

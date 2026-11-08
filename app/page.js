@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import BillingTerms from "@/components/BillingTerms";
 import PlanCards from "@/components/PlanCards";
 import CompareTable from "@/components/CompareTable";
 import { createClient } from "@/lib/supabase/server";
@@ -79,6 +80,7 @@ export default async function Home() {
           <h2 className="h2">Pick your plan</h2>
           <p className="sub">Every plan starts with a {TRIAL_DAYS}-day free trial. Features marked "Coming soon" are on the way and unlock on your plan as they launch.</p>
           <PlanCards mode={user ? "checkout" : "signup"} />
+          <BillingTerms />
           <CompareTable />
         </section>
         <section className="band">

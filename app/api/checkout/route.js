@@ -24,7 +24,8 @@ async function startCheckout(request) {
 
   const form = await request.formData();
   const plan = String(form.get("plan") || "");
-  const price = priceIdFor(plan);
+  const interval = String(form.get("interval") || "month") === "year" ? "year" : "month";
+  const price = priceIdFor(plan, interval);
   if (!price) return NextResponse.redirect(`${SITE_URL}/pricing?error=plan`, { status: 303 });
 
   const admin = createAdminClient();

@@ -77,7 +77,28 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.01e
 .ic{width:30px;height:30px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
 .plan{background:var(--surface);border:1px solid var(--line-2);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;position:relative}
-.plan.best{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.plan.best{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 28px 70px -24px color-mix(in srgb,var(--accent) 55%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,var(--surface)),var(--surface) 45%)}
+.plan.best .badge{font-size:12px;padding:4px 11px}
+@media (min-width:981px){.plan.best{transform:translateY(-12px)}}
+.pick{font-size:13px;font-weight:700;color:var(--accent);margin-top:-6px}
+.price-note{display:block;font-size:13px;color:var(--muted);margin-top:4px;line-height:1.45}.price-note b{color:var(--win)}
+.billing-wrap{display:flex;flex-direction:column;gap:30px}
+.bill-in{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.bill-switch{align-self:center;display:inline-flex;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;padding:4px;gap:4px}
+.bill-switch label{padding:9px 16px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.bill-save{font-size:11px;background:color-mix(in srgb,var(--win) 16%,transparent);color:var(--win);padding:2px 8px;border-radius:999px;font-weight:800}
+#bill-m:checked~.bill-switch label[for=bill-m],#bill-y:checked~.bill-switch label[for=bill-y]{background:var(--accent);color:var(--accent-ink)}
+#bill-y:checked~.bill-switch label[for=bill-y] .bill-save{background:rgba(0,0,0,.16);color:inherit}
+.bill-in:focus-visible~.bill-switch{outline:2px solid var(--accent);outline-offset:3px}
+.billing-wrap .py{display:none}
+#bill-y:checked~.plans .pm{display:none}
+#bill-y:checked~.plans div.py{display:block}
+#bill-y:checked~.plans button.py{display:inline-flex}
+.terms-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.terms-card{background:var(--surface);border:1px solid var(--line-2);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.terms-card h3{margin:0;font-size:17px}
+.terms-card b{color:var(--ink)}
+@media (max-width:760px){.terms-grid{grid-template-columns:1fr}}
 .plan .badge{position:absolute;top:-11px;left:20px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px}
 .price{font-family:var(--mono);font-size:38px;font-weight:800}.price small{font-size:14px;color:var(--muted);font-weight:600}
 .ticks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px}
