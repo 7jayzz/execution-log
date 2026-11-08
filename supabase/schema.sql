@@ -92,3 +92,24 @@ create table if not exists public.trial_cards (
   created_at timestamptz not null default now()
 );
 alter table public.trial_cards enable row level security; -- server-only, no policies
+
+-- Browser push (see lib/push.js and app/api/push/cron). Keys live in Supabase Vault:
+--   select vault.create_secret('<VAPID private key>', 'vapid_private_key');
+--   select vault.create_secret('<random string>', 'push_cron_secret');
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  p256dh text not null, auth text not null, user_agent text,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+create policy "own push select" on public.push_subscriptions for select using ((select auth.uid()) = user_id);
+create policy "own push insert" on public.push_subscriptions for insert with check ((select auth.uid()) = user_id);
+create policy "own push update" on public.push_subscriptions for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "own push delete" on public.push_subscriptions for delete using ((select auth.uid()) = user_id);
+create table if not exists public.push_log (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  key text not null, sent_at timestamptz not null default now(),
+  primary key (user_id, key)
+);
+alter table public.push_log enable row level security;
