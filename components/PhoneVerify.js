@@ -17,7 +17,7 @@ const toE164 = (code, raw) => {
 };
 const friendly = (e) => {
   const m = String(e?.message || e || "").toLowerCase();
-  if (m.includes("already") && (m.includes("registered") || m.includes("use") || m.includes("exists"))) return "This number is already linked to another account. Each number can only be used once.";
+  if (m.includes("already") && (m.includes("registered") || m.includes("use") || m.includes("exists"))) return "This phone number is already associated with an account. Please log in or contact support.";
   if (m.includes("rate") || m.includes("too many") || m.includes("seconds")) return "Too many attempts. Please wait a few minutes and try again.";
   if (m.includes("expired") || m.includes("invalid") || m.includes("token")) return "That code isn't right or has expired. Check it, or send a new one.";
   if (m.includes("phone") && (m.includes("format") || m.includes("valid"))) return "That doesn't look like a valid mobile number.";
