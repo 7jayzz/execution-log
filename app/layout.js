@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: { default: "The Execution Log — trading journal", template: "%s · The Execution Log" },
-  description: "The trading journal for prop and retail traders. Real lot sizes, MT5-matched costs, goals and discipline tracking.",
+  description: "Your trades already tell the story. We help you read it. The trading journal for prop and retail traders: real lot sizes, MT5-matched costs, goals and discipline tracking.",
 };
 
 export const viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0A0E18" };

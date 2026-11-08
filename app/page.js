@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import BillingTerms from "@/components/BillingTerms";
+import { FOUNDER } from "@/lib/site";
 import PlanCards from "@/components/PlanCards";
 import CompareTable from "@/components/CompareTable";
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +76,7 @@ export default async function Home() {
             <ol className="why-steps">
               <li><b>Record</b><span>Every trade, with the context behind it: your plan, your mood, your mistakes.</span></li>
               <li><b>Recognise</b><span>The patterns in your decisions that you can't see one trade at a time.</span></li>
-              <li><b>Refine</b><span>Turn those lessons into rules, and trade them with discipline.</span></li>
+              <li><b>Refine</b><span>Turn what you've learned into better trading habits.</span></li>
             </ol>
             <p className="why-close">Your trades already tell the story. We help you read it.</p>
           </div>
@@ -90,6 +91,25 @@ export default async function Home() {
                 <p>{text}</p>
               </article>
             ))}
+          </div>
+        </section>
+        <section className="founder" aria-labelledby="founder-title">
+          <div className="founder-media">
+            {FOUNDER.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={FOUNDER.photo} alt="The founder of The Execution Log" width="240" height="240" />
+            ) : (
+              <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" rx="9" fill="#F4B53F" /><line x1="13" y1="8" x2="13" y2="31" stroke="#1A1204" strokeWidth="2" /><rect x="9" y="14" width="8" height="11" rx="1.5" fill="#1A1204" /><line x1="27" y1="10" x2="27" y2="33" stroke="#1A1204" strokeWidth="2" /><rect x="23" y="17" width="8" height="10" rx="1.5" fill="#F4B53F" stroke="#1A1204" strokeWidth="2" /></svg>
+            )}
+          </div>
+          <div className="founder-copy">
+            <span className="kicker">The founder</span>
+            <h2 className="h2" id="founder-title">Built by a trader. <em>Designed for traders.</em></h2>
+            <p>The Execution Log was created from a simple belief: improving as a trader starts with understanding your own decisions.</p>
+            <p>It's built by a trader documenting the journey, for traders committed to improving theirs.</p>
+            {FOUNDER.tiktok && (
+              <a className="btn" href={FOUNDER.tiktok} target="_blank" rel="noopener noreferrer">Follow the journey on TikTok →</a>
+            )}
           </div>
         </section>
         <section className="section" id="pricing">
