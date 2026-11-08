@@ -3,6 +3,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import BillingTerms from "@/components/BillingTerms";
 import { FOUNDER } from "@/lib/site";
+import { StickyPlansBar } from "@/components/PlanExtras";
 import PlanCards from "@/components/PlanCards";
 import CompareTable from "@/components/CompareTable";
 import { createClient } from "@/lib/supabase/server";
@@ -123,6 +124,7 @@ export default async function Home() {
           <h2 className="h2">Your next 100 trades deserve a record.</h2>
           <Link href={user ? "/dashboard" : "/signup"} className="btn primary big">{user ? "Open my dashboard" : "Start your journal"}</Link>
         </section>
+        <StickyPlansBar from="£12.99" trialDays={TRIAL_DAYS} />
         <SiteFooter />
       </div>
     </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import BillingTerms from "@/components/BillingTerms";
+import { StickyPlansBar } from "@/components/PlanExtras";
 import PlanCards from "@/components/PlanCards";
 import PhoneVerify from "@/components/PhoneVerify";
 import { PHONE_VERIFY } from "@/lib/site";
@@ -46,6 +47,7 @@ export default async function Pricing({ searchParams }) {
           <CompareTable />
           <p className="hint">Payments are handled securely by Stripe.</p>
         </section>
+        <StickyPlansBar from="£12.99" trialDays={TRIAL_DAYS} />
         <SiteFooter />
       </div>
     </div>

@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { PLANS, FEATURE_GROUPS, TRIAL_DAYS } from "@/lib/plans";
+import { OpenOnDesktop } from "@/components/PlanExtras";
 
 const Soon = () => <span className="soon">Coming soon</span>;
 
 // mode: "signup" (links to sign-up) or "checkout" (posts to Stripe Checkout)
 export default function PlanCards({ mode = "signup", trial = true, current = null, locked = false }) {
+  // The date the first payment is taken if someone starts a trial today (UK time).
+  const showTrial = (mode === "signup" || trial) && TRIAL_DAYS > 0;
+  const chargeDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "Europe/London" }).format(new Date(Date.now() + TRIAL_DAYS * 864e5));
   return (
     <div className="billing-wrap">
     {/* Monthly / annual switch: pure CSS, so it works before any script loads. */}
@@ -42,20 +46,31 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
             ) : (
               <Link className={`btn block ${p.best ? "primary" : ""}`} href={`/signup?plan=${p.id}`}>{cta}</Link>
             )}
+            {showTrial && current !== p.id && (
+              <p className="trial-line">
+                <b>£0 today.</b>{" "}
+                <span className="pm">Then {p.price}/month from {chargeDate}.</span>
+                <span className="py">Then {p.yearly}/year from {chargeDate}.</span>{" "}
+                Cancel before then and you pay nothing.
+              </p>
+            )}
             {idx > 0 && <span className="plus">Everything in {PLANS[idx - 1].name}, plus:</span>}
             {FEATURE_GROUPS[p.id].map((g) => (
-              <div className="fgroup" key={g.title}>
-                <span className="label">{g.title}</span>
-                {g.benefit && <p className="fbenefit">{g.benefit}</p>}
+              <details className="fgroup" key={g.title}>
+                <summary>
+                  <span className="fg-head"><span className="label">{g.title}</span><span className="fg-count">{g.items.length} features</span></span>
+                  {g.benefit && <p className="fbenefit">{g.benefit}</p>}
+                </summary>
                 <ul className="ticks">
                   {g.items.map(([f, live]) => <li key={f} className={live ? "" : "later"}><span>{f}{!live && <Soon />}</span></li>)}
                 </ul>
-              </div>
+              </details>
             ))}
           </div>
         );
       })}
     </div>
+    <OpenOnDesktop />
     </div>
   );
 }
