@@ -129,6 +129,7 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.01e
 
 .plan .plus{font-size:13px;font-weight:700;color:var(--ink);border-top:1px solid var(--line);padding-top:12px}
 .fgroup{display:flex;flex-direction:column;gap:8px}
+.fbenefit{margin:-2px 0 2px;font-size:14px;line-height:1.5;color:var(--ink);font-weight:500}
 .ticks li.later{color:var(--muted)}
 .ticks li.later::before{background:var(--line-2)}
 .soon{display:inline-block;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:5px;border:1px dashed var(--line-2);color:var(--muted);white-space:nowrap;vertical-align:1px}

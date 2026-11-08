@@ -29,6 +29,7 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
             {FEATURE_GROUPS[p.id].map((g) => (
               <div className="fgroup" key={g.title}>
                 <span className="label">{g.title}</span>
+                {g.benefit && <p className="fbenefit">{g.benefit}</p>}
                 <ul className="ticks">
                   {g.items.map(([f, live]) => <li key={f} className={live ? "" : "later"}><span>{f}{!live && <Soon />}</span></li>)}
                 </ul>

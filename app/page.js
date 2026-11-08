@@ -7,12 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 import { TRIAL_DAYS } from "@/lib/plans";
 
 const FEATURES = [
-  ["Real lot sizing", "Enter your balance and risk %, and get the exact lots for gold, indices, forex and crypto.", <path key="a" d="M4 20V10M10 20V4M16 20v-7M22 20H2" />],
-  ["Matches MT5", "Commission, swaps and broker profit included, so your P&L matches your account.", <path key="b" d="M4 7h16M4 12h16M4 17h10" />],
-  ["Daily P&L calendar", "Tap any day to see what happened, or log a trade on it.", <g key="c"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></g>],
-  ["Goals & discipline", "Profit targets, loss limits, and checks for FOMO and revenge trades.", <g key="d"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></g>],
-  ["Open positions", "Track a running trade's floating P&L and its distance to stop and target.", <g key="e"><path d="M3 17l5-5 4 4 8-8" /><path d="M15 8h5v5" /></g>],
-  ["Notes & free templates", "Pre-market plans, checklists, and daily and weekly reviews that fill in your real numbers.", <g key="f"><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></g>],
+  ["Never over-risk a trade again", "Enter your balance and risk %, and get the exact lot size for gold, indices, forex and crypto.", <path key="a" d="M4 20V10M10 20V4M16 20v-7M22 20H2" />],
+  ["Numbers you can trust", "Commission, swaps and broker profit are included, so your P&L matches your MT5 account.", <path key="b" d="M4 7h16M4 12h16M4 17h10" />],
+  ["See your month at a glance", "Every day's P&L on one calendar. Tap a day to see what went right, or what went wrong.", <g key="c"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></g>],
+  ["Stop breaking your own rules", "Profit targets and loss limits that warn you in time, plus checks that flag FOMO and revenge trades.", <g key="d"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></g>],
+  ["Manage live trades calmly", "See a running trade's floating P&L and exactly how far it is from your stop and your target.", <g key="e"><path d="M3 17l5-5 4 4 8-8" /><path d="M15 8h5v5" /></g>],
+  ["Walk into every session with a plan", "Pre-market plans, checklists, and daily and weekly reviews that fill in your real numbers for you.", <g key="f"><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></g>],
 ];
 
 function Preview() {
