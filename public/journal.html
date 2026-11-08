@@ -584,11 +584,9 @@ details.adv[open] summary{margin-bottom:10px}
 @media (prefers-reduced-motion:no-preference){.live-dot{animation:livePulse 2s ease-out infinite}}
 .live-pill{background:color-mix(in srgb,var(--win) 14%,transparent);color:var(--win);display:inline-flex;align-items:center}
 .live-pill .live-dot{width:6px;height:6px;margin-right:5px}
-.shut-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--loss);margin-right:6px;vertical-align:middle}
-.stop-ico{display:inline-block;width:7px;height:7px;border-radius:1.5px;background:var(--loss);margin-right:6px;vertical-align:middle}
+.shut-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--loss);margin-right:6px;vertical-align:middle;color:var(--loss)}
+@media (prefers-reduced-motion:no-preference){.shut-dot{animation:livePulse 2s ease-out infinite}}
 #f-status button{white-space:nowrap}
-.stop-pill{background:color-mix(in srgb,var(--loss) 14%,transparent);color:var(--loss);display:inline-flex;align-items:center;font-size:11px;padding:2px 7px;border-radius:999px;font-weight:600}
-.stop-pill .stop-ico{width:6px;height:6px;margin-right:5px}
 .open-panel{border-color:color-mix(in srgb,var(--win) 30%,var(--line));margin-bottom:18px}
 .open-panel[hidden]{display:none}
 .fgrid .f[hidden]{display:none}
@@ -1131,7 +1129,7 @@ const outcomeBadge = p => { const o = outcomeOf(p); return `<span class="oc ${o}
 function tradeRow(x){
   const p = pnl(x), r = rMult(x);
   return `<button type="button" class="trow" data-id="${esc(x.id)}">
-    <span class="trow-main"><span class="trow-top"><b>${esc(x.symbol)}</b><span class="side ${x.side}">${esc(t(x.side))}</span>${outcomeBadge(p)}${x.stopped ? `<span class="stop-pill"><span class="stop-ico"></span>${esc(t("statusStopped"))}</span>` : ""}</span>
+    <span class="trow-main"><span class="trow-top"><b>${esc(x.symbol)}</b><span class="side ${x.side}">${esc(t(x.side))}</span>${outcomeBadge(p)}</span>
       <span class="trow-sub"><span>${esc(fmtDate(x.date))}${timeSpan(x) ? " " + esc(timeSpan(x)) : ""} · ${spec(x).lots} ${esc(t("lotsW"))}</span><span>${price(x.entry)} → ${price(x.exit)}</span></span></span>
     <span class="trow-pnl"><b class="num ${cls(p)}">${money(p)}</b>${r == null ? "" : `<span class="hint num">${(r > 0 ? "+" : "") + r.toFixed(2)}R</span>`}</span></button>`;
 }
@@ -3025,7 +3023,7 @@ function openTrade(t, presetDate){
       <div class="f" id="w-tout"><label for="f-tout">${esc(tr("timeOut"))} <span class="opt">(${esc(tr("optional"))})</span></label><input id="f-tout" type="time" value="${esc(t.timeOut || "")}"></div>
       <div class="f full"><span class="hint" style="margin-top:-4px">${esc(tr("timeHint"))}</span></div>
       <div class="f full"><label>${esc(tr("statusLbl"))}</label><div class="seg" role="group" aria-label="${esc(tr("statusLbl"))}" id="f-status">
-        <button type="button" data-v="closed" aria-pressed="${!isOpen(t) && !t.stopped}"><span class="shut-dot"></span>${esc(tr("statusClosed"))}</button><button type="button" data-v="stopped" aria-pressed="${!isOpen(t) && !!t.stopped}"><span class="stop-ico"></span>${esc(tr("statusStopped"))}</button><button type="button" data-v="open" aria-pressed="${isOpen(t)}"><span class="live-dot"></span>${esc(tr("statusOpen"))}</button></div><span class="hint" id="f-stopHint" hidden>${esc(tr("stoppedHint"))}</span></div>
+        <button type="button" data-v="closed" aria-pressed="${!isOpen(t)}"><span class="shut-dot"></span>${esc(tr("statusClosed"))}</button><button type="button" data-v="open" aria-pressed="${isOpen(t)}"><span class="live-dot"></span>${esc(tr("statusOpen"))}</button></div></div>
       <div class="f full"><div class="spec" id="specLine"></div></div>
       <div class="f full"><label>${esc(tr("direction"))}</label><div class="seg" role="group" aria-label="${esc(tr("direction"))}" id="f-side">
         <button type="button" data-v="long" aria-pressed="${t.side==="long"}">${esc(tr("buyLong"))}</button><button type="button" data-v="short" aria-pressed="${t.side==="short"}">${esc(tr("sellShort"))}</button></div></div>
@@ -3089,7 +3087,7 @@ function openTrade(t, presetDate){
       <div class="actions"><button type="button" class="btn" data-close>${esc(tr("cancel"))}</button><button type="submit" class="btn primary">${esc(edit?tr("saveChanges"):tr("logTradeBtn"))}</button></div>
     </div></form>`, () => { if (!tfSaved) deleteShots(shots.filter(z => !origShots.includes(z))); });
 
-  let side = t.side, rateTouched = edit, commTouched = edit, status = isOpen(t) ? "open" : t.stopped ? "stopped" : "closed", mood = t.mood || "", cond = t.cond || "";
+  let side = t.side, rateTouched = edit, commTouched = edit, status = isOpen(t) ? "open" : "closed", mood = t.mood || "", cond = t.cond || "";
   const balBefore = edit ? (ledger().before[t.id] ?? st.balance) : ledger().end;
   const v = id => $("#"+id).value;
   const curSymbol = () => v("f-inst") === "__custom" ? v("f-symbol").trim().toUpperCase() : v("f-inst");
@@ -3142,10 +3140,7 @@ function openTrade(t, presetDate){
   $("#tf").addEventListener("input", upd); upd();
   const updRisk = bindRiskNote("f-riskpct", () => balBefore, "f-riskNote");
   $("#f-riskpct").addEventListener("input", updRisk);
-  const fillStop = () => { if (status !== "stopped") return; const sl = v("f-stop"); if (sl !== "") { $("#f-exit").value = sl; upd(); } };
-  $("#f-stop").addEventListener("input", fillStop);
   const applyStatus = () => { const o = status === "open"; ["w-exit","w-tout","w-broker"].forEach(id => $("#"+id).hidden = o);
-    $("#f-stopHint").hidden = status !== "stopped"; fillStop();
     $("#f-status").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === status)); upd(); };
   $("#f-status").querySelectorAll("button").forEach(b => b.onclick = () => { status = b.dataset.v; applyStatus(); });
   $("#f-fields").onclick = () => openFields();
@@ -3195,7 +3190,6 @@ function openTrade(t, presetDate){
     if (isNaN(d.entry)) miss.push(tr("m_entry")); if (status !== "open" && isNaN(d.exit)) miss.push(tr("m_exit")); if (isNaN(d.lots) || d.lots <= 0) miss.push(tr("m_lots"));
     if (miss.length){ err.hidden = false; err.textContent = tr("missing", { list: miss.join(", ") }); return; }
     if (status === "open") Object.assign(d, { exit: "", brokerPnl: "", status: "open", mark: num(t.mark) ?? d.entry }); else Object.assign(d, { status: "", mark: "" });
-    d.stopped = status === "stopped";
     const rec = { ...d, shots, example: false, accountId: edit ? acctOf(t) : (activeAcct()?.id || "main"), created: edit ? (t.created || Date.now()) : Date.now() };
     const id = edit ? t.id : "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     tfSaved = true; close(); if (await saveTrade(id, rec)){ toast(status === "open" && !isOpen(t) ? tr("openedMsg") : edit ? tr("tradeUpdated") : tr("tradeLogged")); state.month = d.date.slice(0,7); renderCal();
