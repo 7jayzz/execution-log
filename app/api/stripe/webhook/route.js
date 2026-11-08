@@ -35,6 +35,34 @@ async function saveSubscription(admin, sub) {
   if (error) throw error;
 }
 
+// One free trial per card. Stripe gives a card the same fingerprint whatever email or account it's used with,
+// so a second trial on a card that has already had one is ended straight away and the plan is charged as normal.
+async function enforceOneTrial(stripe, admin, sub) {
+  if (sub.status !== "trialing") return;
+  const pmId = typeof sub.default_payment_method === "string" ? sub.default_payment_method : sub.default_payment_method?.id;
+  if (!pmId) return;
+  const pm = await stripe.paymentMethods.retrieve(pmId);
+  const fp = pm.card?.fingerprint;
+  if (!fp) return;
+  const userId = sub.metadata?.user_id || null;
+  const { data: seen } = await admin.from("trial_cards").select("user_id, stripe_subscription_id").eq("fingerprint", fp).maybeSingle();
+  if (seen && seen.stripe_subscription_id !== sub.id && seen.user_id !== userId) {
+    const ended = await stripe.subscriptions.update(sub.id, {
+      trial_end: "now",
+      proration_behavior: "none",
+      metadata: { ...sub.metadata, trial_blocked: "card_already_used" },
+    });
+    await saveSubscription(admin, ended);
+    return;
+  }
+  if (!seen) {
+    await admin.from("trial_cards").upsert(
+      { fingerprint: fp, user_id: userId, stripe_subscription_id: sub.id },
+      { onConflict: "fingerprint", ignoreDuplicates: true }
+    );
+  }
+}
+
 export async function POST(request) {
   const stripe = getStripe();
   const body = await request.text();
@@ -55,6 +83,7 @@ export async function POST(request) {
           const sub = await stripe.subscriptions.retrieve(s.subscription);
           if (!sub.metadata?.user_id && s.client_reference_id) sub.metadata = { ...sub.metadata, user_id: s.client_reference_id };
           await saveSubscription(admin, sub);
+          await enforceOneTrial(stripe, admin, sub);
         }
         break;
       }

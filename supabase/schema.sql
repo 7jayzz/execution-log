@@ -83,3 +83,12 @@ create table if not exists public.ai_usage (
   primary key (user_id, day)
 );
 alter table public.ai_usage enable row level security;
+
+-- One free trial per card. Stripe card fingerprints are the same whatever email or account uses the card.
+create table if not exists public.trial_cards (
+  fingerprint text primary key,
+  user_id uuid references auth.users (id) on delete set null,
+  stripe_subscription_id text,
+  created_at timestamptz not null default now()
+);
+alter table public.trial_cards enable row level security; -- server-only, no policies

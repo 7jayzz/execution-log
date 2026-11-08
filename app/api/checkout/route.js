@@ -42,6 +42,7 @@ async function startCheckout(request) {
 
   // One free trial per person: no trial if they've subscribed before.
   const hadSubscription = !!existing?.stripe_subscription_id;
+  const offerTrial = !hadSubscription && TRIAL_DAYS > 0;
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,
@@ -50,8 +51,19 @@ async function startCheckout(request) {
     allow_promotion_codes: true,
     subscription_data: {
       metadata: { user_id: user.id },
-      ...(hadSubscription || !TRIAL_DAYS ? {} : { trial_period_days: TRIAL_DAYS }),
+      ...(offerTrial ? { trial_period_days: TRIAL_DAYS } : {}),
     },
+    // Trials need a card: its fingerprint is how we keep it to one free trial per person.
+    ...(offerTrial
+      ? {
+          payment_method_types: ["card"],
+          custom_text: {
+            submit: {
+              message: `Free trials are limited to one per person and per card. If this card has already been used for a free trial, your plan starts today and you'll be charged now. Otherwise you won't be charged until your ${TRIAL_DAYS}-day trial ends.`,
+            },
+          },
+        }
+      : {}),
     success_url: `${SITE_URL}/dashboard?checkout=success`,
     cancel_url: `${SITE_URL}/pricing?checkout=cancelled`,
   });
