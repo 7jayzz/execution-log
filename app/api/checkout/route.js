@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { priceIdFor, TRIAL_DAYS } from "@/lib/plans";
 import { isActive } from "@/lib/subscription";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, PHONE_VERIFY } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +43,8 @@ async function startCheckout(request) {
   // One free trial per person: no trial if they've subscribed before.
   const hadSubscription = !!existing?.stripe_subscription_id;
   const offerTrial = !hadSubscription && TRIAL_DAYS > 0;
+  // Free trials need a verified mobile number (one number per account; Supabase enforces that).
+  if (offerTrial && PHONE_VERIFY && !user.phone_confirmed_at) return NextResponse.redirect(`${SITE_URL}/pricing?error=phone#verify`, { status: 303 });
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,

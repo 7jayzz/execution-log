@@ -184,3 +184,15 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.01e
 .compare thead th span{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}
 .compare tbody tr:last-child td{border-bottom:0}
 .compare td.pos{font-weight:800}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--accent);font-weight:700;cursor:pointer}
+.linkish:disabled{color:var(--muted);cursor:default}
+.verify-card{display:flex;flex-direction:column;gap:14px;padding:22px;border:1px solid var(--accent);border-radius:16px;background:var(--surface);box-shadow:0 0 0 4px var(--accent-soft);max-width:640px}
+.verify-card h2{margin:0 0 6px;font-size:20px}
+.verify-card .hint{margin:0}
+.verify-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.verify-row select,.verify-row input{border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:11px 12px;font-size:16px}
+.verify-row input{flex:1;min-width:150px}
+.verify-row .otp{max-width:170px;letter-spacing:.3em;font-family:var(--mono);font-weight:700}
+.verify-meta{flex-basis:100%}
+.btn:disabled{opacity:.55;cursor:not-allowed}

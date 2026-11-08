@@ -3,6 +3,8 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import BillingTerms from "@/components/BillingTerms";
 import PlanCards from "@/components/PlanCards";
+import PhoneVerify from "@/components/PhoneVerify";
+import { PHONE_VERIFY } from "@/lib/site";
 import CompareTable from "@/components/CompareTable";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, isActive } from "@/lib/subscription";
@@ -19,6 +21,7 @@ export default async function Pricing({ searchParams }) {
   const active = isActive(sub);
   const trial = !sub?.stripe_subscription_id;
   const current = active ? planForPrice(sub.price_id) : null;
+  const needPhone = PHONE_VERIFY && !!user && trial && !active && !user.phone_confirmed_at;
   return (
     <div className="glow">
       <div className="site" style={{ gap: 40 }}>
@@ -34,9 +37,11 @@ export default async function Pricing({ searchParams }) {
           </p>
           {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Pick a plan when you're ready.</div>}
           {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.</div>}
+          {searchParams?.error === "phone" && <div className="box bad">Please verify your mobile number to start your free trial.</div>}
+          {needPhone && <PhoneVerify />}
           {searchParams?.error === "plan" && <div className="box bad">That plan isn't available. Please pick one of the plans below.</div>}
           {active && <div className="ctas"><Link href="/dashboard" className="btn primary big">Open my dashboard</Link><a href="/api/billing-portal" className="btn big">Manage billing</a></div>}
-          <PlanCards mode={user ? "checkout" : "signup"} trial={trial && !active} current={current} />
+          <PlanCards mode={user ? "checkout" : "signup"} trial={trial && !active} current={current} locked={needPhone} />
           <BillingTerms />
           <CompareTable />
           <p className="hint">Payments are handled securely by Stripe.</p>

@@ -4,7 +4,7 @@ import { PLANS, FEATURE_GROUPS, TRIAL_DAYS } from "@/lib/plans";
 const Soon = () => <span className="soon">Coming soon</span>;
 
 // mode: "signup" (links to sign-up) or "checkout" (posts to Stripe Checkout)
-export default function PlanCards({ mode = "signup", trial = true, current = null }) {
+export default function PlanCards({ mode = "signup", trial = true, current = null, locked = false }) {
   return (
     <div className="billing-wrap">
     {/* Monthly / annual switch: pure CSS, so it works before any script loads. */}
@@ -36,8 +36,8 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
             ) : mode === "checkout" ? (
               <form action="/api/checkout" method="post">
                 <input type="hidden" name="plan" value={p.id} />
-                <button className={`btn block pm ${p.best ? "primary" : ""}`} type="submit" name="interval" value="month">{cta}</button>
-                <button className={`btn block py ${p.best ? "primary" : ""}`} type="submit" name="interval" value="year">{cta}</button>
+                <button className={`btn block pm ${p.best ? "primary" : ""}`} type="submit" name="interval" value="month" disabled={locked}>{locked ? "Verify your phone first" : cta}</button>
+                <button className={`btn block py ${p.best ? "primary" : ""}`} type="submit" name="interval" value="year" disabled={locked}>{locked ? "Verify your phone first" : cta}</button>
               </form>
             ) : (
               <Link className={`btn block ${p.best ? "primary" : ""}`} href={`/signup?plan=${p.id}`}>{cta}</Link>
