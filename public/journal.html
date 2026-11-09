@@ -228,6 +228,7 @@ tbody tr.row:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .setup{background:var(--surface);border:1px solid var(--accent);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 0 0 4px var(--accent-soft)}
 .setup h2{font-size:30px}
 .setup p{margin:0;color:var(--muted);max-width:60ch}
+.demo-try{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px dashed var(--line-2);padding-top:14px;color:var(--muted);font-size:13.5px}.demo-try span{max-width:52ch}
 .setup .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .setup .f{min-width:160px}
 .spec{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:9px;padding:9px 11px;border:1px solid var(--line)}
@@ -984,6 +985,8 @@ const TIME_I18N = {"en": {"timeIn": "Entry time", "timeOut": "Exit time", "optio
 Object.entries(TIME_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
 const SHOT_I18N = {"en": {"shotsH": "Screenshots", "shotsAdd": "Add screenshot", "shotsHint": "Paste (Ctrl+V), drop or choose a TradingView screenshot.", "shotsUploading": "Uploading…", "shotsUnavailable": "Screenshot uploads work when this page is open in Claude.", "shotsErrType": "Use a PNG, JPG, WEBP or GIF image.", "shotsErrSize": "That image is over 20 MB.", "shotsErr": "Upload failed. Try again.", "shotsRemove": "Remove screenshot", "mapH": "Trade map", "mapEntry": "Entry", "mapExit": "Exit", "mapStop": "Stop", "shotsCountD": "{n} screenshots attached to your trades. Remove one from its trade to delete it.", "shotsStoreOff": "Uploads work when this page is open in Claude"}, "es": {"shotsH": "Capturas", "shotsAdd": "Añadir captura", "shotsHint": "Pega (Ctrl+V), arrastra o elige una captura de TradingView.", "shotsUploading": "Subiendo…", "shotsUnavailable": "Las capturas se suben cuando abres esta página en Claude.", "shotsErrType": "Usa una imagen PNG, JPG, WEBP o GIF.", "shotsErrSize": "Esa imagen supera los 20 MB.", "shotsErr": "No se pudo subir. Inténtalo de nuevo.", "shotsRemove": "Quitar captura", "mapH": "Mapa de la operación", "mapEntry": "Entrada", "mapExit": "Salida", "mapStop": "Stop"}, "pt": {"shotsH": "Capturas", "shotsAdd": "Adicionar captura", "shotsHint": "Cole (Ctrl+V), arraste ou escolha uma captura do TradingView.", "shotsUploading": "Enviando…", "shotsUnavailable": "O envio de capturas funciona com esta página aberta no Claude.", "shotsErrType": "Use uma imagem PNG, JPG, WEBP ou GIF.", "shotsErrSize": "Essa imagem passa de 20 MB.", "shotsErr": "O envio falhou. Tente de novo.", "shotsRemove": "Remover captura", "mapH": "Mapa da operação", "mapEntry": "Entrada", "mapExit": "Saída", "mapStop": "Stop"}, "fr": {"shotsH": "Captures", "shotsAdd": "Ajouter une capture", "shotsHint": "Collez (Ctrl+V), déposez ou choisissez une capture TradingView.", "shotsUploading": "Envoi…", "shotsUnavailable": "L’envoi de captures fonctionne quand cette page est ouverte dans Claude.", "shotsErrType": "Utilisez une image PNG, JPG, WEBP ou GIF.", "shotsErrSize": "Cette image dépasse 20 Mo.", "shotsErr": "Échec de l’envoi. Réessayez.", "shotsRemove": "Retirer la capture", "mapH": "Carte du trade", "mapEntry": "Entrée", "mapExit": "Sortie", "mapStop": "Stop"}, "de": {"shotsH": "Screenshots", "shotsAdd": "Screenshot hinzufügen", "shotsHint": "Einfügen (Strg+V), ablegen oder einen TradingView-Screenshot wählen.", "shotsUploading": "Wird hochgeladen…", "shotsUnavailable": "Screenshots lassen sich hochladen, wenn diese Seite in Claude geöffnet ist.", "shotsErrType": "Nutze ein PNG-, JPG-, WEBP- oder GIF-Bild.", "shotsErrSize": "Das Bild ist größer als 20 MB.", "shotsErr": "Upload fehlgeschlagen. Versuch es erneut.", "shotsRemove": "Screenshot entfernen", "mapH": "Trade-Karte", "mapEntry": "Einstieg", "mapExit": "Ausstieg", "mapStop": "Stop"}, "it": {"shotsH": "Screenshot", "shotsAdd": "Aggiungi screenshot", "shotsHint": "Incolla (Ctrl+V), trascina o scegli uno screenshot di TradingView.", "shotsUploading": "Caricamento…", "shotsUnavailable": "Il caricamento funziona quando questa pagina è aperta in Claude.", "shotsErrType": "Usa un’immagine PNG, JPG, WEBP o GIF.", "shotsErrSize": "L’immagine supera i 20 MB.", "shotsErr": "Caricamento non riuscito. Riprova.", "shotsRemove": "Rimuovi screenshot", "mapH": "Mappa del trade", "mapEntry": "Entrata", "mapExit": "Uscita", "mapStop": "Stop"}, "tr": {"shotsH": "Ekran görüntüleri", "shotsAdd": "Ekran görüntüsü ekle", "shotsHint": "Yapıştır (Ctrl+V), sürükle ya da bir TradingView görüntüsü seç.", "shotsUploading": "Yükleniyor…", "shotsUnavailable": "Ekran görüntüsü yükleme, bu sayfa Claude'da açıkken çalışır.", "shotsErrType": "PNG, JPG, WEBP veya GIF görüntü kullan.", "shotsErrSize": "Bu görüntü 20 MB'tan büyük.", "shotsErr": "Yükleme başarısız. Tekrar dene.", "shotsRemove": "Ekran görüntüsünü kaldır", "mapH": "İşlem haritası", "mapEntry": "Giriş", "mapExit": "Çıkış", "mapStop": "Stop"}, "ar": {"shotsH": "لقطات الشاشة", "shotsAdd": "إضافة لقطة", "shotsHint": "الصق (Ctrl+V) أو اسحب أو اختر لقطة من TradingView.", "shotsUploading": "جارٍ الرفع…", "shotsUnavailable": "يعمل رفع اللقطات عند فتح هذه الصفحة في Claude.", "shotsErrType": "استخدم صورة PNG أو JPG أو WEBP أو GIF.", "shotsErrSize": "حجم الصورة أكبر من 20 ميغابايت.", "shotsErr": "تعذّر الرفع. حاول مرة أخرى.", "shotsRemove": "إزالة اللقطة", "mapH": "خريطة الصفقة", "mapEntry": "الدخول", "mapExit": "الخروج", "mapStop": "الوقف"}, "hi": {"shotsH": "स्क्रीनशॉट", "shotsAdd": "स्क्रीनशॉट जोड़ें", "shotsHint": "पेस्ट (Ctrl+V), ड्रॉप करें या TradingView स्क्रीनशॉट चुनें।", "shotsUploading": "अपलोड हो रहा है…", "shotsUnavailable": "स्क्रीनशॉट अपलोड तब काम करता है जब यह पेज Claude में खुला हो।", "shotsErrType": "PNG, JPG, WEBP या GIF इमेज इस्तेमाल करें।", "shotsErrSize": "यह इमेज 20 MB से बड़ी है।", "shotsErr": "अपलोड नहीं हुआ। फिर कोशिश करें।", "shotsRemove": "स्क्रीनशॉट हटाएँ", "mapH": "ट्रेड मैप", "mapEntry": "एंट्री", "mapExit": "एग्ज़िट", "mapStop": "स्टॉप"}, "id": {"shotsH": "Screenshot", "shotsAdd": "Tambah screenshot", "shotsHint": "Tempel (Ctrl+V), seret atau pilih screenshot TradingView.", "shotsUploading": "Mengunggah…", "shotsUnavailable": "Unggah screenshot berfungsi saat halaman ini dibuka di Claude.", "shotsErrType": "Gunakan gambar PNG, JPG, WEBP, atau GIF.", "shotsErrSize": "Gambar itu lebih dari 20 MB.", "shotsErr": "Gagal mengunggah. Coba lagi.", "shotsRemove": "Hapus screenshot", "mapH": "Peta trade", "mapEntry": "Entry", "mapExit": "Exit", "mapStop": "Stop"}, "zh": {"shotsH": "截图", "shotsAdd": "添加截图", "shotsHint": "粘贴（Ctrl+V）、拖入或选择一张 TradingView 截图。", "shotsUploading": "正在上传…", "shotsUnavailable": "在 Claude 中打开此页面时才能上传截图。", "shotsErrType": "请使用 PNG、JPG、WEBP 或 GIF 图片。", "shotsErrSize": "图片超过 20 MB。", "shotsErr": "上传失败，请重试。", "shotsRemove": "移除截图", "mapH": "交易图", "mapEntry": "入场", "mapExit": "出场", "mapStop": "止损"}, "ja": {"shotsH": "スクリーンショット", "shotsAdd": "スクリーンショットを追加", "shotsHint": "貼り付け（Ctrl+V）、ドロップ、または TradingView のスクリーンショットを選択。", "shotsUploading": "アップロード中…", "shotsUnavailable": "スクリーンショットは、このページを Claude で開いているときにアップロードできます。", "shotsErrType": "PNG、JPG、WEBP、GIF 画像を使ってください。", "shotsErrSize": "画像が 20 MB を超えています。", "shotsErr": "アップロードできませんでした。もう一度お試しください。", "shotsRemove": "スクリーンショットを削除", "mapH": "トレードマップ", "mapEntry": "エントリー", "mapExit": "決済", "mapStop": "ストップ"}};
 Object.entries(SHOT_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
+const DEMO_I18N = {"en": {"demoName": "Example account", "demoPill": "Example", "demoOpen": "Explore an example account", "demoTry": "Look around an example account first", "demoTryD": "Not ready to set up yet? Open an example account full of made-up trades and see how everything works.", "demoAdding": "Setting up your example account…", "demoReady": "Example account ready. Have a look around.", "demoBanT": "Example account.", "demoBanP": "Made-up trades so you can see how everything works. Nothing here touches your real stats.", "demoBack": "Back to my account", "demoSetup": "Set up my account", "demoRemove": "Remove example", "demoRemoveSure": "Tap again to remove", "demoRemoved": "Example account removed", "demoH": "Example account", "demoD": "A separate account filled with made-up trades, so you can explore the dashboard, stats and reviews without touching your real data. Remove it whenever you like.", "demoAdd": "Add example account", "demoGo": "Open example account"}};
+Object.entries(DEMO_I18N).forEach(([k, v]) => Object.assign(I18N[k], v));
 const LANGS = [["en","English"],["es","Español"],["pt","Português"],["fr","Français"],["de","Deutsch"],["it","Italiano"],["tr","Türkçe"],["ar","العربية"],["hi","हिन्दी"],["id","Bahasa Indonesia"],["zh","中文（简体）"],["ja","日本語"]];
 const LOCALES = { en:"en-GB", es:"es-ES", pt:"pt-BR", fr:"fr-FR", de:"de-DE", it:"it-IT", tr:"tr-TR", ar:"ar-u-nu-latn", hi:"hi-IN-u-nu-latn", id:"id-ID", zh:"zh-CN", ja:"ja-JP" };
 let lang = (() => { let saved = null; try { saved = localStorage.getItem("tel-lang"); } catch {}
@@ -1073,6 +1076,41 @@ const sampleTrades = (acctId = activeAcct()?.id || "main", rows = SAMPLE_ROWS, a
     contract: ins.contract, quote: ins.quote, rate: rateFor(ins.quote, acct), brokerPnl: "",
     timeIn: ["08:05","14:32","09:47","15:10"][i % 4], timeOut: ["09:20","15:05","11:02","16:44"][i % 4], notes: grade === "A" ? "Waited for confirmation, clean entry." : grade === "B" ? "Fine, slightly early entry." : "", plan: grade !== "C", revenge: grade === "C" && i % 2 === 1, fomo: grade === "C" && i % 2 === 0, example: true, created: i };
 });
+
+/* ---------- Example account ---------- */
+// A separate, clearly labelled account full of made-up trades. It never mixes with real accounts and can be removed in one tap.
+const isDemo = a => !!(a && a.demo);
+const realAccounts = () => accountsList().filter(a => !a.demo);
+const demoAcct = () => accountsList().find(a => a.demo);
+const isoDow = d => new Date(d + "T12:00:00Z").getUTCDay();
+function demoRows(rows){ // move the example dates so the latest one is the last weekday before today
+  let end = isoAdd(localToday(), -1); while (isoDow(end) === 0 || isoDow(end) === 6) end = isoAdd(end, -1);
+  const shift = Math.round((Date.parse(end) - Date.parse(rows[rows.length - 1][0])) / 864e5);
+  return rows.map(r => { let d = isoAdd(r[0], shift); const w = isoDow(d); if (w === 6) d = isoAdd(d, -1); else if (w === 0) d = isoAdd(d, 1); if (d > end) d = end; return [d, ...r.slice(1)]; });
+}
+let demoBusy = false;
+async function openDemo(extra = {}){
+  const have = demoAcct(); if (have){ setActive(have.id); return; }
+  if (demoBusy || state.readOnly) return; demoBusy = true;
+  try {
+    const id = "demo" + Date.now().toString(36);
+    const acct = { id, demo: true, name: t("demoName"), type: "Demo", balance: 10000, ccy: "GBP", risk: 1, rates: defaultRates("GBP") };
+    const ex = sampleTrades(id, demoRows(SAMPLE_ROWS), acct);
+    if (state.mode !== "live"){ state.settings = { ...(state.settings || {}), ...extra, accounts: [...accountsList(), acct] }; state.trades = [...state.trades, ...ex]; setActive(id); toast(t("demoReady")); return; }
+    toast(t("demoAdding"));
+    if (!(await saveCfg({ ...extra, accounts: [...accountsList(), acct] }))) return false;
+    for (const x of ex){ const { id: tid, ...rec } = x; if (!(await saveTrade(tid, rec))) return; }
+    setActive(id); toast(t("demoReady")); return true;
+  } finally { demoBusy = false; }
+}
+async function removeDemo(){
+  const d = demoAcct(); if (!d) return;
+  const rest = accountsList().filter(a => a.id !== d.id), mine = state.trades.filter(x => x.accountId === d.id);
+  const after = () => { if (rest[0]) setActive(rest[0].id); else { state.activeId = null; render(); } toast(t("demoRemoved")); };
+  if (state.mode !== "live"){ state.trades = state.trades.filter(x => x.accountId !== d.id); state.settings = { ...state.settings, accounts: rest }; after(); return; }
+  for (const x of mine){ try { await col.doc(x.id).delete(); } catch(e){ handleWriteError(e); return; } }
+  if (await saveCfg({ accounts: rest })) after();
+}
 
 /* ---------- Maths ---------- */
 const num = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
@@ -1315,14 +1353,18 @@ function renderTape(){
 }
 
 function renderBanner(){
-  const hasEx = state.trades.some(t=>t.example);
+  const act = activeAcct(), hasEx = !isDemo(act) && state.trades.some(t => t.example && acctOf(t) === act?.id);
   let html = "";
   if (state.mode === "demo") html = `<div class="banner"><span><b>${esc(t("previewB"))}</b> ${esc(t("previewT"))}</span></div>`;
+  else if (state.mode === "live" && isDemo(act)) html = `<div class="banner"><span><b>${esc(t("demoBanT"))}</b> ${esc(t("demoBanP"))}</span><span class="actions">${realAccounts().length ? `<button class="btn small primary" id="demoBack">${esc(t("demoBack"))}</button>` : `<button class="btn small primary" id="demoSetup">${esc(t("demoSetup"))}</button>`}<button class="btn small" id="demoDel">${esc(t("demoRemove"))}</button></span></div>`;
   else if (state.mode === "loading" && state.slow) html = `<div class="banner"><span><b>${esc(t("slowB"))}</b> ${esc(t("slowT"))}</span></div>`;
   else if (state.mode === "live" && accountsList().length && (!profile() || (!HOSTED && !hasLock())) && ls.get("tel-profban") !== "1") html = `<div class="banner"><span><b>${esc(t("profBannerT"))}</b> ${esc(t("profBannerP"))}</span><span class="actions"><button class="btn small primary" id="profGo">${esc(t("profBannerBtn"))}</button><button class="iconbtn" id="profX" aria-label="${esc(t("close"))}">✕</button></span></div>`;
   else if (state.mode === "live" && hasEx) html = `<div class="banner"><span>${esc(t("exT"))}</span><button class="btn small" id="clearEx">${esc(t("clearEx"))}</button></div>`;
   $("#banner").innerHTML = html;
   const b = $("#clearEx"); if (b) b.onclick = clearExamples;
+  const db = $("#demoBack"); if (db) db.onclick = () => { const r = realAccounts()[0]; if (r){ setActive(r.id); toast(t("switched", { name: r.name })); } };
+  const ds = $("#demoSetup"); if (ds) ds.onclick = () => openAccount(null);
+  const dd = $("#demoDel"); if (dd){ let armed = false; dd.onclick = () => { if (!armed){ armed = true; dd.textContent = t("demoRemoveSure"); return; } removeDemo(); }; }
   const pg = $("#profGo"); if (pg) pg.onclick = () => openSignup(false);
   const lo = $("#logoutBtn"); if (lo && !lo.dataset.bound){ lo.dataset.bound = "1"; lo.onclick = logOut; }
   const lbtn = $("#lockBtn"); if (lbtn && !lbtn.dataset.bound){ lbtn.dataset.bound = "1"; lbtn.onclick = () => lockApp(false); }
@@ -1346,7 +1388,9 @@ function renderSetup(){
     </div>
     <div class="risknote" id="s-riskNote" role="status"></div>
     <div class="err" id="s-err" hidden></div>
+    <div class="demo-try"><span>${esc(t("demoTryD"))}</span><button type="button" class="btn" id="s-demo">${esc(t("demoTry"))}</button></div>
   </form>`;
+  $("#s-demo").onclick = openDemo;
   $("#setupForm").onsubmit = async e => { e.preventDefault();
     const bal = parseFloat($("#s-bal").value); if (!(bal > 0)){ const er = $("#s-err"); er.hidden = false; er.textContent = t("errBal"); return; }
     const ccy = $("#s-ccy").value;
@@ -1608,7 +1652,8 @@ function openSignup(full = true, startStep = 0, onCancel = null){
           <div class="f"><label for="s-ccy">${esc(t("acctCcy"))}</label><select id="s-ccy">${CCYS.map(c => `<option value="${c}" ${c === (["US"].includes(p.country) ? "USD" : ["GB"].includes(p.country) ? "GBP" : "") ? "selected" : ""}>${c} ${SYM[c]}</option>`).join("")}</select></div>
           <div class="f"><label for="s-bal">${esc(t("startBal"))}</label><input id="s-bal" type="number" step="any" inputmode="decimal" placeholder="10000"></div>
           <div class="f"><label for="s-risk">${esc(t("riskPct"))}</label><input id="s-risk" type="number" step="any" inputmode="decimal" value="1"></div>
-          <div class="f full"><div class="risknote" id="s-riskNote" role="status"></div></div></div>`;
+          <div class="f full"><div class="risknote" id="s-riskNote" role="status"></div></div>
+          ${full ? `<div class="f full"><div class="demo-try"><span>${esc(t("demoTryD"))}</span><button type="button" class="btn" id="suDemo">${esc(t("demoTry"))}</button></div></div>` : ""}</div>`;
     const titles = { id: ["su1T","su1P"], trading: ["su2T","su2P"], account: ["su3T","setupP"] };
     host.innerHTML = `<div class="su-ov" role="dialog" aria-modal="true" aria-labelledby="suTitle"><form class="su-card" id="suForm" novalidate>
       <div class="su-brand">${$(".sidebar .mark").outerHTML}<b>The Execution <em>Log</em></b>${full && !onCancel ? "" : `<button type="button" class="iconbtn" id="suX" aria-label="${esc(t("close"))}">✕</button>`}</div>
@@ -1639,6 +1684,12 @@ function openSignup(full = true, startStep = 0, onCancel = null){
     let skipProf = false;
     const later = $("#suLater"); if (later) later.onclick = () => { skipProf = true; form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event("submit", { cancelable: true })); };
     const err = m => { const e = $("#suErr"); e.hidden = false; e.textContent = m; };
+    const sd = $("#suDemo"); if (sd) sd.onclick = async () => { sd.disabled = true; keepPw(); p = readProfile(form, p);
+      const prof = { ...p, created: p.created || Date.now() };
+      const secPatch = needPw ? { security: { ...(await hashPw(pw)), autoLock: 10 } } : {};
+      applyAccent(DEFAULT_ACCENT); ls.set("tel-accent", DEFAULT_ACCENT);
+      closeSu();
+      if (await openDemo({ profile: prof, tutorialDone: false, accent: DEFAULT_ACCENT, ...secPatch })){ if (needPw) setUnlocked(); ls.set("tel-out", "0"); setTimeout(() => openTutorial(0), 400); } };
     form.onsubmit = async e => { e.preventDefault(); keepPw(); p = readProfile(form, p);
       if (k === "id" && !p.name) return err(t("suErrName"));
       if (k === "id" && !emailValid(p.email || "")) return err(t("suErrEmail"));
@@ -3101,8 +3152,8 @@ function renderLog(){
   if (!acctTrades().length){
     host.innerHTML = `<div class="empty-state"><h3>${esc(t("emptyH", { name: S().name || "" }))}</h3>
       <p>${esc(t("emptyP", { ccy: S().ccy }))}</p>
-      <div class="actions" style="justify-content:center"><button class="btn primary" id="emptyAdd">${esc(t("firstTrade"))}</button><button class="btn" id="loadEx">${esc(t("loadEx"))}</button></div></div>`;
-    $("#emptyAdd").onclick = () => openTrade(); $("#loadEx").onclick = loadExamples; return;
+      <div class="actions" style="justify-content:center"><button class="btn primary" id="emptyAdd">${esc(t("firstTrade"))}</button>${isDemo(S()) ? "" : `<button class="btn" id="loadEx">${esc(t(demoAcct() ? "demoGo" : "demoOpen"))}</button>`}</div></div>`;
+    $("#emptyAdd").onclick = () => openTrade(); const le = $("#loadEx"); if (le) le.onclick = openDemo; return;
   }
   const q = state.search.trim().toLowerCase(), L = ledger();
   const rows = sorted().reverse().filter(t => { const p = pnl(t);
@@ -3488,13 +3539,14 @@ function openAccounts(){
     <div class="acct-list">${list.map(a => { const L = ledger(a), n = acctTrades(a).length, g = (L.end - a.balance) / a.balance;
       return `<div class="acct-row ${a.id===act?.id?"on":""}">
         <button type="button" class="acct-main" data-switch="${esc(a.id)}">
-          <span><span class="nm">${esc(a.name)} <span class="pill">${esc(typeLabel(a.type||"Personal"))}</span></span>
+          <span><span class="nm">${esc(a.name)} <span class="pill">${esc(a.demo ? t("demoPill") : typeLabel(a.type||"Personal"))}</span></span>
             <span class="meta">${esc(t("started", { v: money(+a.balance,false,a.ccy) }))} · ${esc(tradeCount(n))}</span></span>
           <span><div class="bal">${money(L.end,false,a.ccy)}</div><div class="gr ${cls(g)}">${pct(g)}</div></span>
         </button>
         <button type="button" class="acct-edit" data-edit="${esc(a.id)}" aria-label="${esc(t("edit"))} ${esc(a.name)}">${esc(t("edit"))}</button></div>`; }).join("")}</div>
-    <div class="drawer-foot"><div></div><button type="button" class="btn primary" id="addAcct">${esc(t("addAcct"))}</button></div>
+    <div class="drawer-foot"><div>${demoAcct() ? "" : `<button type="button" class="btn" id="tryDemo">${esc(t("demoAdd"))}</button>`}</div><button type="button" class="btn primary" id="addAcct">${esc(t("addAcct"))}</button></div>
   </div>`);
+  const td = $("#tryDemo"); if (td) td.onclick = () => { close(); openDemo(); };
   $("#drawerHost").querySelectorAll("[data-switch]").forEach(b => b.onclick = () => { close(); setActive(b.dataset.switch); toast(t("switched", { name: accountsList().find(a=>a.id===b.dataset.switch)?.name || "" })); });
   $("#drawerHost").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { close(); openAccount(accountsList().find(a=>a.id===b.dataset.edit)); });
   $("#addAcct").onclick = () => { close(); openAccount(null); };
@@ -3503,7 +3555,7 @@ function openAccounts(){
 const ACCT_LIMIT = () => tier() === "basic" ? 2 : Infinity;
 function openAccount(acct){
   const isNew = !acct, base = S();
-  if (isNew && accountsList().length >= ACCT_LIMIT()){
+  if (isNew && realAccounts().length >= ACCT_LIMIT()){
     const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>${esc(t("addAcct"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
       <div class="set-note">${esc(t("acctLimit"))}</div>
       <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="upgradeBtn">${esc(t("seePlans"))}</button></div></div></div>`);
@@ -3646,10 +3698,14 @@ function renderSettings(){
 }
 
 function renderSetGeneral(body){
-  setTimeout(() => { const b = document.getElementById("replayTut"); if (b) b.onclick = () => openTutorial(0); }, 0);
+  setTimeout(() => { const b = document.getElementById("replayTut"); if (b) b.onclick = () => openTutorial(0);
+    const go = document.getElementById("demoSetGo"); if (go) go.onclick = () => openDemo();
+    const rm = document.getElementById("demoSetDel"); if (rm){ let armed = false; rm.onclick = async () => { if (!armed){ armed = true; rm.textContent = t("demoRemoveSure"); return; } await removeDemo(); renderSettings?.(); }; } }, 0);
   const start = currentAccent();
   body.innerHTML = `<section class="panel"><div class="panel-head"><h2>${esc(t("tutorialH"))}</h2><button type="button" class="btn small" id="replayTut">${esc(t("replayTut"))}</button></div>
       <span class="hint">${esc(t("replayTutD"))}</span></section>
+    <section class="panel"><div class="panel-head"><h2>${esc(t("demoH"))}</h2><span class="actions">${demoAcct() ? `<button type="button" class="btn small" id="demoSetGo">${esc(t("demoGo"))}</button><button type="button" class="btn small danger" id="demoSetDel">${esc(t("demoRemove"))}</button>` : `<button type="button" class="btn small" id="demoSetGo">${esc(t("demoAdd"))}</button>`}</span></div>
+      <span class="hint">${esc(t("demoD"))}</span></section>
     <section class="panel"><div class="panel-head"><h2>${esc(t("theme"))}</h2></div>
       <div class="seg theme-seg" role="group" aria-label="${esc(t("theme"))}" id="themeSeg">${THEMES.map(m => `<button type="button" data-theme-opt="${m}" aria-pressed="${m === currentTheme()}">${esc(t("theme" + m[0].toUpperCase() + m.slice(1)))}</button>`).join("")}</div>
       <span class="hint">${esc(t("themeHint"))}</span></section>
@@ -4499,8 +4555,8 @@ async function loadExamples(){
   state.month = null;
 }
 async function clearExamples(){
-  const ex = state.trades.filter(t=>t.example);
-  if (state.mode !== "live"){ state.trades = state.trades.filter(t=>!t.example); render(); return; }
+  const aid = activeAcct()?.id, ex = state.trades.filter(t => t.example && acctOf(t) === aid);
+  if (state.mode !== "live"){ state.trades = state.trades.filter(t => !(t.example && acctOf(t) === aid)); render(); return; }
   for (const t of ex){ try { await col.doc(t.id).delete(); } catch(e){ handleWriteError(e); return; } }
   state.month = null; toast(t("exCleared"));
 }

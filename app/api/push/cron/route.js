@@ -36,9 +36,11 @@ async function remindersFor(admin, userId) {
 
   const today = now.date, from = addDays(today, -40);
   const { data: rows } = await admin.from("journal_docs").select("id,data").eq("user_id", userId).neq("id", "settings").filter("data->>date", "gte", from).limit(2000);
-  const trades = (rows || []).map((r) => r.data || {}).filter((x) => x.kind !== "note" && x.date && x.symbol && x.status !== "open" && x.date <= today);
-  const ws = addDays(today, -now.dow), week = trades.filter((x) => x.date >= ws);
   const accounts = Array.isArray(settings.accounts) ? settings.accounts : [];
+  const demoIds = new Set(accounts.filter((a) => a?.demo).map((a) => a.id));
+  // Example trades (and the example account) never trigger reminders.
+  const trades = (rows || []).map((r) => r.data || {}).filter((x) => x.kind !== "note" && x.date && x.symbol && x.status !== "open" && x.date <= today && !x.example && !demoIds.has(x.accountId));
+  const ws = addDays(today, -now.dow), week = trades.filter((x) => x.date >= ws);
   const out = [];
 
   if (on(n, "journal")) {
@@ -61,6 +63,7 @@ async function remindersFor(admin, userId) {
     out.push({ key: "psy:" + ws, title: "Quick check-in", body: "Have you reviewed your emotional state and trading discipline this week?" });
   if (on(n, "prop")) {
     for (const a of accounts) {
+      if (a?.demo) continue;
       const end = a?.rules?.endDate;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(end || "")) continue;
       const d = Math.round((Date.parse(end + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 864e5);
