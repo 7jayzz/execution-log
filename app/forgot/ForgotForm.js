@@ -46,8 +46,8 @@ export default function ForgotForm() {
       <h1>Reset your password</h1>
       {sent ? (
         <>
-          <div className="box good">If there's an account for <b>{email.trim()}</b>, we've sent a link to reset your password.</div>
-          <div className="box info">It can take a few minutes to arrive. Check your spam or promotions folder, and make sure the email above is the one you signed up with.</div>
+          <div className="box good"><b>Check your inbox.</b> We've sent a reset link to <b>{email.trim()}</b>, if that address has an account with us.</div>
+          <div className="box info">Not there after a few minutes? Check your spam or promotions folder, and make sure the email above is the one you signed up with. New here? <Link href="/signup" className="link">Create an account</Link>.</div>
           {note && <div className="box good" role="status">{note}</div>}
           {error && <div className="err" role="alert">{error}</div>}
           <button type="button" className="btn block" onClick={resend} disabled={busy || left > 0} aria-live="polite">
