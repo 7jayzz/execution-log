@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email";
+import { trialEndingEmail, paymentFailedEmail, cancelledEmail } from "@/lib/emails/billing";
+import { planForPrice } from "@/lib/plans";
+import { SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,6 +67,39 @@ async function enforceOneTrial(stripe, admin, sub) {
   }
 }
 
+// Finds who a subscription belongs to and sends them a billing email. Never fails the webhook:
+// Stripe would retry and the customer could get the same email twice.
+async function notify(admin, sub, build) {
+  try {
+    let userId = sub.metadata?.user_id;
+    const customer = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+    if (!userId && customer) {
+      const { data } = await admin.from("subscriptions").select("user_id").eq("stripe_customer_id", customer).maybeSingle();
+      userId = data?.user_id;
+    }
+    if (!userId) return;
+    const { data: u } = await admin.auth.admin.getUserById(userId);
+    const email = u?.user?.email;
+    if (!email) return;
+    const { data: prof } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+    const item = sub.items?.data?.[0];
+    const price = item?.price;
+    const ctx = {
+      name: prof?.full_name || u.user.user_metadata?.full_name || "",
+      email,
+      plan: planForPrice(price?.id),
+      interval: price?.recurring?.interval || "month",
+      amount: price?.unit_amount ?? 0,
+      currency: price?.currency || "gbp",
+      billingUrl: `${SITE_URL}/api/billing-portal`,
+      dashboardUrl: `${SITE_URL}/dashboard`,
+    };
+    await sendEmail({ to: email, ...build(ctx) });
+  } catch (e) {
+    console.error("Billing email failed", e);
+  }
+}
+
 export async function POST(request) {
   const stripe = getStripe();
   const body = await request.text();
@@ -87,8 +124,30 @@ export async function POST(request) {
         }
         break;
       }
+      case "customer.subscription.trial_will_end": {
+        const sub = event.data.object;
+        if (sub.status === "trialing" && !sub.cancel_at_period_end) await notify(admin, sub, (c) => trialEndingEmail({ ...c, trialEnd: sub.trial_end }));
+        break;
+      }
+      case "invoice.payment_failed": {
+        const inv = event.data.object;
+        const subId = inv.subscription || inv.parent?.subscription_details?.subscription;
+        if (subId && inv.amount_due > 0) {
+          const sub = await stripe.subscriptions.retrieve(subId);
+          await notify(admin, sub, (c) => paymentFailedEmail({ ...c, amount: inv.amount_due, currency: inv.currency, nextAttempt: inv.next_payment_attempt }));
+        }
+        break;
+      }
+      case "customer.subscription.updated": {
+        const sub = event.data.object, prev = event.data.previous_attributes || {};
+        await saveSubscription(admin, sub);
+        // Only when cancel_at_period_end has just switched on: that's the moment someone cancels in the portal.
+        if (sub.cancel_at_period_end && prev.cancel_at_period_end === false) {
+          await notify(admin, sub, (c) => cancelledEmail({ ...c, accessUntil: sub.cancel_at || sub.current_period_end || sub.items?.data?.[0]?.current_period_end }));
+        }
+        break;
+      }
       case "customer.subscription.created":
-      case "customer.subscription.updated":
       case "customer.subscription.deleted":
       case "customer.subscription.paused":
       case "customer.subscription.resumed":
