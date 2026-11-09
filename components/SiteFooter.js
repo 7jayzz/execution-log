@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TAGLINE } from "@/lib/site";
+import { LEGAL_PAGES } from "@/lib/legal";
 
 export default function SiteFooter() {
   return (
@@ -7,8 +8,7 @@ export default function SiteFooter() {
       <span>© {new Date().getFullYear()} The Execution Log · {TAGLINE}</span>
       <nav>
         <Link href="/pricing">Pricing</Link>
-        <Link href="/privacy">Privacy</Link>
-        <Link href="/terms">Terms</Link>
+        {LEGAL_PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
       </nav>
     </footer>
   );
