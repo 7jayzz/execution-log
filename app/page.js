@@ -40,13 +40,16 @@ function Preview() {
   );
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   return (
     <div className="glow">
       <div className="site">
         <SiteNav user={user} />
+        {searchParams?.deleted === "1" && !user && (
+          <div className="box good" role="status">Your account and all your data have been deleted, and your subscription is cancelled. Thanks for trying The Execution Log.</div>
+        )}
         <section className="hero">
           <div className="hero-copy">
             <span className="kicker">The trading journal for prop and retail traders</span>

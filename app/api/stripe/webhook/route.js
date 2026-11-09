@@ -36,6 +36,8 @@ async function saveSubscription(admin, sub) {
     },
     { onConflict: "user_id" }
   );
+  // 23503: the user no longer exists (they deleted their account). Nothing to update, and retrying won't help.
+  if (error && error.code === "23503") { console.warn("Webhook: user deleted, skipping", userId); return; }
   if (error) throw error;
 }
 
