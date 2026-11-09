@@ -8,6 +8,7 @@ export default function SiteFooter() {
       <span>© {new Date().getFullYear()} The Execution Log · {TAGLINE}</span>
       <nav>
         <Link href="/pricing">Pricing</Link>
+        <Link href="/help">Help</Link>
         {LEGAL_PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
       </nav>
     </footer>

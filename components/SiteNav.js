@@ -6,6 +6,7 @@ export default function SiteNav({ user }) {
     <nav className="nav">
       <Brand />
       <div className="nav-r">
+        <Link href="/help" className="btn hide-sm">Help</Link>
         <Link href="/pricing" className="btn hide-sm">Pricing</Link>
         {user ? (
           <Link href="/dashboard" className="btn primary">Dashboard</Link>
