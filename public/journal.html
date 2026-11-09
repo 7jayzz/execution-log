@@ -1095,12 +1095,8 @@ async function openDemo(extra = {}){
   if (demoBusy || state.readOnly) return; demoBusy = true;
   try {
     const id = "demo" + Date.now().toString(36);
-    const today = localToday(), lastWeek = isoAdd(weekStartOf(today), -7);
-    const acct = { id, demo: true, name: t("demoName"), type: "Demo", balance: 10000, ccy: "GBP", risk: 1, rates: defaultRates("GBP"),
-      goals: { daily: 150, weekly: 400, monthly: 1500, monthlyPct: "", growth: 12500, maxLoss: 500, maxDD: 6, winRate: 55, rr: 2, pf: 1.5, minAvgR: 0.5, maxStreak: 4, maxTradesDay: 2, maxRisk: 1, dailyLossLimit: 200,
-        d_plan: true, d_revenge: true, d_fomo: true, d_overtrade: false, d_stopLoss: true, d_setups: true, d_journal: true, d_review: true, approvedSetups: "ORB, Trend pullback, VWAP reclaim" },
-      goalHistory: [{ k: "weekly", from: 300, to: 400, date: isoAdd(today, -12) }],
-      reviews: { [lastWeek]: true } };
+    const lastWeek = isoAdd(weekStartOf(localToday()), -7);
+    const acct = { id, demo: true, name: t("demoName"), type: "Demo", balance: 10000, ccy: "GBP", risk: 1, rates: defaultRates("GBP"), ...demoGoals() };
     const ex = sampleTrades(id, demoRows(SAMPLE_ROWS), acct);
     const notes = demoNotes(id, lastWeek);
     if (state.mode !== "live"){ state.settings = { ...(state.settings || {}), ...extra, accounts: [...accountsList(), acct] }; state.trades = [...state.trades, ...ex]; state.notes = [...state.notes, ...notes]; setActive(id); toast(t("demoReady")); return true; }
@@ -1110,6 +1106,21 @@ async function openDemo(extra = {}){
     for (const n of notes){ const { id: nid, ...rec } = n; await saveNote(nid, rec); }
     setActive(id); toast(t("demoReady")); return true;
   } finally { demoBusy = false; }
+}
+function demoGoals(){
+  const today = localToday();
+  return { goals: { daily: 150, weekly: 400, monthly: 1500, monthlyPct: "", growth: 12500, maxLoss: 500, maxDD: 6, winRate: 55, rr: 2, pf: 1.5, minAvgR: 0.5, maxStreak: 4, maxTradesDay: 2, maxRisk: 1, dailyLossLimit: 200,
+      d_plan: true, d_revenge: true, d_fomo: true, d_overtrade: false, d_stopLoss: true, d_setups: true, d_journal: true, d_review: true, approvedSetups: "ORB, Trend pullback, VWAP reclaim" },
+    goalHistory: [{ k: "weekly", from: 300, to: 400, date: isoAdd(today, -12) }],
+    reviews: { [isoAdd(weekStartOf(today), -7)]: true } };
+}
+// Example accounts made before goals and notes existed get them filled in once.
+let demoUpgraded = false;
+async function upgradeDemo(){
+  const d = demoAcct(); if (demoUpgraded || !d || state.mode !== "live" || state.readOnly) return;
+  demoUpgraded = true;
+  if (!d.goals) await saveCfg({ accounts: accountsList().map(a => a.id === d.id ? { ...a, ...demoGoals() } : a) });
+  if (!state.notes.some(n => n.demo === d.id)) for (const n of demoNotes(d.id, isoAdd(weekStartOf(localToday()), -7))){ const { id: nid, ...rec } = n; await saveNote(nid, rec); }
 }
 // Example notes belong to the example account and only show while it's open.
 function demoNotes(acctId, lastWeek){
@@ -4681,7 +4692,7 @@ render();
       state.notes = all.filter(t => t.kind === "note");
       if (wasLoading) state.month = null;
       render();
-      if (!snap.metadata.fromCache) maybeTutorial();
+      if (!snap.metadata.fromCache){ maybeTutorial(); upgradeDemo(); }
     }, () => { clearTimeout(slowTimer); if (state.mode === "loading") enterDemo(); else toast(t("lostConn")); });
   } catch { clearTimeout(slowTimer); enterDemo(); }
 })();
