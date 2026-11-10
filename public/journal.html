@@ -365,6 +365,14 @@ details.adv[open] summary{margin-bottom:10px}
 .tut-dots i.on{width:24px;background:var(--accent)}
 .tut-actions{display:flex;justify-content:space-between;gap:8px}
 @media (prefers-reduced-motion:no-preference){ .tut-body{animation:tutIn .28s cubic-bezier(.2,.8,.2,1)} @keyframes tutIn{from{opacity:0;transform:translateY(8px)}} }
+.title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.guide-btn{border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);border-radius:99px;padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;position:relative;white-space:nowrap}
+.guide-btn:hover{border-color:var(--accent)}.guide-btn.new{border-color:var(--accent);background:var(--accent-soft)}
+.guide-btn.new::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+@media (prefers-reduced-motion:no-preference){.guide-btn.new::after{animation:guidePing 1.8s ease-in-out infinite}}@keyframes guidePing{50%{transform:scale(1.35);opacity:.6}}
+.guide-list{display:flex;flex-direction:column;gap:8px}.guide-row{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);border-radius:12px;padding:12px 14px;cursor:pointer;font:inherit}
+.guide-row:hover:not(:disabled){border-color:var(--accent)}.guide-row:disabled{opacity:.55;cursor:not-allowed}.guide-row b{display:flex;align-items:center;gap:8px;font-size:14px}
+.guide-new{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent)}
 .tour{position:fixed;inset:0;z-index:40}
 .tour-block{position:fixed;inset:0}
 .tour.centred .tour-block{background:rgba(4,6,12,.72);backdrop-filter:blur(3px)}
@@ -482,6 +490,10 @@ details.adv[open] summary{margin-bottom:10px}
 .trial-bar{border:1px solid #C792FF66;background:#C792FF14;border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
 .trial-bar p{margin:0;line-height:1.5}.lock-mini{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}.lock-mini p{margin:0}
 .pro-bars,.pro-uw{width:100%;height:auto;max-height:210px;display:block}.pb-l{font-size:10.5px;fill:var(--muted);font-family:var(--mono)}.pb-v{font-size:10.5px;fill:var(--ink);font-family:var(--mono);font-weight:700}
+.rg-h{margin:6px 0 0;font-size:14px}.rg-prop{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}.rg-prop summary{cursor:pointer;padding:2px 0}.rg-prop[open] summary{margin-bottom:10px}
+.rg-status{display:flex;flex-direction:column;gap:2px;border-radius:12px;padding:12px 14px;border:1px solid var(--line-2);margin-bottom:12px}.rg-status b{font-size:15px}.rg-status span{font-size:13px;color:var(--muted)}
+.rg-status.good{border-color:var(--win);background:color-mix(in srgb,var(--win) 10%,transparent)}.rg-status.warn{border-color:var(--accent);background:var(--accent-soft)}.rg-status.bad{border-color:var(--loss);background:color-mix(in srgb,var(--loss) 10%,transparent)}
+.rg .rg-row:first-child{margin-top:12px}.rg-chips{display:flex;flex-direction:column;gap:6px;margin-top:14px}.rg-chips div{display:flex;flex-wrap:wrap;gap:6px}.rg-chip{font-size:12.5px;border:1px solid var(--line-2);background:var(--surface-2);border-radius:99px;padding:4px 10px}
 .rg{display:flex;flex-direction:column;gap:14px}.rg-row{display:flex;flex-direction:column;gap:6px}.rg-top{display:flex;justify-content:space-between;gap:10px}
 .rg-bar{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}.rg-bar i{display:block;height:100%;border-radius:99px;background:var(--win)}
 .rg-bar.warn i{background:var(--accent)}.rg-bar.bad i{background:var(--loss)}
@@ -526,6 +538,16 @@ details.adv[open] summary{margin-bottom:10px}
 .rp-saved{margin-top:14px;display:flex;flex-direction:column;gap:8px}.rs-item{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--surface-2)}.rs-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 260px}.rs-main p{margin:4px 0 0;font-size:13.5px;line-height:1.5}
 .shot-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.shot-opt{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;cursor:pointer;font:inherit;color:var(--ink)}.shot-opt:hover{border-color:var(--accent)}.shot-opt img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;background:var(--surface)}.shot-opt>span{display:flex;flex-direction:column;gap:2px;font-size:13px}
 .dl-chips{display:inline-flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto}.dl-chip{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}.dl-chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.bt-build{grid-column:1/-1;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
+.bt-ai{display:flex;flex-direction:column;gap:8px}.bt-ai textarea{width:100%;resize:vertical;min-height:58px}.bt-ai .actions select{flex:1;min-width:200px}
+.bt-side{display:flex;flex-direction:column;gap:8px}.bt-side-h{font-size:13px}.bt-side-h.buy{color:var(--win)}.bt-side-h.sell{color:var(--loss)}
+.bt-cond{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line-2);border-radius:10px;padding:8px;background:var(--surface)}
+.bt-cond .ctl{width:auto;min-width:0;padding:7px 8px;font-size:13px}.bt-cond input.ctl{width:76px}.bt-cond .c-del{margin-left:auto}
+.bt-and{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:42px}
+.bt-sum{border-top:1px dashed var(--line-2);padding-top:10px;display:flex;flex-direction:column;gap:4px}.bt-sum p{margin:0;font-size:13.5px}
+.daychips{display:flex;flex-wrap:wrap;gap:6px}.daychips .chip{padding:6px 11px;font-size:12.5px;display:inline-flex;align-items:center}.daychips input{position:absolute;opacity:0;pointer-events:none}
+.daychips .chip:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}.daychips .chip:has(input:focus-visible){outline:2px solid var(--accent)}
+@media (max-width:560px){.bt-cond{padding:7px}.bt-cond .ctl{flex:1 1 40%}.bt-cond input.ctl{flex:0 0 64px;width:64px}.bt-and{min-width:100%}}
 .bt-grid .bt-sig{display:contents}.bt-grid .bt-sig[hidden]{display:none}.bt-check{grid-column:1/-1}.bt-report{display:flex;flex-direction:column;gap:14px;margin-top:6px}.bt-curve{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}.bt-curve svg{width:100%;height:160px;display:block}.bt-curve .ln{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}.bt-tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.bt-tbl{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:13px}.bt-tbl table{width:100%;border-collapse:collapse;margin-top:6px}.bt-tbl td,.bt-tbl th{padding:4px 2px;border-bottom:1px solid var(--line)}.bt-tbl th{font-size:11px;color:var(--muted);text-align:left}.bt-tbl .r{text-align:right}.bt-trades summary{cursor:pointer;font-weight:600}.bt-file{cursor:pointer}
 .rp-ready{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:260px;padding:24px;border:1px dashed var(--line-2);border-radius:8px;background:var(--surface)}.rp-ready>b{font-size:20px}.rp-ready .btn{margin:6px 0;padding:10px 26px;font-size:15px}.rp-lock .v{font-size:18px;opacity:.7}
 .rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
@@ -826,7 +848,7 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 
   <main class="main">
     <header class="top">
-      <div class="title-wrap"><span class="greet" id="greet" hidden></span><h2 class="page-title" id="pageTitle">Dashboard</h2></div>
+      <div class="title-wrap"><span class="greet" id="greet" hidden></span><div class="title-row"><h2 class="page-title" id="pageTitle">Dashboard</h2><button type="button" class="guide-btn" id="guideBtn" hidden aria-label="Guide for this page"><span aria-hidden="true">📘</span> Guide</button></div></div>
       <div class="actions"><button class="btn acct-btn acct-chip" id="acctChip" aria-label="Switch or manage accounts" data-i18n-aria="accounts"><small><span id="acctName2">Account</span> ▾</small><span id="acctBal2">—</span></button><button class="btn primary" id="addBtn" data-i18n="logTradeBtnPlus">+ Log trade</button></div>
     </header>
 
@@ -1437,7 +1459,7 @@ function bindRiskNote(pctId, balFn, noteId, ccyFn){
 }
 
 /* ---------- Render ---------- */
-function render(){ checkLockOnLoad(); renderHeader(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderBell(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
+function render(){ checkLockOnLoad(); renderHeader(); renderGuideBtn(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderBell(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
 
 function renderHeader(){ const a = activeAcct();
   $("#pageTitle").textContent = t(VIEWS[state.view] || "navDash");
@@ -1866,7 +1888,7 @@ function setView(v, push = true){
   if (!VIEWS[v]) v = "dashboard"; state.view = v;
   document.querySelectorAll(".page").forEach(p => p.hidden = p.dataset.page !== v);
   document.querySelectorAll(".nav button").forEach(b => b.dataset.view === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
-  $("#pageTitle").textContent = t(VIEWS[v]); renderGreet();
+  $("#pageTitle").textContent = t(VIEWS[v]); renderGreet(); renderGuideBtn();
   v === "settings" ? $("#setBtn").setAttribute("aria-current", "page") : $("#setBtn").removeAttribute("aria-current");
   renderSettings(); if (v === "notes") renderNotes(); else flushNote(); if (v === "insights") renderInsights(); if (v === "elite"){ const eh = $("#elitePage"); if (eh) eh.dataset.built = ""; renderElite(); }
   if (push){ try { if (location.hash !== "#" + v) location.hash = v; } catch {} }
@@ -1898,10 +1920,13 @@ const TOUR = [
 ];
 const TUT = TOUR;
 const visibleEl = sel => { if (!sel) return null; for (const el of document.querySelectorAll(sel)){ const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden") return el; } return null; };
-function openTutorial(i = 0){
-  i = Math.max(0, Math.min(TOUR.length - 1, i)); const st = TOUR[i], last = i === TOUR.length - 1;
-  if (state.view !== "dashboard") setView("dashboard");
-  const fresh = state.mode === "live" && !accountsList().length;
+let tourSet = null;
+function openTutorial(i = 0){ tourSet = { steps: TOUR, view: "dashboard", main: true }; runTour(i); }
+function runTour(i = 0){
+  const TS = tourSet.steps; i = Math.max(0, Math.min(TS.length - 1, i)); const st = TS[i], last = i === TS.length - 1;
+  if (state.view !== tourSet.view) setView(tourSet.view);
+  try { st.before?.(); } catch {}
+  const fresh = tourSet.main && state.mode === "live" && !accountsList().length;
   let target = visibleEl(st.sel); if (target && st.panel) target = target.closest(".panel") || target;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const host = $("#tutHost"), had = !!host.querySelector(".tour");
@@ -1909,9 +1934,9 @@ function openTutorial(i = 0){
   const hole = host.querySelector(".tour-hole"), tip = host.querySelector(".tour-tip");
   host.querySelector(".tour").classList.toggle("centred", !target);
   tip.innerHTML = `<span class="tour-arrow"></span>
-    <div class="tour-top"><span class="label">${esc(t("tourOf", { a: i + 1, b: TOUR.length }))}</span>${last ? "" : `<button type="button" class="tut-skip" id="tutSkip">${esc(t("skip"))}</button>`}</div>
-    <h2 id="tourTitle">${esc(t(st.t))}</h2><p>${esc(t(st.b))}</p>
-    <div class="tut-dots" aria-hidden="true">${TOUR.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("")}</div>
+    <div class="tour-top"><span class="label">${esc(t("tourOf", { a: i + 1, b: TS.length }))}</span>${last ? "" : `<button type="button" class="tut-skip" id="tutSkip">${esc(t("skip"))}</button>`}</div>
+    <h2 id="tourTitle">${esc(st.title ?? t(st.t))}</h2><p>${esc(st.body ?? t(st.b))}</p>
+    <div class="tut-dots" aria-hidden="true">${TS.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("")}</div>
     <div class="tut-actions"><button type="button" class="btn" id="tutBack" ${i === 0 ? "hidden" : ""}>${esc(t("back"))}</button><span></span>
       <button type="button" class="btn primary" id="tutNext">${esc(last ? (fresh ? t("getStarted") : t("finish")) : t("next"))}</button></div>`;
   tip.classList.remove("in"); void tip.offsetWidth; tip.classList.add("in");
@@ -1954,13 +1979,106 @@ function openTutorial(i = 0){
   if (tourPos){ window.removeEventListener("resize", tourPos); window.removeEventListener("scroll", tourPos, true); }
   tourPos = () => requestAnimationFrame(place);
   window.addEventListener("resize", tourPos); window.addEventListener("scroll", tourPos, true);
-  $("#tutNext").onclick = () => last ? finishTutorial() : openTutorial(i + 1);
-  $("#tutBack").onclick = () => openTutorial(i - 1);
-  const sk = $("#tutSkip"); if (sk) sk.onclick = finishTutorial;
+  const done = () => tourSet.main ? finishTutorial() : finishGuide();
+  $("#tutNext").onclick = () => last ? done() : runTour(i + 1);
+  $("#tutBack").onclick = () => runTour(i - 1);
+  const sk = $("#tutSkip"); if (sk) sk.onclick = done;
   if (tutKey) document.removeEventListener("keydown", tutKey);
-  tutKey = e => { if (e.key === "Escape") finishTutorial(); else if (e.key === "ArrowRight" && !last) openTutorial(i + 1); else if (e.key === "ArrowLeft" && i > 0) openTutorial(i - 1); };
+  tutKey = e => { if (e.key === "Escape") done(); else if (e.key === "ArrowRight" && !last) runTour(i + 1); else if (e.key === "ArrowLeft" && i > 0) runTour(i - 1); };
   document.addEventListener("keydown", tutKey);
   setTimeout(() => $("#tutNext")?.focus({ preventScroll: true }), 30);
+}
+function finishGuide(){
+  if (tourPos){ window.removeEventListener("resize", tourPos); window.removeEventListener("scroll", tourPos, true); tourPos = null; }
+  $("#tutHost").innerHTML = ""; if (tutKey){ document.removeEventListener("keydown", tutKey); tutKey = null; }
+  const k = tourSet?.key; tourSet = null; if (k) markGuideSeen(k);
+}
+/* ---------- Page guides (Pro and Elite): a short spotlight walkthrough for each screen ---------- */
+const GUIDES = {
+  dashboard: { name: "Dashboard", tier: "pro", steps: [
+    { title: "Your dashboard", body: "Everything about the account you're looking at, on one screen. This guide shows the Pro and Elite parts and how to use them day to day." },
+    { sel: "#rangeBar", title: "Pick the period", body: "Switch between today, this week, this month or any range. Every number on the page follows the period you pick." },
+    { sel: "#dashEdit", tier: "elite", title: "Your own layouts", body: "Customise hides, shows and reorders sections. Save more than one layout, for example \"Morning check\" and \"Weekly review\", and switch between them with the chips." },
+    { sel: "#alerts", title: "RuleGuard alerts", body: "If you're close to a loss limit, have used up your trades for the day, or your last trade broke one of your rules, the warning shows up here first." },
+    { sel: "#strip", title: "Key numbers", body: "Net P&L, win rate, profit factor and expectancy for the period. Tap any of them on a phone to see more." },
+    { sel: "#chart", panel: true, title: "Balance and equity", body: "Balance follows closed trades. Equity also counts open trades. Use Deposits to log money in and out so your returns stay accurate." },
+    { sel: "#dashCal", panel: true, title: "Calendar", body: "Green and red days at a glance. Tap a day to see its trades and add a note about how it went." }
+  ] },
+  trades: { name: "Trades", tier: "pro", steps: [
+    { title: "Your trade log", body: "Every trade on this account. Pro adds filters, tags and your own fields, so you can slice your history any way you like." },
+    { sel: "#impBtn", title: "Import trades", body: "Bring in trades from an MT4 or MT5 statement or a CSV file instead of typing them. Duplicates are skipped." },
+    { sel: "#search", title: "Search", body: "Search by symbol, setup, tag or note text." },
+    { sel: "#fltBtn", title: "Filters", body: "Filter by setup, instrument, side, session, emotion, tag, grade or a custom field. The stats at the top update to match, so you can ask questions like \"how do my London XAUUSD trades do?\"." },
+    { sel: "#fieldsBtn", title: "Custom fields", body: "Add your own fields, such as \"Confluence count\" or \"News day\". They appear on every trade form and can be filtered and analysed." },
+    { sel: "#log", title: "Open any trade", body: "Tap a row to see the full trade: R multiple, risk, screenshots, notes and how it scored. You can edit or delete it from there." }
+  ] },
+  analytics: { name: "Analytics", tier: "pro", steps: [
+    { title: "Analytics", body: "This is where you find out what actually makes you money. Every table is built from your own trades." },
+    { sel: "#kStats", panel: true, title: "Performance", body: "Your all-time numbers on this account, including average win and loss, best and worst trade and R multiples." },
+    { sel: "#setupTbl", panel: true, title: "By setup and instrument", body: "Which setups and markets earn and which cost you. If a setup has a negative expectancy over 20+ trades, consider dropping it." },
+    { sel: "#moodTbl", panel: true, title: "Psychology", body: "Your results by the emotion you logged. Most traders find one mood that costs them money." },
+    { sel: "#discTbl", panel: true, title: "Discipline", body: "Following your plan against breaking it, and what FOMO and revenge trades really cost." },
+    { sel: "#proAnalytics", title: "Pro breakdowns", body: "Sessions, days of the week, hold times, tags and your custom fields, plus cross-account comparison." },
+    { sel: "#pdfBtn", title: "PDF report", body: "Export a clean report for your own records or to share." }
+  ] },
+  insights: { name: "Insights and RuleGuard", tier: "pro", steps: [
+    { title: "Insights", body: "Your accountability page. RuleGuard checks your trades against your own rules, and Insights finds the habits that cost you money." },
+    { sel: "#rgPanel", title: "RuleGuard", body: "Set your rules once: max trades a day, stop after a set number of losses, max risk, trading hours, cooldown after a loss, and daily or weekly loss limits. It works for live accounts and prop firm challenges." },
+    { sel: "#rgEdit", title: "Edit your rules", body: "Leave any box empty to skip that rule. For a prop account, pick your firm's template to fill in the challenge limits, then check them against your dashboard." },
+    { sel: ".rg-status", title: "Can you trade right now?", body: "Green means you're inside your rules. Amber means wait (cooldown, or outside your hours). Red means your own rules say you're done for today." },
+    { sel: "#rgBreaks", title: "Rule breaks", body: "Every trade that broke a rule in the last 30 days, which rule, and what those trades made or lost compared with the ones where you stuck to your plan." },
+    { sel: ".ins-list, #insightsPage .panel:nth-last-child(2)", title: "What your trades are telling you", body: "Patterns found in your journal, sorted by how much they cost you: revenge trades, overtrading, your worst day or session, and more." }
+  ] },
+  goals: { name: "Goals", tier: "pro", steps: [
+    { title: "Goals", body: "Set targets for the day, week and month, plus limits you don't want to cross." },
+    { sel: "#goalsPanel", title: "Your targets", body: "Progress bars fill as you trade. Loss limits turn amber and then red as you get close, and you'll get a reminder on the dashboard." }
+  ] },
+  notes: { name: "Notes", tier: "pro", steps: [
+    { title: "Notes", body: "Your trading plan, daily reviews and lessons in one place. Saved coach chats and backtest reports can be saved here too." },
+    { sel: "#noteNew", title: "New note", body: "Start a blank note or use a template, such as a pre-market plan or a weekly review." },
+    { sel: "#noteQ", title: "Search", body: "Find any note by its words. Pin your trading plan so it always sits at the top." }
+  ] },
+  elite: { name: "Elite tools", tier: "elite", steps: [
+    { title: "Elite tools", body: "Your AI coach, Trade Replay, the strategy tester and the deeper risk tools. Here's how each one works." },
+    { sel: "#coachBtns", title: "AI Trading Coach", body: "One tap reviews your last trade, your week or your month using your real journal data. Or type any question below, like \"why do I lose on Fridays?\"." },
+    { sel: "#coachShot", title: "Screenshot review", body: "Pick a trade with a chart screenshot and the coach looks at the chart itself: structure, entry location, stop and target." },
+    { sel: "#coachHist", title: "Saved coach chats", body: "Every answer is saved automatically. Search them, copy them or save one as a note." },
+    { sel: "#rpTrade", title: "Trade Replay: pick a trade", body: "Choose any trade you've logged." },
+    { sel: "#rpHow", title: "Get the candles", body: "Replay needs a candles file for that symbol and day. This guide shows how to export one for free from MT5, MT4 or TradingView in under a minute." },
+    { sel: "#rpChart", title: "Replay it", body: "Press Play and watch the trade unfold candle by candle, with your entry, stop and target drawn on. Drag to move, scroll or pinch to zoom, and switch timeframes at the top." },
+    { sel: "#btBox", title: "Strategy tester", body: "Test a strategy on months of real price history before you risk money. Load a candles file, set your rules and run it." },
+    { sel: "#btSig", title: "Build your own rules", body: "Pick \"Build my own rules\" to combine indicators, price levels and candle patterns, for example \"close above the 200 EMA and RSI crosses above 40\". Or describe it in plain English and the coach builds it for you." },
+    { sel: "#btRun", title: "Run and read the report", body: "You get win rate, profit factor, drawdown, an equity curve and breakdowns by day and hour. Save the strategy to test it again on new data." },
+    { sel: "#mcRun", title: "Monte Carlo", body: "Shuffles your real results 1,000 times to show the range of outcomes over your next trades, and how likely you are to hit a drawdown limit." },
+    { sel: "#eliteRep", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status." }
+  ] },
+  settings: { name: "Settings", tier: "pro", steps: [
+    { title: "Settings", body: "Accounts, notifications, appearance, your data and your plan all live here." },
+    { sel: "#setTabs", title: "Tabs", body: "Accounts lets you add live, demo and prop accounts. Notifications sets reminders. Data has exports, backups and your screenshot storage meter." }
+  ] }
+};
+const guideAllowed = v => { const g = GUIDES[v]; return !!g && hasTier(g.tier); };
+const guidesSeen = () => { const a = state.settings?.guidesSeen; return Array.isArray(a) ? a : lsList("tel-guides"); };
+function markGuideSeen(v){ const list = [...new Set([...guidesSeen(), v])]; ls.set("tel-guides", JSON.stringify(list)); if (state.mode === "live" && !state.readOnly) saveCfg({ guidesSeen: list }); renderGuideBtn(); }
+function renderGuideBtn(){
+  const b = $("#guideBtn"); if (!b) return; const ok = guideAllowed(state.view);
+  b.hidden = !ok; if (ok){ b.classList.toggle("new", !guidesSeen().includes(state.view)); b.title = `How the ${GUIDES[state.view].name} page works`; }
+}
+function openGuide(v = state.view){
+  const g = GUIDES[v]; if (!g || !guideAllowed(v)) return;
+  if (state.view !== v) setView(v);
+  const steps = g.steps.filter(s_ => !s_.tier || hasTier(s_.tier));
+  setTimeout(() => { tourSet = { steps, view: v, main: false, key: v }; runTour(0); }, 60);
+}
+function openGuidesHub(){
+  const pill = tr_ => `<span class="tier-pill ${tr_}">${tr_ === "elite" ? "Elite" : "Pro"}</span>`, seen = guidesSeen();
+  const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Guides</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">A short walkthrough for each page. You can also open the guide for the page you're on with the 📘 button next to its title.</p>
+    <div class="guide-list">
+      <button type="button" class="guide-row" data-g="__main"><b>Getting started</b><span class="hint">The basics: logging trades, accounts, the calendar</span></button>
+      ${Object.entries(GUIDES).map(([k, g]) => { const ok = guideAllowed(k); return `<button type="button" class="guide-row" data-g="${k}" ${ok ? "" : "disabled"}><b>${esc(g.name)} ${pill(g.tier)}${ok && !seen.includes(k) ? ' <span class="guide-new">New</span>' : ""}</b><span class="hint">${ok ? `${g.steps.filter(s_ => !s_.tier || hasTier(s_.tier)).length} steps` : `Included with ${g.tier === "elite" ? "Elite" : "Pro"}`}</span></button>`; }).join("")}
+    </div></div>`);
+  document.querySelectorAll(".guide-row").forEach(b => b.onclick = () => { if (b.disabled) return; close(); const k = b.dataset.g; setTimeout(() => k === "__main" ? openTutorial(0) : openGuide(k), 80); });
 }
 function finishTutorial(){
   if (tourPos){ window.removeEventListener("resize", tourPos); window.removeEventListener("scroll", tourPos, true); tourPos = null; }
@@ -2486,29 +2604,99 @@ function renderProAnalytics(){
       accts.map(r => `<tr><td><b>${esc(r.a.name)}</b> <span class="hint">${esc(typeLabel(r.a.type || "Personal"))}</span></td><td class="r num">${money(r.end, false, r.a.ccy)}</td><td class="r num ${cls(r.ret)}">${pct(r.ret)}</td><td class="r num">${r.s.n}</td><td class="r num">${r.s.n ? (r.s.winRate * 100).toFixed(0) + "%" : "—"}</td><td class="r num">${r.s.pfTxt}</td><td class="r num ${cls(r.s.exp)}">${r.s.n ? money(r.s.exp, true, r.a.ccy) : "—"}</td><td class="r num">${(r.dd * 100).toFixed(2)}%</td></tr>`).join("")}</tbody></table></div></section>`;
 }
 
-/* ---------- RuleGuard (prop-firm rules) ---------- */
+/* ---------- RuleGuard: your own trading rules (any account) plus prop-firm limits ---------- */
+const isPropAcct = a => /prop|funded/i.test(a?.type || "") || !!a?.rules?.template;
+const RG_DAYN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const RG_NAMES = { trades: "Max trades per day", losses: "Stop after losses", stop: "Stop loss on every trade", risk: "Max risk per trade", hours: "Trading hours", days: "Trading days", sym: "Instruments", cool: "Cooldown after a loss", daily: "Daily loss limit", week: "Weekly loss limit" };
+const rgOrd = (p, q) => (p.timeIn || "").localeCompare(q.timeIn || "") || (p.created || 0) - (q.created || 0);
+const fmtHM = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+// Shared lookups so checking every trade stays fast.
+function guardCtx(a = activeAcct()){
+  const byDay = {}; acctTrades(a).forEach(x => (byDay[x.date] ||= []).push(x)); Object.values(byDay).forEach(d => d.sort(rgOrd));
+  return { a, r: a?.rules || {}, byDay, L: ledger(a) };
+}
+function dayLossLimit(r, base){ const c = []; if (num(r.dailyPct)) c.push(base * r.dailyPct / 100); if (num(r.dailyAmt)) c.push(+r.dailyAmt); return c.length ? Math.min(...c) : null; }
+// Which of your rules did this trade break? Each one is { k, txt }.
+function tradeBreaks(x, a = activeAcct(), ctx = guardCtx(a)){
+  const r = ctx.r; if (!r?.on || !x) return [];
+  const out = [], add = (k, txt) => out.push({ k, txt });
+  const day = (ctx.byDay[x.date] || []).filter(z => z.id !== x.id).concat([x]).sort(rgOrd), i = day.indexOf(x), before = day.slice(0, i);
+  if (num(r.maxTrades) && i >= r.maxTrades) add("trades", `trade ${i + 1} of the day (your max is ${r.maxTrades})`);
+  const lost = before.filter(z => pnl(z) < 0).length; if (num(r.maxLosses) && lost >= r.maxLosses) add("losses", `taken after ${lost} losing trade${lost === 1 ? "" : "s"} (you stop after ${r.maxLosses})`);
+  if (r.needStop && num(x.stop) == null) add("stop", "no stop loss");
+  if (num(r.maxRiskPct)){ const ra = riskAmt(x), bal = ctx.L.before[x.id] ?? ctx.L.end; if (ra && bal > 0 && ra / bal * 100 > r.maxRiskPct * 1.02) add("risk", `risked ${(ra / bal * 100).toFixed(2)}% (your max is ${r.maxRiskPct}%)`); }
+  if (r.hFrom && r.hTo && x.timeIn){ const m = tmin(x.timeIn), f = tmin(r.hFrom), t_ = tmin(r.hTo), inside = f <= t_ ? m >= f && m < t_ : m >= f || m < t_; if (!inside) add("hours", `opened at ${x.timeIn}, outside ${r.hFrom}–${r.hTo}`); }
+  if (Array.isArray(r.days) && r.days.length && r.days.length < 7){ const wd = new Date(x.date + "T12:00:00Z").getUTCDay(); if (!r.days.includes(wd)) add("days", `traded on a ${RG_DAYN[wd]}`); }
+  if (Array.isArray(r.symbols) && r.symbols.length && !r.symbols.some(s => sameSym(s, x.symbol))) add("sym", `${x.symbol} isn't on your instrument list`);
+  if (num(r.cooldown) && x.timeIn){ const ll = [...before].reverse().find(z => pnl(z) < 0 && z.timeOut); if (ll){ const gap = tmin(x.timeIn) - tmin(ll.timeOut); if (gap >= 0 && gap < r.cooldown) add("cool", `${gap} min after a loss (you wait ${r.cooldown})`); } }
+  if (before.length){ const net = before.reduce((q, z) => q + pnl(z), 0), base = ctx.L.before[day[0].id] ?? ctx.L.end, lim = dayLossLimit(r, base); if (lim && -net >= lim) add("daily", `taken after hitting your daily loss limit (${money(net)})`); }
+  if (num(r.weekPct)){ const ws = weekStart(x.date), prior = []; for (let d = ws; d < x.date; d = isoAdd(d, 1)) prior.push(...(ctx.byDay[d] || [])); prior.push(...before);
+    if (prior.length){ const net = prior.reduce((q, z) => q + pnl(z), 0), first = prior[0], base = ctx.L.before[first.id] ?? ctx.L.end, lim = base * r.weekPct / 100; if (-net >= lim) add("week", `taken after hitting your weekly loss limit (${money(net)})`); } }
+  return out;
+}
+const hasOwnRules = r => !!r && (["maxTrades", "maxLosses", "maxRiskPct", "cooldown", "weekPct", "dailyAmt"].some(k => num(r[k]) != null) || !!r.needStop || !!(r.hFrom && r.hTo) || (Array.isArray(r.days) && r.days.length && r.days.length < 7) || (r.symbols || []).length > 0);
 function ruleStatus(a = activeAcct()){
   const r = a?.rules; if (!r || !r.on) return null;
   const start = +a.balance || 0, L_ = ledger(a), today = localToday();
   const todayClosed = acctTrades(a).filter(x => x.date === today).reduce((q, x) => q + pnl(x), 0);
   const floating = openTrades(a).reduce((q, x) => q + openCalc(x).p, 0);
   const dayStart = L_.end - todayClosed, dayBase = r.dailyBase === "start" ? start : dayStart;
-  const dailyLimit = num(r.dailyPct) ? dayBase * r.dailyPct / 100 : null, dayUsed = Math.max(0, -(todayClosed + floating));
+  const dailyLimit = dayLossLimit(r, dayBase), dayUsed = Math.max(0, -(todayClosed + floating));
   let peak = start; if (r.ddType === "trailing"){ let bal = start; events(a).forEach(e => { bal += e.amount; peak = Math.max(peak, bal); }); }
   const floor = num(r.maxPct) ? (r.ddType === "trailing" ? peak : start) * (1 - r.maxPct / 100) : null, equity = L_.end + floating;
   const ddRoom = floor != null ? equity - floor : null, ddUsed = floor != null ? Math.max(0, (r.ddType === "trailing" ? peak : start) - equity) : null, ddLimit = floor != null ? (r.ddType === "trailing" ? peak : start) * r.maxPct / 100 : null;
   const target = num(r.targetPct) ? start * r.targetPct / 100 : null, profit = acctTrades(a).reduce((q, x) => q + pnl(x), 0);
   const days = new Set(acctTrades(a).map(x => x.date)).size;
-  return { r, dailyLimit, dayUsed, floating, ddLimit, ddUsed, ddRoom, floor, equity, target, profit, days, minDays: num(r.minDays) };
+  const ws = weekStart(today), wkT = acctTrades(a).filter(x => x.date >= ws), weekNet = wkT.reduce((q, x) => q + pnl(x), 0) + floating;
+  const weekLimit = num(r.weekPct) ? (L_.end - wkT.reduce((q, x) => q + pnl(x), 0)) * r.weekPct / 100 : null;
+  return { r, dailyLimit, dayUsed, floating, ddLimit, ddUsed, ddRoom, floor, equity, target, profit, days, minDays: num(r.minDays), weekLimit, weekUsed: Math.max(0, -weekNet) };
+}
+// Where you stand right now: trades used, losses, cooldown, and whether your rules say stop.
+function guardToday(a = activeAcct()){
+  const r = a?.rules; if (!r?.on) return null;
+  const today = localToday(), done = acctTrades(a).filter(x => x.date === today).sort(rgOrd), opened = openTrades(a).filter(x => x.date === today);
+  const n = done.length + opened.length, losses = done.filter(x => pnl(x) < 0).length, st = ruleStatus(a);
+  const now = new Date(), nowM = now.getHours() * 60 + now.getMinutes(), wd = now.getDay();
+  const ll = [...done].reverse().find(x => pnl(x) < 0 && x.timeOut); let coolUntil = null;
+  if (num(r.cooldown) && ll){ const end = tmin(ll.timeOut) + r.cooldown; if (end > nowM && end < 24 * 60) coolUntil = end; }
+  const stop = [];
+  if (num(r.maxTrades) && n >= r.maxTrades) stop.push(`you've taken ${n} trade${n === 1 ? "" : "s"} today (your max is ${r.maxTrades})`);
+  if (num(r.maxLosses) && losses >= r.maxLosses) stop.push(`${losses} losing trade${losses === 1 ? "" : "s"} today`);
+  if (st?.dailyLimit && st.dayUsed >= st.dailyLimit) stop.push("daily loss limit reached");
+  if (st?.weekLimit && st.weekUsed >= st.weekLimit) stop.push("weekly loss limit reached");
+  const offDay = Array.isArray(r.days) && r.days.length && r.days.length < 7 && !r.days.includes(wd);
+  const offHours = r.hFrom && r.hTo ? (() => { const f = tmin(r.hFrom), t_ = tmin(r.hTo); return !(f <= t_ ? nowM >= f && nowM < t_ : nowM >= f || nowM < t_); })() : false;
+  return { r, n, losses, coolUntil, stop, offDay, offHours, st };
+}
+// Accountability record: how often you kept your rules, and what breaking them cost.
+function guardRecord(a = activeAcct(), days = 30){
+  const r = a?.rules; if (!r?.on) return null;
+  const ctx = guardCtx(a), from = isoAdd(localToday(), -(days - 1)), ts = acctTrades(a).filter(x => x.date >= from).sort((p, q) => p.date.localeCompare(q.date) || rgOrd(p, q));
+  const rows = ts.map(x => ({ x, b: tradeBreaks(x, a, ctx) })), broke = rows.filter(z => z.b.length);
+  const count = {}; broke.forEach(z => z.b.forEach(b => count[b.k] = (count[b.k] || 0) + 1));
+  const top = Object.entries(count).sort((p, q) => q[1] - p[1])[0];
+  const dayClean = {}; rows.forEach(z => { dayClean[z.x.date] = (dayClean[z.x.date] ?? true) && !z.b.length; });
+  let streak = 0; Object.keys(dayClean).sort().reverse().some(d => { if (!dayClean[d]) return true; streak++; return false; });
+  const cleanT = rows.filter(z => !z.b.length).map(z => z.x), brokeT = broke.map(z => z.x);
+  return { rows, broke, n: rows.length, kept: rows.length ? (rows.length - broke.length) / rows.length : null, cost: brokeT.reduce((q, x) => q + pnl(x), 0),
+    top: top ? { k: top[0], n: top[1] } : null, streak, cleanExp: cleanT.length ? proStats(cleanT).exp : null, brokeExp: brokeT.length ? proStats(brokeT).exp : null };
 }
 function ruleAlerts(){
   if (!hasTier("pro")) return [];
-  const st = ruleStatus(); if (!st) return []; const out = [];
+  const st = ruleStatus(); if (!st) return []; const out = [], today = localToday();
   if (st.dailyLimit){ const u = st.dayUsed / st.dailyLimit; if (u >= 1) out.push(["bad", "rg-day", `RuleGuard: daily loss limit hit (${money(-st.dayUsed)} of ${money(-st.dailyLimit)}). Stop trading today.`]);
     else if (u >= .5) out.push([u >= .8 ? "bad" : "warn", "rg-day", `RuleGuard: ${Math.round(u * 100)}% of today's loss limit used. ${money(st.dailyLimit - st.dayUsed, false)} left${st.floating ? ", including open trades" : ""}.`]); }
   if (st.ddLimit){ const u = st.ddUsed / st.ddLimit; if (u >= 1) out.push(["bad", "rg-dd", "RuleGuard: maximum drawdown breached."]);
     else if (u >= .5) out.push([u >= .8 ? "bad" : "warn", "rg-dd", `RuleGuard: ${Math.round(u * 100)}% of max drawdown used. ${money(st.ddRoom, false)} until the limit.`]); }
   if (st.target && st.profit >= st.target && (!st.minDays || st.days >= st.minDays)) out.push(["good", "rg-target", "RuleGuard: profit target reached. Protect it."]);
+  const g = guardToday(); if (g){
+    const own = g.stop.filter(s => !/daily loss limit/.test(s));
+    if (own.length) out.push(["bad", "rg-stop-" + today, `RuleGuard: ${own[0]}. Your own rules say you're done for today.`]);
+    else if (g.coolUntil) out.push(["warn", "rg-cool-" + today, `RuleGuard: cooldown after your last loss. Your next trade is allowed from ${fmtHM(g.coolUntil)}.`]);
+    else if (num(g.r.maxTrades) && g.n === g.r.maxTrades - 1 && g.n > 0) out.push(["warn", "rg-last-" + today, `RuleGuard: one trade left today (your max is ${g.r.maxTrades}). Make it your best setup.`]);
+    const last = acctTrades().filter(x => x.date === today).sort(rgOrd).pop(), b = last ? tradeBreaks(last) : [];
+    if (b.length) out.push(["bad", "rg-broke-" + last.id, `RuleGuard: your last trade (${last.symbol}) broke ${b.length === 1 ? "a rule" : b.length + " rules"}: ${b.map(z => z.txt).join("; ")}.`]);
+  }
   return out;
 }
 // Starting points only: firms change rules and they differ by account size and version.
@@ -2525,24 +2713,44 @@ const PROP_TPL = [
   { id: "fn1", firm: "FundedNext", name: "Stellar 1-Step", targetPct: 10, minDays: 2, dailyPct: 3, dailyBase: "start", maxPct: 6, ddType: "static" },
 ];
 function openRules(){
-  const a = activeAcct(); if (!a) return; const r = a.rules || {};
+  const a = activeAcct(); if (!a) return; const r = a.rules || {}, prop = isPropAcct(a), v_ = k => esc(r[k] ?? "");
+  const days = Array.isArray(r.days) && r.days.length ? r.days : [0, 1, 2, 3, 4, 5, 6];
   const close = showDrawer(`<form class="drawer" id="rgF" novalidate>
-    <div class="panel-head"><h2>RuleGuard rules</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-    <p class="hint" style="margin:0">Copy these from your prop firm's rules for <b>${esc(a.name)}</b>. RuleGuard warns you at 50%, 80% and 100% of each limit, counting open trades too.</p>
-    <div class="f"><label for="rg-tpl">${esc(t("rgTpl"))}</label><select id="rg-tpl"><option value="">${esc(t("rgTplNone"))}</option>${["FTMO","The5ers","FundedNext"].map(f => `<optgroup label="${f}">${PROP_TPL.filter(x => x.firm === f).map(x => `<option value="${x.id}" ${r.template?.id === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}</select></div>
-    <div class="set-note" id="rg-tplNote" ${r.template ? "" : "hidden"}>${r.template ? esc(t("rgTplUsed", { firm: r.template.firm, name: r.template.name, d: r.template.checked, c: r.template.confirmed ? fmtDate(r.template.confirmed) : "—" })) : ""}</div>
-    <label class="check" id="rg-confirmWrap" hidden><input type="checkbox" id="rg-confirm"><span>${esc(t("rgConfirm"))}</span></label>
+    <div class="panel-head"><h2>RuleGuard · ${esc(a.name)}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Write your rules down once. RuleGuard checks every trade against them, warns you on the dashboard before you break one, and keeps an honest record when you do. Works for live and prop accounts. Leave a box empty to skip that rule.</p>
     <label class="check"><input type="checkbox" id="rg-on" ${r.on !== false ? "checked" : ""}><span>Turn on RuleGuard for this account</span></label>
+    <h3 class="rg-h">Your trading rules</h3>
     <div class="fgrid">
-      <div class="f"><label for="rg-target">Profit target (%)</label><input id="rg-target" type="number" step="any" value="${esc(r.targetPct ?? "")}" placeholder="10"></div>
-      <div class="f"><label for="rg-days">Minimum trading days</label><input id="rg-days" type="number" step="1" value="${esc(r.minDays ?? "")}" placeholder="4"></div>
-      <div class="f"><label for="rg-daily">Max daily loss (%)</label><input id="rg-daily" type="number" step="any" value="${esc(r.dailyPct ?? "")}" placeholder="5"></div>
+      <div class="f"><label for="rg-mt">Max trades per day</label><input id="rg-mt" type="number" min="1" step="1" value="${v_("maxTrades")}" placeholder="3"></div>
+      <div class="f"><label for="rg-ml">Stop for the day after … losses</label><input id="rg-ml" type="number" min="1" step="1" value="${v_("maxLosses")}" placeholder="2"></div>
+      <div class="f"><label for="rg-mr">Max risk per trade (% of balance)</label><input id="rg-mr" type="number" step="any" value="${v_("maxRiskPct")}" placeholder="1"></div>
+      <div class="f"><label for="rg-cd">Cooldown after a loss (minutes)</label><input id="rg-cd" type="number" min="1" step="1" value="${v_("cooldown")}" placeholder="30"></div>
+      <div class="f"><label for="rg-hf">Only trade from</label><input id="rg-hf" type="time" value="${v_("hFrom")}"></div>
+      <div class="f"><label for="rg-ht">…until</label><input id="rg-ht" type="time" value="${v_("hTo")}"></div>
+      <div class="f"><label for="rg-da">Max daily loss (${esc(a.ccy || S().ccy || "")})</label><input id="rg-da" type="number" step="any" value="${v_("dailyAmt")}" placeholder="e.g. 200"></div>
+      <div class="f"><label for="rg-wk">Max weekly loss (%)</label><input id="rg-wk" type="number" step="any" value="${v_("weekPct")}" placeholder="4"></div>
+    </div>
+    <div class="f"><label>Days I trade</label><div class="daychips" id="rg-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${days.includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
+    <div class="f"><label for="rg-sym">Only these instruments <span class="opt">(${esc(t("optional"))})</span></label><input id="rg-sym" value="${esc((r.symbols || []).join(", "))}" placeholder="e.g. XAUUSD, NAS100, GBPUSD"></div>
+    <label class="check"><input type="checkbox" id="rg-stop" ${r.needStop ? "checked" : ""}><span>Every trade must have a stop loss</span></label>
+    <h3 class="rg-h">Account limits</h3>
+    <div class="fgrid">
+      <div class="f"><label for="rg-daily">Max daily loss (%)</label><input id="rg-daily" type="number" step="any" value="${v_("dailyPct")}" placeholder="5"></div>
       <div class="f"><label for="rg-dbase">Daily loss is measured from</label><select id="rg-dbase"><option value="day" ${r.dailyBase !== "start" ? "selected" : ""}>Balance at start of day</option><option value="start" ${r.dailyBase === "start" ? "selected" : ""}>Starting balance</option></select></div>
-      <div class="f"><label for="rg-max">Max total drawdown (%)</label><input id="rg-max" type="number" step="any" value="${esc(r.maxPct ?? "")}" placeholder="10"></div>
-      <div class="f"><label for="rg-end">${esc(t("rgEnd"))}</label><input id="rg-end" type="date" value="${esc(r.endDate || "")}"></div>
-      <div class="f"><label for="rg-cons">${esc(t("rgBestDay"))} <span class="opt">(${esc(t("optional"))})</span></label><input id="rg-cons" type="number" step="any" value="${esc(r.consistencyPct ?? "")}" placeholder="50"></div>
+      <div class="f"><label for="rg-max">Max total drawdown (%)</label><input id="rg-max" type="number" step="any" value="${v_("maxPct")}" placeholder="10"></div>
       <div class="f"><label for="rg-ddt">Drawdown type</label><select id="rg-ddt"><option value="static" ${r.ddType !== "trailing" ? "selected" : ""}>Static (from starting balance)</option><option value="trailing" ${r.ddType === "trailing" ? "selected" : ""}>Trailing (from highest balance)</option></select></div>
     </div>
+    <details class="rg-prop" ${prop ? "open" : ""}><summary><b>Prop firm challenge</b> <span class="hint">${prop ? "" : "· only if this is a prop account"}</span></summary>
+      <p class="hint" style="margin:0 0 10px">Copy these from your prop firm's rules. RuleGuard warns you at 50%, 80% and 100% of each limit, counting open trades too.</p>
+      <div class="f"><label for="rg-tpl">${esc(t("rgTpl"))}</label><select id="rg-tpl"><option value="">${esc(t("rgTplNone"))}</option>${["FTMO","The5ers","FundedNext"].map(f => `<optgroup label="${f}">${PROP_TPL.filter(x => x.firm === f).map(x => `<option value="${x.id}" ${r.template?.id === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}</select></div>
+      <div class="set-note" id="rg-tplNote" ${r.template ? "" : "hidden"}>${r.template ? esc(t("rgTplUsed", { firm: r.template.firm, name: r.template.name, d: r.template.checked, c: r.template.confirmed ? fmtDate(r.template.confirmed) : "—" })) : ""}</div>
+      <label class="check" id="rg-confirmWrap" hidden><input type="checkbox" id="rg-confirm"><span>${esc(t("rgConfirm"))}</span></label>
+      <div class="fgrid">
+        <div class="f"><label for="rg-target">Profit target (%)</label><input id="rg-target" type="number" step="any" value="${v_("targetPct")}" placeholder="10"></div>
+        <div class="f"><label for="rg-days2">Minimum trading days</label><input id="rg-days2" type="number" step="1" value="${v_("minDays")}" placeholder="4"></div>
+        <div class="f"><label for="rg-end">${esc(t("rgEnd"))}</label><input id="rg-end" type="date" value="${esc(r.endDate || "")}"></div>
+        <div class="f"><label for="rg-cons">${esc(t("rgBestDay"))} <span class="opt">(${esc(t("optional"))})</span></label><input id="rg-cons" type="number" step="any" value="${v_("consistencyPct")}" placeholder="50"></div>
+      </div></details>
     <div class="err" id="rg-err" hidden></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">${esc(t("saveChanges"))}</button></div></div></form>`);
   let tpl = r.template ? { ...r.template } : null, tplFresh = false;
@@ -2550,16 +2758,23 @@ function openRules(){
     const x = PROP_TPL.find(z => z.id === e.target.value), note = $("#rg-tplNote");
     if (!x){ tpl = null; tplFresh = false; note.hidden = true; $("#rg-confirmWrap").hidden = true; return; }
     const set = (id, val) => { $("#" + id).value = val == null ? "" : val; };
-    set("rg-target", x.targetPct); set("rg-days", x.minDays); set("rg-daily", x.dailyPct); set("rg-max", x.maxPct); set("rg-cons", x.consistencyPct);
+    set("rg-target", x.targetPct); set("rg-days2", x.minDays); set("rg-daily", x.dailyPct); set("rg-max", x.maxPct); set("rg-cons", x.consistencyPct);
     $("#rg-dbase").value = x.dailyBase; $("#rg-ddt").value = x.ddType;
     tpl = { id: x.id, firm: x.firm, name: x.name, checked: TPL_CHECKED }; tplFresh = true;
     note.hidden = false; note.textContent = t("rgTplNote", { firm: x.firm, name: x.name, d: TPL_CHECKED }) + (x.warn ? " " + x.warn : "");
     $("#rg-confirmWrap").hidden = false; $("#rg-confirm").checked = false;
   };
-  $("#rgF").onsubmit = async e => { e.preventDefault(); const v = id => $("#" + id).value;
-    if (tpl && tplFresh && $("#rg-on").checked && !$("#rg-confirm").checked){ const er = $("#rg-err"); er.hidden = false; er.textContent = t("rgConfirmErr"); return; }
+  $("#rgF").onsubmit = async e => { e.preventDefault(); const v = id => $("#" + id).value, er = $("#rg-err"), pos = id => { const n_ = num(v(id)); return n_ != null && n_ > 0 ? n_ : null; };
+    if (tpl && tplFresh && $("#rg-on").checked && !$("#rg-confirm").checked){ er.hidden = false; er.textContent = t("rgConfirmErr"); return; }
+    const dsel = [...document.querySelectorAll("#rg-days input:checked")].map(x => +x.value);
+    if (!dsel.length){ er.hidden = false; er.textContent = "Pick at least one day you trade."; return; }
+    if (!!v("rg-hf") !== !!v("rg-ht")){ er.hidden = false; er.textContent = "Set both a start and an end time for your trading hours, or leave both empty."; return; }
     if (tpl && tplFresh) tpl.confirmed = localToday();
-    const rules = { on: $("#rg-on").checked, targetPct: num(v("rg-target")), minDays: num(v("rg-days")), dailyPct: num(v("rg-daily")), dailyBase: v("rg-dbase"), maxPct: num(v("rg-max")), ddType: v("rg-ddt"), endDate: /^\d{4}-\d{2}-\d{2}$/.test(v("rg-end")) ? v("rg-end") : "", consistencyPct: num(v("rg-cons")), template: tpl || null };
+    const rules = { ...r, on: $("#rg-on").checked,
+      maxTrades: pos("rg-mt"), maxLosses: pos("rg-ml"), maxRiskPct: pos("rg-mr"), cooldown: pos("rg-cd"), hFrom: v("rg-hf") || "", hTo: v("rg-ht") || "", dailyAmt: pos("rg-da"), weekPct: pos("rg-wk"),
+      days: dsel.length === 7 ? [] : dsel.sort(), symbols: v("rg-sym").split(/[,\s]+/).map(z => z.trim().toUpperCase()).filter(Boolean).slice(0, 30), needStop: $("#rg-stop").checked,
+      targetPct: num(v("rg-target")), minDays: num(v("rg-days2")), dailyPct: num(v("rg-daily")), dailyBase: v("rg-dbase"), maxPct: num(v("rg-max")), ddType: v("rg-ddt"),
+      endDate: /^\d{4}-\d{2}-\d{2}$/.test(v("rg-end")) ? v("rg-end") : "", consistencyPct: num(v("rg-cons")), template: tpl || null };
     const list = accountsList().map(x => x.id === a.id ? { ...x, rules } : x);
     close(); if (await saveCfg({ accounts: list })) toast("RuleGuard saved"); };
 }
@@ -2604,6 +2819,35 @@ function insightsTeaser(){
     <p class="hint" style="margin:0">Pro also breaks down your results by session, setup, instrument and day, and warns you before you break a prop-firm rule.</p>
     <div class="tease-cta"><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Unlock with Pro" : "Preview plans"}</button><span class="hint">You keep everything you've logged.</span></div></div>`;
 }
+function rgPanels(a, st, bar, k){
+  const g = guardToday(a), rec = guardRecord(a, 30), r = a?.rules || {};
+  if (!st) return `<section class="panel" id="rgPanel"><div class="panel-head"><h2>RuleGuard</h2><button type="button" class="btn small primary" id="rgEdit">Set up your rules</button></div>
+    <p class="hint" style="margin:0">Your trading rules, written down and checked on every trade: max trades a day, stop after a set number of losses, max risk, trading hours, cooldown after a loss, daily and weekly loss limits. Works for live accounts and prop firm challenges. RuleGuard warns you before you break a rule and keeps an honest record when you do.</p></section>`;
+  const chips = [num(r.maxTrades) && `Max ${r.maxTrades} trade${r.maxTrades === 1 ? "" : "s"} a day`, num(r.maxLosses) && `Stop after ${r.maxLosses} loss${r.maxLosses === 1 ? "" : "es"}`, num(r.maxRiskPct) && `Risk ≤ ${r.maxRiskPct}% a trade`,
+    r.needStop && "Always use a stop", r.hFrom && r.hTo && `Trade ${r.hFrom}–${r.hTo}`, Array.isArray(r.days) && r.days.length && r.days.length < 7 && [1, 2, 3, 4, 5, 6, 0].filter(d => r.days.includes(d)).map(d => BT_DOW[d]).join(", "),
+    num(r.cooldown) && `${r.cooldown} min cooldown after a loss`, (r.symbols || []).length && r.symbols.join(", "), num(r.dailyAmt) && `Max ${money(r.dailyAmt, false)} loss a day`, num(r.dailyPct) && `Max ${r.dailyPct}% loss a day`,
+    num(r.weekPct) && `Max ${r.weekPct}% loss a week`, num(r.maxPct) && `Max ${r.maxPct}% drawdown`].filter(Boolean);
+  const own = g.stop.filter(Boolean), status = own.length ? ["bad", "⛔ Done for today", own.join(" · ")] : g.coolUntil ? ["warn", `⏳ Cooldown until ${fmtHM(g.coolUntil)}`, "You took a loss. Step away before the next trade."]
+    : g.offDay ? ["warn", "Not a trading day", "Today isn't one of the days you trade."] : g.offHours ? ["warn", "Outside your trading hours", `You trade ${r.hFrom}–${r.hTo}.`] : ["good", "✓ Clear to trade", "You're inside all of your rules right now."];
+  const ofMax = (v, m) => m ? `${v} / ${m}` : String(v);
+  return `<section class="panel" id="rgPanel"><div class="panel-head"><h2>RuleGuard</h2><span class="label">${isPropAcct(a) ? "Prop account" : "Live account"}</span><button type="button" class="btn small" id="rgEdit">Edit rules</button></div>
+      <div class="rg-status ${status[0]}"><b>${esc(status[1])}</b><span>${esc(status[2])}</span></div>
+      <div class="kgrid">${k("Trades today", ofMax(g.n, num(r.maxTrades)), num(r.maxTrades) && g.n >= r.maxTrades ? "neg" : "")}${k("Losses today", ofMax(g.losses, num(r.maxLosses)), num(r.maxLosses) && g.losses >= r.maxLosses ? "neg" : "")}${k("Rules kept", rec.kept == null ? "—" : Math.round(rec.kept * 100) + "%", rec.kept == null ? "" : rec.kept >= .9 ? "pos" : rec.kept < .7 ? "neg" : "", `of ${rec.n} trades · 30 days`)}${k("Clean-day streak", String(rec.streak), rec.streak ? "pos" : "", `trading day${rec.streak === 1 ? "" : "s"} without a break`)}</div>
+      <div class="rg">
+        ${st.dailyLimit ? bar("Today's loss limit", st.dayUsed, st.dailyLimit, st.floating ? `Includes ${money(st.floating)} floating on open trades` : "") : ""}
+        ${st.weekLimit ? bar("This week's loss limit", st.weekUsed, st.weekLimit, "") : ""}
+        ${st.ddLimit ? bar("Max drawdown", st.ddUsed, st.ddLimit, st.floor != null ? `Equity must stay above ${money(st.floor, false)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "") : ""}
+        ${st.target ? `<div class="rg-row"><div class="rg-top"><b>Profit target</b><span class="num ${cls(st.profit)}">${money(st.profit)} / ${money(st.target, false)}</span></div><div class="rg-bar good"><i style="width:${Math.max(0, Math.min(100, st.profit / st.target * 100)).toFixed(1)}%"></i></div></div>` : ""}
+        ${st.minDays ? `<div class="rg-row"><div class="rg-top"><b>Trading days</b><span class="num">${st.days} / ${st.minDays}</span></div><div class="rg-bar good"><i style="width:${Math.min(100, st.days / st.minDays * 100).toFixed(1)}%"></i></div></div>` : ""}
+      </div>
+      ${chips.length ? `<div class="rg-chips"><span class="label">Your rules</span><div>${chips.map(c => `<span class="rg-chip">${esc(String(c))}</span>`).join("")}</div></div>` : `<p class="hint" style="margin:0">Add your own rules (max trades, losses, hours, cooldown) with Edit rules.</p>`}
+    </section>
+    <section class="panel" id="rgBreaks"><div class="panel-head"><h2>Rule breaks</h2><span class="label">Last 30 days</span></div>
+      ${!rec.n ? `<p class="hint" style="margin:0">No trades in the last 30 days yet.</p>` : !rec.broke.length ? `<p class="set-note" style="margin:0">No rule breaks in your last ${rec.n} trades. That's discipline. Keep it going.</p>` : `
+      <div class="kgrid">${k("Trades that broke a rule", String(rec.broke.length), "neg", `of ${rec.n}`)}${k(rec.cost < 0 ? "Cost of breaking rules" : "Rule-break trades", money(rec.cost), cls(rec.cost), rec.cost < 0 ? "net P&L on those trades" : "net P&L. Lucky this time")}${k("Most broken rule", rec.top ? RG_NAMES[rec.top.k] : "—", "", rec.top ? `${rec.top.n} time${rec.top.n === 1 ? "" : "s"}` : "")}${k("Per trade", rec.brokeExp == null ? "—" : money(rec.brokeExp), cls(rec.brokeExp), rec.cleanExp == null ? "" : `vs ${money(rec.cleanExp)} when you kept your rules`)}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Trade</th><th class="r">Net</th><th>What broke</th></tr></thead><tbody>${rec.broke.slice(-15).reverse().map(z => `<tr class="row" data-id="${esc(z.x.id)}" tabindex="0"><td>${esc(fmtDate(z.x.date))} ${esc(z.x.timeIn || "")}</td><td><b>${esc(z.x.symbol)}</b> ${z.x.side === "short" ? "sell" : "buy"}</td><td class="r num ${cls(pnl(z.x))}">${money(pnl(z.x))}</td><td>${z.b.map(b => esc(b.txt)).join("<br>")}</td></tr>`).join("")}</tbody></table></div>`}
+    </section>`;
+}
 function renderInsights(){
   const host = $("#insightsPage"); if (!host || state.view !== "insights") return;
   if (!hasTier("pro")){ host.innerHTML = insightsTeaser(); bindUpgrade(host); return; }
@@ -2618,14 +2862,7 @@ function renderInsights(){
   const chg = (a_, b_) => b_ == null || !isFinite(a_ - b_) ? "" : `${a_ - b_ >= 0 ? "▲" : "▼"} vs last week`;
   host.innerHTML = `
     <div class="pro-head"><h2 class="pro-h">Execution intelligence</h2><span class="tier-pill pro">Pro</span><span class="hint">${esc(a?.name || "")}</span></div>
-    <section class="panel"><div class="panel-head"><h2>RuleGuard</h2><button type="button" class="btn small" id="rgEdit">${st ? "Edit rules" : "Set up rules"}</button></div>
-      ${st ? `<div class="rg">
-          ${bar("Today's loss limit", st.dayUsed, st.dailyLimit, st.floating ? `Includes ${money(st.floating)} floating on open trades` : "")}
-          ${bar("Max drawdown", st.ddUsed, st.ddLimit, st.floor != null ? `Equity must stay above ${money(st.floor, false)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "")}
-          ${st.target ? `<div class="rg-row"><div class="rg-top"><b>Profit target</b><span class="num ${cls(st.profit)}">${money(st.profit)} / ${money(st.target, false)}</span></div><div class="rg-bar good"><i style="width:${Math.max(0, Math.min(100, st.profit / st.target * 100)).toFixed(1)}%"></i></div></div>` : ""}
-          ${st.minDays ? `<div class="rg-row"><div class="rg-top"><b>Trading days</b><span class="num">${st.days} / ${st.minDays}</span></div><div class="rg-bar good"><i style="width:${Math.min(100, st.days / st.minDays * 100).toFixed(1)}%"></i></div></div>` : ""}
-        </div>` : `<p class="hint" style="margin:0">Add your prop firm's daily loss, max drawdown and profit target. RuleGuard tracks them live, including open trades, and warns you on the dashboard before you break a rule.</p>`}
-    </section>
+    ${rgPanels(a, st, bar, k)}
     <section class="panel"><div class="panel-head"><h2>This week</h2><span class="label">${esc(fmtDate(wk))} → ${esc(fmtDate(today))}</span></div>
       <div class="kgrid">${k("Net P&L", money(thisW.net), cls(thisW.net), chg(thisW.net, lastW.n ? lastW.net : null))}${k("Trades", String(thisW.n), "", lastW.n ? `${lastW.n} last week` : "")}${k("Win rate", thisW.n ? (thisW.winRate * 100).toFixed(0) + "%" : "—", "", lastW.n ? `${(lastW.winRate * 100).toFixed(0)}% last week` : "")}${k("Discipline", discOf(ts.filter(x => x.date >= wk)) == null ? "—" : Math.round(discOf(ts.filter(x => x.date >= wk)) * 100) + "%", "", "Followed plan, no FOMO or revenge")}</div></section>
     <section class="panel"><div class="panel-head"><h2>What your trades are telling you</h2><span class="label">${ts.length} trades analysed</span></div>
@@ -2634,6 +2871,7 @@ function renderInsights(){
       ${weeks.some(w => w.arr.length) ? barsSvg(weeks.map(w => ({ label: w.label, value: w.d == null ? 0 : w.d * 100, top: w.d == null ? "" : Math.round(w.d * 100) + "%" })), { colour: it => it.value >= 80 ? "var(--win)" : it.value >= 50 ? "var(--accent)" : "var(--loss)" }) : `<p class="hint">No trades in the last 8 weeks.</p>`}
       <p class="hint" style="margin:0">% of trades where you followed your plan with no FOMO or revenge.</p></section>`;
   $("#rgEdit").onclick = openRules;
+  host.querySelectorAll("#rgBreaks tr.row").forEach(tr_ => { const go = () => { const x = state.trades.find(z => z.id === tr_.dataset.id); if (x) openDetails(x); }; tr_.onclick = go; tr_.onkeydown = e => { if (e.key === "Enter") go(); }; });
 }
 
 /* ---------- Pro: tags, custom fields, filters ---------- */
@@ -3162,10 +3400,81 @@ function replayPlay(){ if (replay.timer){ replayStop(); return; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
 
 /* ---------- Strategy tester (Elite): your own rules on historical candles ---------- */
-const BT_SIGNALS = { orb: "Opening range breakout", ma: "Moving average crossover", brk: "Breakout of recent high/low", rsi: "RSI reversal" };
-const btState = { base: null, sym: null, last: null };
+const BT_SIGNALS = { custom: "✎ Build my own rules", orb: "Opening range breakout", ma: "Moving average crossover", brk: "Breakout of recent high/low", rsi: "RSI reversal" };
+const btState = { base: null, sym: null, last: null, buy: null, sell: null };
 const btDefaults = () => ({ name: "", signal: "orb", dir: "both", tf: 5, orbStart: "08:00", orbMins: 30, maFast: 9, maSlow: 21, brkN: 20, rsiN: 14, rsiLo: 30, rsiHi: 70,
+  buy: [{ a: { k: "close" }, op: "xa", b: { k: "ema", n: 50 } }], sell: [], sellMode: "mirror", days: [1, 2, 3, 4, 5], exitOpp: false, swingN: 10,
   stopType: "atr", stopPts: 5, stopAtr: 1.5, rr: 2, from: "08:00", to: "17:00", maxDay: 2, closeEnd: true, risk: 1, start: 10000 });
+/* Custom rules: every condition must be true on the candle's close. Shorts can mirror the buy rules. */
+const BT_OPK = { close: "Close", open: "Open", high: "High", low: "Low", ema: "EMA", sma: "SMA", rsi: "RSI", atr: "ATR", hh: "Highest high of last", ll: "Lowest low of last", pdh: "Yesterday's high", pdl: "Yesterday's low", dopen: "Today's open", value: "Number" };
+const OPK_N = { ema: 50, sma: 50, rsi: 14, atr: 14, hh: 20, ll: 20 };
+const BT_OPS = { gt: "is above", lt: "is below", xa: "crosses above", xb: "crosses below" };
+const BT_PATS = { bull: "Green (bullish) candle", bear: "Red (bearish) candle", engBull: "Bullish engulfing candle", engBear: "Bearish engulfing candle", pinBull: "Bullish pin bar (long lower wick)", pinBear: "Bearish pin bar (long upper wick)", inside: "Inside bar" };
+const BT_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const BT_PRESETS = [
+  { name: "Trend pullback (EMA 200 + RSI)", buy: [{ a: { k: "close" }, op: "gt", b: { k: "ema", n: 200 } }, { a: { k: "rsi", n: 14 }, op: "xa", b: { k: "value", v: 40 } }], stopType: "swing", swingN: 10, rr: 2 },
+  { name: "Yesterday's high/low breakout", buy: [{ a: { k: "close" }, op: "xa", b: { k: "pdh" } }], stopType: "atr", stopAtr: 1.5, rr: 2, maxDay: 1 },
+  { name: "Engulfing candle with the trend", buy: [{ pat: "engBull" }, { a: { k: "ema", n: 20 }, op: "gt", b: { k: "ema", n: 50 } }], stopType: "candle", rr: 2 },
+  { name: "Golden cross (EMA 50 / 200)", buy: [{ a: { k: "ema", n: 50 }, op: "xa", b: { k: "ema", n: 200 } }], stopType: "atr", stopAtr: 2, rr: 3, maxDay: 1 },
+  { name: "Above today's open, pin bar entry", buy: [{ a: { k: "close" }, op: "gt", b: { k: "dopen" } }, { pat: "pinBull" }], stopType: "candle", rr: 1.5 },
+  { name: "20-candle breakout, RSI filter", buy: [{ a: { k: "close" }, op: "gt", b: { k: "hh", n: 20 } }, { a: { k: "rsi", n: 14 }, op: "lt", b: { k: "value", v: 70 } }], stopType: "swing", swingN: 10, rr: 2 }
+];
+const opLabel = o => !o ? "?" : o.k === "value" ? String(+o.v) : o.k === "hh" || o.k === "ll" ? `${BT_OPK[o.k]} ${o.n || OPK_N[o.k]} candles` : OPK_N[o.k] != null ? `${BT_OPK[o.k]}(${o.n || OPK_N[o.k]})` : BT_OPK[o.k] || o.k;
+const condText = c => c.pat ? BT_PATS[c.pat] || c.pat : `${opLabel(c.a)} ${BT_OPS[c.op] || c.op} ${opLabel(c.b)}`;
+const MIRROR_K = { high: "low", low: "high", hh: "ll", ll: "hh", pdh: "pdl", pdl: "pdh" }, MIRROR_OP = { gt: "lt", lt: "gt", xa: "xb", xb: "xa" };
+const MIRROR_P = { bull: "bear", bear: "bull", engBull: "engBear", engBear: "engBull", pinBull: "pinBear", pinBear: "pinBull", inside: "inside" };
+function mirrorCond(c){
+  if (c.pat) return { pat: MIRROR_P[c.pat] || c.pat };
+  const osc = c.a?.k === "rsi" || c.b?.k === "rsi";
+  const m = o => o.k === "value" ? { ...o, v: osc ? 100 - +o.v : +o.v } : { ...o, k: MIRROR_K[o.k] || o.k };
+  return { a: m(c.a), op: MIRROR_OP[c.op] || c.op, b: m(c.b) };
+}
+const sellRules = r => r.sellMode === "own" ? (r.sell || []) : (r.buy || []).map(mirrorCond);
+// Clean anything that came from storage or the AI before we run it.
+function cleanConds(list){
+  const okO = o => o && BT_OPK[o.k] ? (o.k === "value" ? { k: "value", v: isFinite(+o.v) ? +o.v : 0 } : OPK_N[o.k] != null ? { k: o.k, n: Math.max(1, Math.min(500, Math.round(+o.n || OPK_N[o.k]))) } : { k: o.k }) : null;
+  return (Array.isArray(list) ? list : []).map(c => { if (c?.pat) return BT_PATS[c.pat] ? { pat: c.pat } : null; const a = okO(c?.a), b = okO(c?.b); return a && b && BT_OPS[c.op] && a.k !== "value" ? { a, op: c.op, b } : null; }).filter(Boolean).slice(0, 8);
+}
+function btSeries(cs){
+  const cache = {}, cl = cs.map(c => c.c);
+  let days = null; const dayInfo = () => { if (days) return days; const hi = {}, lo = {}, op = {}, order = [];
+    cs.forEach(c => { if (!(c.d in hi)){ hi[c.d] = c.h; lo[c.d] = c.l; op[c.d] = c.o; order.push(c.d); } else { hi[c.d] = Math.max(hi[c.d], c.h); lo[c.d] = Math.min(lo[c.d], c.l); } });
+    const prev = {}; order.forEach((d, i) => { if (i) prev[d] = order[i - 1]; }); return days = { hi, lo, op, prev }; };
+  const extreme = (n, hi) => { const out = new Array(cs.length).fill(null), q = []; // monotonic window of the previous n candles
+    for (let i = 0; i < cs.length; i++){ if (i >= n) out[i] = (hi ? cs[q[0]].h : cs[q[0]].l);
+      const v = hi ? cs[i].h : cs[i].l; while (q.length && (hi ? cs[q[q.length - 1]].h <= v : cs[q[q.length - 1]].l >= v)) q.pop(); q.push(i); while (q[0] <= i - n) q.shift(); }
+    return out; };
+  return o => { const n = Math.max(1, Math.round(+o.n || OPK_N[o.k] || 14)), key = o.k + ":" + n + ":" + (o.k === "value" ? +o.v : ""); if (cache[key]) return cache[key]; let s;
+    switch (o.k){
+      case "close": s = cl; break; case "open": s = cs.map(c => c.o); break; case "high": s = cs.map(c => c.h); break; case "low": s = cs.map(c => c.l); break;
+      case "ema": s = ema(cl, n).map((v, i) => i < n - 1 ? null : v); break;
+      case "sma": { let sum = 0; s = cl.map((v, i) => { sum += v; if (i >= n) sum -= cl[i - n]; return i >= n - 1 ? sum / n : null; }); break; }
+      case "rsi": s = rsiArr(cl, n); break;
+      case "atr": s = atrArr(cs, n).map((v, i) => i < n ? null : v); break;
+      case "hh": s = extreme(n, true); break; case "ll": s = extreme(n, false); break;
+      case "pdh": { const D = dayInfo(); s = cs.map(c => D.prev[c.d] ? D.hi[D.prev[c.d]] : null); break; }
+      case "pdl": { const D = dayInfo(); s = cs.map(c => D.prev[c.d] ? D.lo[D.prev[c.d]] : null); break; }
+      case "dopen": { const D = dayInfo(); s = cs.map(c => D.op[c.d]); break; }
+      case "value": s = cs.map(() => +o.v); break;
+      default: s = cs.map(() => null);
+    }
+    return cache[key] = s; };
+}
+function condAt(c, i, S_, cs){
+  if (c.pat){ const k = cs[i], p = cs[i - 1]; if (!p) return false;
+    const body = Math.abs(k.c - k.o), rng = (k.h - k.l) || 1e-12, lw = Math.min(k.o, k.c) - k.l, uw = k.h - Math.max(k.o, k.c);
+    switch (c.pat){
+      case "bull": return k.c > k.o; case "bear": return k.c < k.o;
+      case "engBull": return p.c < p.o && k.c > k.o && k.c >= p.o && k.o <= p.c;
+      case "engBear": return p.c > p.o && k.c < k.o && k.c <= p.o && k.o >= p.c;
+      case "pinBull": return lw >= 2 * body && lw >= .6 * rng; case "pinBear": return uw >= 2 * body && uw >= .6 * rng;
+      case "inside": return k.h < p.h && k.l > p.l; }
+    return false; }
+  const a = S_(c.a), b = S_(c.b), x = a[i], y = b[i]; if (x == null || y == null) return false;
+  if (c.op === "gt") return x > y; if (c.op === "lt") return x < y;
+  const x0 = a[i - 1], y0 = b[i - 1]; if (x0 == null || y0 == null) return false;
+  return c.op === "xa" ? x0 <= y0 && x > y : x0 >= y0 && x < y;
+}
 const btRules = () => Array.isArray(state.settings?.btRules) ? state.settings.btRules : [];
 const ema = (vals, n) => { const k = 2 / (n + 1); let e = null; return vals.map(v => (e = e == null ? v : v * k + e * (1 - k))); };
 function rsiArr(cl, n){ const out = cl.map(() => null); let g = 0, l = 0; for (let i = 1; i < cl.length; i++){ const d = cl[i] - cl[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0);
@@ -3177,7 +3486,16 @@ const tmin = t_ => { const [h, m] = String(t_ || "0:0").split(":").map(Number); 
 function runBacktest(cs, r){
   const cl = cs.map(c => c.c), fast = r.signal === "ma" ? ema(cl, r.maFast) : null, slow = r.signal === "ma" ? ema(cl, r.maSlow) : null, rsi = r.signal === "rsi" ? rsiArr(cl, r.rsiN) : null, atr = atrArr(cs);
   const trades = [], perDay = {}, orb = {}; let pos = null;
-  const inWin = c => { const m = tmin(c.t); return m >= tmin(r.from) && m < tmin(r.to); };
+  const S_ = btSeries(cs), buyC = cleanConds(r.buy), sellC = cleanConds(sellRules(r)), okDays = Array.isArray(r.days) && r.days.length ? r.days : null;
+  const lows = r.stopType === "swing" ? S_({ k: "ll", n: r.swingN }) : null, highs = r.stopType === "swing" ? S_({ k: "hh", n: r.swingN }) : null;
+  // Signals that don't keep state through the day, so they can also be used to close a trade.
+  const pureSig = i => {
+    if (r.signal === "ma"){ if (i > r.maSlow){ if (fast[i] > slow[i] && fast[i - 1] <= slow[i - 1]) return 1; if (fast[i] < slow[i] && fast[i - 1] >= slow[i - 1]) return -1; } return 0; }
+    if (r.signal === "brk"){ if (i > r.brkN){ const w = cs.slice(i - r.brkN, i), hh = Math.max(...w.map(k => k.h)), ll = Math.min(...w.map(k => k.l)); if (cs[i].c > hh) return 1; if (cs[i].c < ll) return -1; } return 0; }
+    if (r.signal === "rsi"){ if (rsi[i] != null && rsi[i - 1] != null){ if (rsi[i - 1] < r.rsiLo && rsi[i] >= r.rsiLo) return 1; if (rsi[i - 1] > r.rsiHi && rsi[i] <= r.rsiHi) return -1; } return 0; }
+    if (r.signal === "custom"){ if (buyC.length && buyC.every(c => condAt(c, i, S_, cs))) return 1; if (sellC.length && sellC.every(c => condAt(c, i, S_, cs))) return -1; return 0; }
+    return 0; };
+  const inWin = c => { const m = tmin(c.t); return m >= tmin(r.from) && m < tmin(r.to) && (!okDays || okDays.includes(new Date(c.d + "T12:00:00Z").getUTCDay())); };
   const close = (i, price, why) => { const c = cs[i], R = (price - pos.entry) * pos.dir / pos.risk; trades.push({ ...pos, exitDate: c.d, exitTime: c.t, exit: price, R, why, bars: i - pos.i }); pos = null; };
   for (let i = 1; i < cs.length; i++){
     const c = cs[i], p = cs[i - 1];
@@ -3187,6 +3505,7 @@ function runBacktest(cs, r){
         const hitS = pos.dir > 0 ? c.l <= pos.stop : c.h >= pos.stop, hitT = pos.dir > 0 ? c.h >= pos.tgt : c.l <= pos.tgt;
         if (hitS){ close(i, pos.stop, "Stop"); continue; } if (hitT){ close(i, pos.tgt, "Target"); continue; }
         if (r.closeEnd && tmin(c.t) >= tmin(r.to)){ close(i, c.c, "Session end"); continue; }
+        if (r.exitOpp && r.signal !== "orb" && pureSig(i) === -pos.dir){ close(i, c.c, "Opposite signal"); continue; }
         continue;
       }
     }
@@ -3196,11 +3515,13 @@ function runBacktest(cs, r){
     if (!inWin(c) || (perDay[c.d] || 0) >= r.maxDay) continue;
     let dir = 0;
     if (r.signal === "orb"){ const o = orb[c.d]; if (o && o.done && isFinite(o.hi)){ if (c.c > o.hi && p.c <= o.hi && !(o.used & 1)) { dir = 1; o.used |= 1; } else if (c.c < o.lo && p.c >= o.lo && !(o.used & 2)) { dir = -1; o.used |= 2; } } }
-    else if (r.signal === "ma"){ if (i > r.maSlow){ if (fast[i] > slow[i] && fast[i - 1] <= slow[i - 1]) dir = 1; else if (fast[i] < slow[i] && fast[i - 1] >= slow[i - 1]) dir = -1; } }
-    else if (r.signal === "brk"){ if (i > r.brkN){ const w = cs.slice(i - r.brkN, i), hh = Math.max(...w.map(k => k.h)), ll = Math.min(...w.map(k => k.l)); if (c.c > hh) dir = 1; else if (c.c < ll) dir = -1; } }
-    else if (r.signal === "rsi"){ if (rsi[i] != null && rsi[i - 1] != null){ if (rsi[i - 1] < r.rsiLo && rsi[i] >= r.rsiLo) dir = 1; else if (rsi[i - 1] > r.rsiHi && rsi[i] <= r.rsiHi) dir = -1; } }
+    else dir = pureSig(i);
     if (!dir || (r.dir === "long" && dir < 0) || (r.dir === "short" && dir > 0)) continue;
-    const dist = r.stopType === "atr" ? atr[i] * r.stopAtr : +r.stopPts; if (!(dist > 0)) continue;
+    // Stop: ATR multiple, fixed distance, beyond the signal candle, or beyond the recent swing (plus a small buffer).
+    const buf = (atr[i] || 0) * .1;
+    const dist = r.stopType === "atr" ? atr[i] * r.stopAtr : r.stopType === "candle" ? (dir > 0 ? c.c - c.l : c.h - c.c) + buf
+      : r.stopType === "swing" ? (dir > 0 ? c.c - Math.min(c.l, lows[i] ?? c.l) : Math.max(c.h, highs[i] ?? c.h) - c.c) + buf : +r.stopPts;
+    if (!(dist > 0)) continue;
     pos = { i, date: c.d, time: c.t, dir, entry: c.c, stop: c.c - dir * dist, tgt: c.c + dir * dist * r.rr, risk: dist };
     perDay[c.d] = (perDay[c.d] || 0) + 1;
   }
@@ -3226,20 +3547,111 @@ function btForm(r){
     <div class="bt-sig" data-for="ma">${num_("btMaF", r.maFast, 1, "Fast EMA")}${num_("btMaS", r.maSlow, 1, "Slow EMA")}</div>
     <div class="bt-sig" data-for="brk">${num_("btBrkN", r.brkN, 1, "Break the high/low of the last … candles")}</div>
     <div class="bt-sig" data-for="rsi">${num_("btRsiN", r.rsiN, 1, "RSI length")}${num_("btRsiLo", r.rsiLo, 1, "Buy when RSI rises back above")}${num_("btRsiHi", r.rsiHi, 1, "Sell when RSI falls back below")}</div>
-    <div class="f"><label for="btStopT">Stop loss</label>${opt("btStopT", r.stopType, [["atr", "ATR multiple"], ["pts", "Fixed price distance"]])}</div>
-    ${num_("btStopV", r.stopType === "atr" ? r.stopAtr : r.stopPts, "any", r.stopType === "atr" ? "× ATR(14)" : "Distance (price)")}
+    <div class="bt-sig" data-for="custom"><div class="bt-build" id="btBuild"></div></div>
+    <div class="f"><label for="btStopT">Stop loss</label>${opt("btStopT", r.stopType, [["atr", "ATR multiple"], ["pts", "Fixed price distance"], ["candle", "Beyond the signal candle"], ["swing", "Beyond the recent swing"]])}</div>
+    ${r.stopType === "candle" ? `<div class="f"><label>&nbsp;</label><span class="hint">Below the signal candle's low for buys, above its high for sells, plus a small buffer.</span></div>`
+      : r.stopType === "swing" ? num_("btStopV", r.swingN, 1, "Swing = lowest low / highest high of the last … candles")
+      : num_("btStopV", r.stopType === "atr" ? r.stopAtr : r.stopPts, "any", r.stopType === "atr" ? "× ATR(14)" : "Distance (price)")}
     ${num_("btRR", r.rr, "any", "Take profit (R multiple)")}
     ${time_("btFrom", r.from, "Trade from")}${time_("btTo", r.to, "Trade until")}
     ${num_("btMax", r.maxDay, 1, "Max trades per day")}
     ${num_("btRisk", r.risk, "any", "Risk per trade (%)")}${num_("btStart", r.start, "any", "Starting balance")}
-    <label class="check bt-check"><input type="checkbox" id="btClose" ${r.closeEnd ? "checked" : ""}><span>Close open trades at the end of the session</span></label></div>`;
+    <div class="f bt-check"><label>Days to trade</label><div class="daychips" id="btDays">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${(r.days || [1, 2, 3, 4, 5]).includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
+    <label class="check bt-check"><input type="checkbox" id="btClose" ${r.closeEnd ? "checked" : ""}><span>Close open trades at the end of the session</span></label>
+    <label class="check bt-check" id="btOppW" ${r.signal === "orb" ? "hidden" : ""}><input type="checkbox" id="btOpp" ${r.exitOpp ? "checked" : ""}><span>Also close a trade early if the opposite signal appears</span></label></div>`;
+}
+// The rule builder for "Build my own rules".
+function condRowHtml(c, side, i){
+  const opts = (map, v, skip = []) => Object.entries(map).filter(([k]) => !skip.includes(k)).map(([k, l]) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("");
+  const word = `<span class="bt-and">${i ? "and" : "When"}</span>`, del = `<button type="button" class="iconbtn c-del" data-side="${side}" data-i="${i}" aria-label="Remove this condition">✕</button>`;
+  if (c.pat) return `<div class="bt-cond" data-side="${side}" data-i="${i}">${word}<select class="ctl c-pat" aria-label="Candle pattern">${opts(BT_PATS, c.pat)}</select>${del}</div>`;
+  const opnd = (o, w) => `<select class="ctl c-${w}" aria-label="${w === "a" ? "Left side" : "Right side"}">${opts(BT_OPK, o.k, w === "a" ? ["value"] : [])}</select>${o.k === "value" ? `<input class="ctl c-${w}v" type="number" step="any" value="${esc(String(o.v ?? 0))}" aria-label="Number">`
+    : OPK_N[o.k] != null ? `<input class="ctl c-${w}n" type="number" min="1" max="500" step="1" value="${esc(String(o.n ?? OPK_N[o.k]))}" aria-label="Length" title="Length (candles)">` : ""}`;
+  return `<div class="bt-cond" data-side="${side}" data-i="${i}">${word}${opnd(c.a, "a")}<select class="ctl c-op" aria-label="Comparison">${opts(BT_OPS, c.op)}</select>${opnd(c.b, "b")}${del}</div>`;
+}
+function btReadConds(side){
+  return [...document.querySelectorAll(`#btBuild .bt-cond[data-side="${side}"]`)].map(row => {
+    const g = s => row.querySelector(s);
+    if (g(".c-pat")) return { pat: g(".c-pat").value };
+    const o = w => { const k = g(".c-" + w).value; return k === "value" ? { k, v: +(g(`.c-${w}v`)?.value || 0) } : OPK_N[k] != null ? { k, n: +(g(`.c-${w}n`)?.value || OPK_N[k]) } : { k }; };
+    return { a: o("a"), op: g(".c-op").value, b: o("b") };
+  });
+}
+function btDrawBuild(){
+  const host = $("#btBuild"); if (!host) return;
+  const buy = btState.buy || [], sell = btState.sell || [], own = btState.sellMode === "own";
+  const list = (side, arr) => arr.length ? arr.map((c, i) => condRowHtml(c, side, i)).join("") : `<p class="hint" style="margin:0">No conditions yet. Add one below.</p>`;
+  const adds = side => `<div class="actions"><button type="button" class="btn small" data-add="${side}" data-kind="cmp">+ Indicator or price rule</button><button type="button" class="btn small" data-add="${side}" data-kind="pat">+ Candle pattern</button></div>`;
+  const words = arr => arr.length ? arr.map(condText).join(", and ") : "—";
+  host.innerHTML = `
+    <div class="bt-ai"><label for="btAiQ"><b>✦ Describe your strategy</b> <span class="hint">and the AI coach turns it into rules you can edit</span></label>
+      <textarea id="btAiQ" class="ctl" rows="2" maxlength="600" placeholder="e.g. Buy when price is above the 200 EMA and RSI crosses back above 40. Stop below the last swing low, 2R target, London session only."></textarea>
+      <div class="actions"><button type="button" class="btn small primary" id="btAiGo">✦ Build my rules</button><select id="btPreset" class="ctl" aria-label="Start from an example"><option value="">…or start from an example</option>${BT_PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join("")}</select></div>
+      <div id="btAiOut"></div></div>
+    <div class="bt-side"><b class="bt-side-h buy">Buy when all of these are true</b>${list("buy", buy)}${adds("buy")}</div>
+    <div class="f"><label for="btSellM">Sell (short) rules</label><select id="btSellM" class="ctl"><option value="mirror"${own ? "" : " selected"}>Mirror my buy rules</option><option value="own"${own ? " selected" : ""}>Write separate sell rules</option></select></div>
+    ${own ? `<div class="bt-side"><b class="bt-side-h sell">Sell when all of these are true</b>${list("sell", sell)}${adds("sell")}</div>`
+      : `<p class="hint" style="margin:0">Mirrored sell rules: <b>${esc(words(buy.map(mirrorCond)))}</b>. Above and below, highs and lows, and RSI levels are flipped.</p>`}
+    <div class="bt-sum"><span class="label">Your strategy in plain English</span><p><b>Buy</b> when ${esc(words(buy))}.</p><p><b>Sell</b> when ${esc(words(own ? sell : buy.map(mirrorCond)))}.</p><p class="hint" style="margin:0">Every rule is checked when a candle closes, and the trade opens at that close.</p></div>`;
+  const sync = () => { btState.buy = btReadConds("buy"); if (btState.sellMode === "own") btState.sell = btReadConds("sell"); };
+  host.querySelectorAll(".bt-cond select, .bt-cond input").forEach(el => el.onchange = () => {
+    const row = el.closest(".bt-cond"), side = row.dataset.side;
+    // Picking RSI on the left almost always means "RSI vs a number", so set that up.
+    if (el.classList.contains("c-a") && el.value === "rsi"){ const b = row.querySelector(".c-b"); if (b && b.value !== "value" && b.value !== "rsi"){ sync(); const arr = btState[side]; arr[+row.dataset.i].b = { k: "value", v: 50 }; btDrawBuild(); return; } }
+    sync(); btDrawBuild(); });
+  host.querySelectorAll(".c-del").forEach(b => b.onclick = () => { sync(); btState[b.dataset.side].splice(+b.dataset.i, 1); btDrawBuild(); });
+  host.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { sync(); const arr = btState[b.dataset.add]; if (arr.length >= 8){ toast("Up to 8 conditions per side"); return; }
+    arr.push(b.dataset.kind === "pat" ? { pat: b.dataset.add === "sell" ? "bear" : "bull" } : b.dataset.add === "sell" ? { a: { k: "close" }, op: "xb", b: { k: "ema", n: 50 } } : { a: { k: "close" }, op: "xa", b: { k: "ema", n: 50 } }); btDrawBuild(); });
+  $("#btSellM").onchange = e => { sync(); btState.sellMode = e.target.value; if (btState.sellMode === "own" && !btState.sell.length) btState.sell = btState.buy.map(mirrorCond); btDrawBuild(); };
+  $("#btPreset").onchange = e => { const p = BT_PRESETS[+e.target.value]; if (!p) return; const cur = btRead();
+    btFill({ ...cur, signal: "custom", buy: p.buy.map(c => JSON.parse(JSON.stringify(c))), sell: [], sellMode: "mirror", stopType: p.stopType || cur.stopType, stopAtr: p.stopAtr ?? cur.stopAtr, swingN: p.swingN ?? cur.swingN, rr: p.rr ?? cur.rr, maxDay: p.maxDay ?? cur.maxDay });
+    if (!$("#btName").value) $("#btName").value = p.name; toast(`Loaded "${p.name}". Change anything you like.`); };
+  $("#btAiGo").onclick = btAiBuild;
+}
+// Plain English in, editable rules out. Uses one coach reply.
+async function btAiBuild(){
+  const q = ($("#btAiQ")?.value || "").trim(), out = $("#btAiOut"); if (!q){ $("#btAiQ").focus(); return; }
+  const sample = await getSample(); if (!sample){ out.innerHTML = `<p class="hint">The AI coach isn't available here, so build the rules with the buttons below.</p>`; return; }
+  const btn = $("#btAiGo"); btn.disabled = true; out.innerHTML = `<p class="hint">Reading your strategy…</p>`;
+  const prompt = `You convert a trader's strategy description into rules for a candle-by-candle backtester. Reply with ONLY one JSON object, no other text.
+Schema:
+{"buy":[COND],"sell":[COND],"sellMode":"mirror"|"own","dir":"both"|"long"|"short","tf":1|5|15|30|60|240,"stopType":"atr"|"pts"|"candle"|"swing","stopAtr":number,"stopPts":number,"swingN":number,"rr":number,"from":"HH:MM","to":"HH:MM","maxDay":number,"days":[0-6 weekday numbers, 1=Monday],"exitOpp":boolean,"name":"short name","notes":"one or two sentences on anything you could not express, or assumptions you made"}
+COND is either {"pat":"bull"|"bear"|"engBull"|"engBear"|"pinBull"|"pinBear"|"inside"} or {"a":OPERAND,"op":"gt"|"lt"|"xa"|"xb","b":OPERAND} where gt=is above, lt=is below, xa=crosses above, xb=crosses below.
+OPERAND is {"k":"close"|"open"|"high"|"low"} or {"k":"ema"|"sma"|"rsi"|"atr","n":length} or {"k":"hh"|"ll","n":candles} (highest high / lowest low of the previous n candles) or {"k":"pdh"|"pdl"|"dopen"} (yesterday's high, yesterday's low, today's open) or {"k":"value","v":number}. "a" must not be a value.
+All conditions in a list must be true together on a candle's close. Use sellMode "mirror" when the sell rules are simply the opposite of the buy rules, otherwise "own" with explicit sell conditions. Only include keys the trader mentioned or clearly implied, except buy, which is required. London session is 08:00-16:30, New York 13:30-20:00 (UK time). Default stopType "atr" with stopAtr 1.5 and rr 2 if none given.
+Strategy: ${JSON.stringify(q)}`;
+  try {
+    const r = await sample(prompt, { onText: () => {} }), txt = String(r.text || ""), m = txt.match(/\{[\s\S]*\}/);
+    let j = null; try { j = m ? JSON.parse(m[0]) : null; } catch {}
+    const buy = cleanConds(j?.buy); if (!buy.length) throw { friendly: "I couldn't turn that into rules. Try naming the indicators and levels, e.g. \"close crosses above the 50 EMA\"." };
+    const cur = btRead(), n = (v, lo, hi, d) => isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d, hm = v => /^\d{2}:\d{2}$/.test(v || "") ? v : null;
+    const next = { ...cur, signal: "custom", buy, sell: cleanConds(j.sell), sellMode: j.sellMode === "own" && cleanConds(j.sell).length ? "own" : "mirror",
+      dir: ["both", "long", "short"].includes(j.dir) ? j.dir : cur.dir, tf: [1, 5, 15, 30, 60, 240].includes(+j.tf) ? +j.tf : cur.tf,
+      stopType: ["atr", "pts", "candle", "swing"].includes(j.stopType) ? j.stopType : cur.stopType, stopAtr: n(j.stopAtr, .1, 20, cur.stopAtr), stopPts: n(j.stopPts, 0, 1e6, cur.stopPts), swingN: Math.round(n(j.swingN, 2, 200, cur.swingN)),
+      rr: n(j.rr, .1, 20, cur.rr), from: hm(j.from) || cur.from, to: hm(j.to) || cur.to, maxDay: Math.round(n(j.maxDay, 1, 50, cur.maxDay)),
+      days: Array.isArray(j.days) && j.days.length ? [...new Set(j.days.map(Number).filter(d => d >= 0 && d <= 6))] : cur.days, exitOpp: typeof j.exitOpp === "boolean" ? j.exitOpp : cur.exitOpp };
+    btFill(next); if (!$("#btName").value && j.name) $("#btName").value = String(j.name).slice(0, 40);
+    $("#btAiQ").value = q;
+    $("#btAiOut").innerHTML = `<p class="set-note" style="margin:0">Done. Check the rules below${j.notes ? `: ${esc(String(j.notes).slice(0, 300))}` : "."}</p>`;
+  } catch (e){ out.innerHTML = `<p class="err">${esc(e?.friendly || (e?.code === "upgrade" ? "You've used your coach replies for now." : "Couldn't build the rules right now. Try again in a moment."))}</p>`; }
+  finally { const b = $("#btAiGo"); if (b) b.disabled = false; }
 }
 function btRead(){ const v = id => $("#" + id)?.value, n = (id, d) => { const x = +v(id); return isFinite(x) && v(id) !== "" ? x : d; }; const d = btDefaults(), st = v("btStopT");
+  const vt = btState.stopT || st; // the value box still belongs to the stop type it was drawn for
+  if ($("#btBuild .bt-side")){ btState.buy = btReadConds("buy"); if (btState.sellMode === "own") btState.sell = btReadConds("sell"); }
+  const days = $("#btDays") ? [...document.querySelectorAll("#btDays input:checked")].map(x => +x.value) : d.days;
   return { ...d, name: ($("#btName")?.value || "").trim(), signal: v("btSig"), dir: v("btDir"), tf: n("btTf", 5), orbStart: v("btOrbS") || d.orbStart, orbMins: Math.max(1, n("btOrbM", 30)), maFast: Math.max(2, n("btMaF", 9)), maSlow: Math.max(3, n("btMaS", 21)),
-    brkN: Math.max(2, n("btBrkN", 20)), rsiN: Math.max(2, n("btRsiN", 14)), rsiLo: n("btRsiLo", 30), rsiHi: n("btRsiHi", 70), stopType: st, stopAtr: st === "atr" ? Math.max(0.1, n("btStopV", 1.5)) : d.stopAtr, stopPts: st === "pts" ? Math.max(0, n("btStopV", 5)) : d.stopPts,
+    brkN: Math.max(2, n("btBrkN", 20)), rsiN: Math.max(2, n("btRsiN", 14)), rsiLo: n("btRsiLo", 30), rsiHi: n("btRsiHi", 70), stopType: st,
+    stopAtr: vt === "atr" ? Math.max(0.1, n("btStopV", 1.5)) : (btState.keep?.stopAtr ?? d.stopAtr), stopPts: vt === "pts" ? Math.max(0, n("btStopV", 5)) : (btState.keep?.stopPts ?? d.stopPts), swingN: vt === "swing" ? Math.max(2, Math.round(n("btStopV", 10))) : (btState.keep?.swingN ?? d.swingN),
+    buy: (btState.buy || d.buy).map(c => JSON.parse(JSON.stringify(c))), sell: (btState.sell || []).map(c => JSON.parse(JSON.stringify(c))), sellMode: btState.sellMode || "mirror", days, exitOpp: !!$("#btOpp")?.checked,
     rr: Math.max(0.1, n("btRR", 2)), from: v("btFrom") || d.from, to: v("btTo") || d.to, maxDay: Math.max(1, n("btMax", 2)), closeEnd: !!$("#btClose")?.checked, risk: Math.max(0.01, n("btRisk", 1)), start: Math.max(1, n("btStart", 10000)) }; }
-function btFill(r){ const host = $("#btRules"); if (!host) return; host.innerHTML = btForm(r); const show = () => host.querySelectorAll(".bt-sig").forEach(el => el.hidden = el.dataset.for !== $("#btSig").value); show();
+function btFill(r){ const host = $("#btRules"); if (!host) return;
+  btState.buy = cleanConds(r.buy); btState.sell = cleanConds(r.sell); btState.sellMode = r.sellMode === "own" ? "own" : "mirror"; btState.keep = { stopAtr: r.stopAtr, stopPts: r.stopPts, swingN: r.swingN }; btState.stopT = r.stopType;
+  host.innerHTML = btForm(r); btDrawBuild();
+  const show = () => { const sg = $("#btSig").value; host.querySelectorAll(".bt-sig").forEach(el => el.hidden = el.dataset.for !== sg); const o = $("#btOppW"); if (o) o.hidden = sg === "orb"; }; show();
   $("#btSig").onchange = show; $("#btStopT").onchange = () => { const cur = btRead(); btFill(cur); }; }
+const btStopText = r => r.stopType === "atr" ? r.stopAtr + "× ATR" : r.stopType === "candle" ? "beyond the signal candle" : r.stopType === "swing" ? `beyond the ${r.swingN}-candle swing` : r.stopPts;
+const btRulesText = r => r.signal !== "custom" ? BT_SIGNALS[r.signal] : `Buy when ${cleanConds(r.buy).map(condText).join(" and ") || "—"}; sell when ${cleanConds(sellRules(r)).map(condText).join(" and ") || "never"}`;
 function btReport(res, r){
   const host = $("#btOut"); if (!host) return; btState.last = { res, r };
   if (!res.n){ host.innerHTML = `<p class="hint">No trades matched these rules on ${esc(String(res.days))} day${res.days === 1 ? "" : "s"} of candles. Try a wider trading window, a different signal, or a bigger file.</p>`; return; }
@@ -3255,6 +3667,7 @@ function btReport(res, r){
     `At ${r.risk}% risk per trade, ${money(+r.start, false)} would have become ${money(res.end, false)} (${(res.ret >= 0 ? "+" : "") + pct(res.ret)}), with a worst drawdown of ${pct(res.maxDD)}.`,
     best && best.n >= 2 ? `Best hour: ${best.k} (${sgn(best.r)}R).` : "", worst && worst.n >= 2 && worst.r < 0 ? `Worst day: ${worst.k} (${sgn(worst.r)}R).` : "", res.days < 20 ? `Only ${res.days} day${res.days === 1 ? "" : "s"} of data: treat this as a first look, and test a few months before trusting it.` : ""].filter(Boolean);
   host.innerHTML = `<div class="bt-report">
+    <p class="hint" style="margin:0"><b>Tested:</b> ${esc(btRulesText(r))} · stop ${esc(String(btStopText(r)))} · target ${esc(String(r.rr))}R${btState.sym ? " · " + esc(btState.sym) : ""}</p>
     <div class="kgrid">${k("Trades", String(res.n), "", `${res.days} days tested`)}${k("Win rate", pct(res.winRate))}${k("Profit factor", res.pf == null ? "—" : res.pf.toFixed(2), res.pf != null && res.pf >= 1 ? "pos" : "neg")}${k("Expectancy", sgn(res.expR) + "R", res.expR >= 0 ? "pos" : "neg", "per trade")}
       ${k("Net result", sgn(res.netR) + "R", res.netR >= 0 ? "pos" : "neg", money(res.end - r.start))}${k("Return", (res.ret >= 0 ? "+" : "") + pct(res.ret), res.ret >= 0 ? "pos" : "neg", `at ${r.risk}% risk`)}${k("Max drawdown", pct(res.maxDD), "neg")}${k("Worst losing streak", String(res.worstStreak), "", `avg hold ${Math.round(res.avgBars)} candle${Math.round(res.avgBars) === 1 ? "" : "s"}`)}</div>
     <div class="bt-curve"><span class="label">Equity curve</span><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="curve"><path class="ln" d="${d}"/></svg></div>
@@ -3267,9 +3680,9 @@ function btReport(res, r){
   $("#btCsv").onclick = () => { const rows = [["entry_date","entry_time","side","entry","stop","target","exit_date","exit_time","exit","exit_reason","r","pnl","balance"], ...res.trades.map(t_ => [t_.date, t_.time, t_.dir > 0 ? "buy" : "sell", t_.entry, +t_.stop.toFixed(5), +t_.tgt.toFixed(5), t_.exitDate, t_.exitTime, t_.exit, t_.why, +t_.R.toFixed(3), +t_.pnl.toFixed(2), +t_.bal.toFixed(2)])];
     saveFile(`backtest-${(btState.sym || "candles").toLowerCase()}-${localToday()}.csv`, rows.map(r_ => r_.join(",")).join("\n")); };
   $("#btNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36);
-    const rules = `${BT_SIGNALS[r.signal]} · ${r.dir === "both" ? "long and short" : r.dir + " only"} · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"} · stop ${r.stopType === "atr" ? r.stopAtr + "× ATR" : r.stopPts} · target ${r.rr}R · ${r.from}–${r.to} · max ${r.maxDay}/day`;
+    const rules = `${btRulesText(r)} · ${r.dir === "both" ? "long and short" : r.dir + " only"} · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"} · stop ${btStopText(r)} · target ${r.rr}R · ${r.from}–${r.to} · max ${r.maxDay}/day`;
     const body = `STRATEGY\n${rules}\n${btState.sym ? "Symbol: " + btState.sym + "\n" : ""}\nRESULTS\n${sum.join("\n")}\n\nBY DAY\n${byDay.map(g => `${g.k}: ${g.n} trades, ${sgn(g.r)}R`).join("\n")}\n\nBY HOUR\n${byHour.map(g => `${g.k}: ${g.n} trades, ${sgn(g.r)}R`).join("\n")}`;
-    if (await saveNote(id, { kind: "note", title: `Backtest: ${r.name || BT_SIGNALS[r.signal]}${btState.sym ? " · " + btState.sym : ""} · ${fmtDate(localToday())}`, body, tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Report saved to Notes"); };
+    if (await saveNote(id, { kind: "note", title: `Backtest: ${r.name || BT_SIGNALS[r.signal].replace("✎ ", "")}${btState.sym ? " · " + btState.sym : ""} · ${fmtDate(localToday())}`, body, tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Report saved to Notes"); };
 }
 function bindStrategyTester(){
   const host = $("#btBox"); if (!host) return;
@@ -3285,6 +3698,8 @@ function bindStrategyTester(){
   $("#btRun").onclick = () => { if (!btState.base?.length){ toast("Choose a candles file first"); return; } const r = btRead(), b = baseTf(btState.base);
     if (r.tf < b){ toast(`This file has ${b}-minute candles, so test on ${b} minutes or more`); return; }
     if (r.signal === "ma" && r.maFast >= r.maSlow){ toast("The fast EMA must be shorter than the slow EMA"); return; }
+    if (r.signal === "custom" && !cleanConds(r.buy).length && !cleanConds(sellRules(r)).length){ toast("Add at least one condition to your rules"); return; }
+    if (!r.days.length){ toast("Pick at least one day to trade"); return; }
     btReport(runBacktest(resample(btState.base, r.tf), r), r); $("#btOut").scrollIntoView({ behavior: "smooth", block: "start" }); };
   $("#btSave").onclick = async () => { const r = btRead(); if (!r.name){ $("#btName").focus(); toast("Give your strategy a name"); return; }
     const ls_ = btRules(), ex = ls_.find(x => x.id === sel.value) || ls_.find(x => x.name.toLowerCase() === r.name.toLowerCase());
@@ -4156,7 +4571,9 @@ function openTrade(t, presetDate){
     if (status === "open") Object.assign(d, { exit: "", brokerPnl: "", status: "open", mark: num(t.mark) ?? d.entry }); else Object.assign(d, { status: "", mark: "" });
     const rec = { ...d, shots, example: false, accountId: edit ? acctOf(t) : (activeAcct()?.id || "main"), created: edit ? (t.created || Date.now()) : Date.now() };
     const id = edit ? t.id : "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-    tfSaved = true; close(); if (await saveTrade(id, rec)){ toast(firstEver ? tr("firstTrade") : status === "open" && !isOpen(t) ? tr("openedMsg") : edit ? tr("tradeUpdated") : tr("tradeLogged")); state.month = d.date.slice(0,7); renderCal();
+    tfSaved = true; close(); if (await saveTrade(id, rec)){ const msg = firstEver ? tr("firstTrade") : status === "open" && !isOpen(t) ? tr("openedMsg") : edit ? tr("tradeUpdated") : tr("tradeLogged");
+      const rgA = accountsList().find(z => z.id === acctOf({ id, ...rec })) || activeAcct(), rgB = hasTier("pro") && rgA?.rules?.on ? tradeBreaks({ id, ...rec }, rgA) : [];
+      if (rgB.length) toast(`${msg} RuleGuard: this trade broke ${rgB.length === 1 ? "one of your rules" : rgB.length + " of your rules"}: ${rgB.map(z => z.txt).join("; ")}.`, 7000); else toast(msg); state.month = d.date.slice(0,7); renderCal();
       deleteShots(origShots.filter(z => !shots.includes(z))); }
   };
 }
@@ -5308,14 +5725,15 @@ async function clearExamples(){
   state.month = null; toast(t("exCleared"));
 }
 let toastTimer;
-function toast(msg){ const h = $("#toastHost"); h.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ h.innerHTML = ""; }, 3000); }
+function toast(msg, ms = 3000){ const h = $("#toastHost"); h.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ h.innerHTML = ""; }, ms); }
 
 /* ---------- Controls ---------- */
 $("#addBtn").onclick = () => openTrade();
 $("#setBtn").onclick = () => setView("settings");
 document.querySelectorAll("#chartSeg button").forEach(b => b.onclick = () => { state.chartMode = b.dataset.cm; if (remembers()) ls.set("tel-chart", b.dataset.cm); renderChart(); });
 $("#cashBtn").onclick = () => openCash();
-$("#tutBtn").onclick = () => openTutorial(0);
+$("#tutBtn").onclick = () => hasTier("pro") ? openGuidesHub() : openTutorial(0);
+$("#guideBtn").onclick = () => openGuide(state.view);
 $("#bellBtn").onclick = () => openNotifs();
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => setView(b.dataset.go));
