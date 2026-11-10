@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TAGLINE } from "@/lib/site";
-import { LEGAL_PAGES } from "@/lib/legal";
+import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
 
 export default function SiteFooter() {
   return (
@@ -9,6 +9,7 @@ export default function SiteFooter() {
       <nav>
         <Link href="/pricing">Pricing</Link>
         <Link href="/help">Help</Link>
+        <a href={`mailto:${LEGAL.email}`}>Contact: {LEGAL.email}</a>
         {LEGAL_PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
       </nav>
     </footer>
