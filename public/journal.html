@@ -2889,7 +2889,7 @@ function drawReplay(){
   const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
   const slots = view.length + 4, bw = (W - L - R) / slots, cx = i => L + i * bw + bw / 2;
   const lv = warn ? [] : [stop, tp, entry, exit].filter(v => v != null);
-  let lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.08; lo -= pad; hi += pad;
+  let lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.12; lo -= pad; hi += pad;
   const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const UP = "#089981", DN = "#F23645";
   const raw = (hi - lo) / (H < 400 ? 5 : 7), mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag, step = (nrm < 1.5 ? 1 : nrm < 3 ? 2 : nrm < 7 ? 5 : 10) * mag;
@@ -2916,6 +2916,18 @@ function drawReplay(){
     if (stop != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(stop)}" y2="${y(stop)}" style="stroke:${DN}" stroke-dasharray="4 3"/>` + tag(stop, DN, (W < 600 ? "" : "SL ") + fmtP(stop));
     if (tp != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(tp)}" y2="${y(tp)}" style="stroke:${UP}" stroke-dasharray="4 3"/>` + tag(tp, UP, (W < 600 ? "" : "TP ") + fmtP(tp));
     lines += tag(entry, "var(--ink)", fmtP(entry), "var(--surface)");
+    // Position-tool labels: target above the green box, stop below the red box, risk/reward in the middle.
+    const s_ = spec(x), cash = d => Math.abs(d) * s_.lots * s_.contract * s_.rate, mid = x0 + bwid / 2;
+    const pill = (cxp, cy, txt, bg, ink = "#fff") => { const w = Math.min(W - R - 4, txt.length * 6.4 + 14), lx = Math.max(2, Math.min(W - R - w - 2, cxp - w / 2)); return `<rect x="${lx}" y="${cy - 10}" width="${w}" height="20" rx="3" style="fill:${bg}"/><text x="${lx + w / 2}" y="${cy + 4}" text-anchor="middle" class="rp-mk" style="fill:${ink}">${esc(txt)}</text>`; };
+    const short = W < 600, dist = v => fmtP(Math.abs(v - entry));
+    const tgtTop = isLong ? Math.min(y(entry), y(tgt)) : Math.max(y(entry), y(tgt)), stTop = stop == null ? null : (isLong ? Math.max(y(entry), y(stop)) : Math.min(y(entry), y(stop)));
+    if (good && (tp != null || reachedOut)) marks += pill(mid, isLong ? tgtTop - 14 : tgtTop + 14, short ? `${tp != null ? "TP" : "Exit"} ${fmtP(tgt)} · ${money(cash(tgt - entry))}` : `${tp != null ? "Target" : "Exit"}: ${fmtP(tgt)} (${dist(tgt)}) · ${money(cash(tgt - entry))}`, UP);
+    if (stop != null) marks += pill(mid, isLong ? stTop + 14 : stTop - 14, short ? `SL ${fmtP(stop)} · −${money(cash(stop - entry)).replace(/^[+−-]/, "")}` : `Stop: ${fmtP(stop)} (${dist(stop)}) · Risk ${money(cash(stop - entry)).replace(/^[+−-]/, "")}`, DN);
+    if (stop != null && Math.abs(entry - stop) > 0){
+      const plan = tp != null ? Math.abs(tp - entry) / Math.abs(entry - stop) : null, got = reachedOut ? rMult(x) : null;
+      const txt = [plan != null ? `R:R ${plan.toFixed(2)}` : "", got != null ? `${short ? "Got" : "Result"} ${got >= 0 ? "+" : ""}${got.toFixed(2)}R` : ""].filter(Boolean).join(" · ");
+      if (txt) marks += pill(mid, y(entry) + (isLong ? -16 : 16), txt, "#131722");
+    }
     const ci = iIn - from, c = view[ci], up = isLong;
     marks += `<path d="M${cx(ci)},${up ? y(c.l) + 6 : y(c.h) - 6} l-6,${up ? 9 : -9} h12 z" style="fill:#2962FF"/><text x="${cx(ci)}" y="${up ? y(c.l) + 27 : y(c.h) - 19}" text-anchor="middle" class="rp-mk" style="fill:#2962FF">${up ? "Buy" : "Sell"} ${esc(String(spec(x).lots ?? x.lots ?? ""))}</text>`;
     if (reachedOut){ const co = iOut - from, d = view[co], pl = pnl(x);
