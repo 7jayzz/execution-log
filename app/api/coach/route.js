@@ -30,10 +30,13 @@ export async function POST(request) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: 1500, messages: [{ role: "user", content: prompt }] }),
+    // Sonnet 5.5 thinks by default and that thinking counts toward max_tokens, which can leave no room for the answer.
+    // "between_tools" turns up-front thinking off, so the whole allowance goes to the reply.
+    body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: 2500, thinking: { type: "between_tools" }, output_config: { effort: "medium" }, messages: [{ role: "user", content: prompt }] }),
   });
   if (!res.ok) { console.error("Anthropic error", res.status, await res.text().catch(() => "")); return NextResponse.json({ code: "unavailable", message: "Coach unavailable" }, { status: 502 }); }
   const data = await res.json();
   const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n").trim();
+  if (!text) { console.error("Coach returned no text", data.stop_reason); return NextResponse.json({ code: "unavailable", message: "Empty reply" }, { status: 502 }); }
   return NextResponse.json({ text, truncated: data.stop_reason === "max_tokens" });
 }
