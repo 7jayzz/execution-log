@@ -507,7 +507,7 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .ch-body{padding:0 14px 12px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
-.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
+.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
 .rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
 .rp-box{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}.rp-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px 2px;font-size:12.5px}.rp-head>b{font-size:13.5px}.rp-when{color:var(--muted);font-family:var(--mono,ui-monospace,monospace);font-size:11.5px}.rp-ohlc{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;color:var(--muted)}.rp-ohlc b{font-weight:600;margin-inline-start:2px}.rp-svg{touch-action:pan-y;cursor:crosshair;max-width:100%}.rp-grid{stroke:var(--line);stroke-width:1;opacity:.6}.rp-ax{font:11px var(--mono,ui-monospace,monospace);fill:var(--muted)}.rp-axbg{fill:var(--surface)}.rp-mk{font:600 11px system-ui,sans-serif}.rp-cross{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
 .rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
@@ -2921,13 +2921,14 @@ function drawReplay(){
   const host = $("#rpChart"); if (!host) return; const x = replay.trade, cs = replay.candles;
   rpInfo(x, null);
   if (!x || !cs.length){ host.innerHTML = `<p class="hint">Pick a trade and load the candles for that symbol.</p>`; return; }
+  bindReplayChart(host);
   const key = c => c.d + " " + c.t, inKey = `${x.date} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
   // The candle that contains the entry (or exit) time.
   const holder = k => { let i = -1; for (let j = 0; j < cs.length; j++){ if (key(cs[j]) <= k) i = j; else break; } return i < 0 ? 0 : i; };
-  const iIn = holder(inKey), iOut = Math.max(iIn, holder(outKey));
-  const from = Math.max(0, iIn - 40), to = Math.min(cs.length - 1, iOut + 25), view = cs.slice(from, to + 1);
-  if (replay.atKey){ replay.idx = Math.max(1, view.filter(c => key(c) <= replay.atKey).length); replay.atKey = null; }
-  const shown = view.slice(0, Math.max(1, replay.idx)); replay.shownKey = key(shown[shown.length - 1]);
+  const iIn = holder(inKey), iOut = Math.max(iIn, holder(outKey)), from = Math.max(0, iIn - 40);
+  if (replay.atKey){ replay.idx = Math.max(1, cs.slice(from).filter(c => key(c) <= replay.atKey).length); replay.atKey = null; }
+  replay.max = cs.length - from; replay.idx = Math.min(Math.max(1, replay.idx || 1), replay.max);
+  const last = from + replay.idx - 1; replay.shownKey = key(cs[last]);
   // Do these candles actually belong to this trade? Check the day, then that the entry and exit prices traded inside them.
   let warn = "";
   const days = [...new Set(cs.map(c => c.d))];
@@ -2937,93 +2938,125 @@ function drawReplay(){
     const off = v => v < wLo - tol || v > wHi + tol;
     if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade, the right symbol, and that MT5's chart time matches the times on your trades (brokers often use a different time zone).`;
   }
-  const reachedIn = from + shown.length - 1 >= iIn, reachedOut = from + shown.length - 1 >= iOut;
-  const isLong = x.side !== "short", entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp);
-  // Chart geometry: real pixels, so text stays readable on phones.
+  const reachedIn = last >= iIn, reachedOut = last >= iOut;
+  const isLong = x.side !== "short", d0 = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp);
+  // Geometry in real pixels, so text stays readable on phones.
   const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
-  const slots = view.length + 4, bw = (W - L - R) / slots, cx = i => L + i * bw + bw / 2;
-  const lv = [stop, tp, entry, exit].filter(v => v != null);
-  let lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.12; lo -= pad; hi += pad;
-  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const defN = Math.round((W - R) / (W < 600 ? 6 : 10));
+  // "Fit" (n = 0) shows the whole file if it's short, otherwise a comfortable number of candles.
+  if (replay.n) replay.n = Math.max(12, Math.min(800, replay.n));
+  let N = replay.n || Math.max(20, Math.min(defN, replay.max + 6));
+  if (!replay.n && !replay.pan && last >= iIn) N = Math.min(400, Math.max(N, last + 4 - (iIn - Math.ceil(80 / ((W - R) / N))) + 1)); // keep the entry on screen while fitting
+  const bw = (W - L - R) / N;
+  replay.pan = Math.max(-(N * 0.6), Math.min(last, replay.pan || 0));
+  const right = last + 4 - replay.pan, left = right - N + 1, ix = i => L + (i - left) * bw + bw / 2;
+  const iA = Math.max(0, Math.ceil(left - 0.5)), iB = Math.min(last, Math.floor(right + 0.5)), vis = [];
+  for (let i = iA; i <= iB; i++) vis.push(i);
   const UP = "#089981", DN = "#F23645";
+  const tradeOnScreen = reachedIn && iIn <= right && iIn - 0 >= left - 50;
+  const lv = tradeOnScreen ? [stop, tp, entry, reachedOut ? exit : null].filter(v => v != null) : [];
+  const visC = vis.length ? vis.map(i => cs[i]) : [cs[last]];
+  let lo = Math.min(...visC.map(c => c.l), ...lv), hi = Math.max(...visC.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.12; lo -= pad; hi += pad;
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const raw = (hi - lo) / (H < 400 ? 5 : 7), mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag, step = (nrm < 1.5 ? 1 : nrm < 3 ? 2 : nrm < 7 ? 5 : 10) * mag;
-  const dec = Math.max(0, -Math.floor(Math.log10(step)) + (step / Math.pow(10, Math.floor(Math.log10(step))) === 1 ? 0 : 0));
+  const dec = Math.max(0, -Math.floor(Math.log10(step)));
   const fmtP = v => (+v).toFixed(Math.max(dec, entry < 10 ? 4 : entry < 1000 ? 3 : 2));
-  const lastC = shown[shown.length - 1], tagVals = [lastC.c, ...(reachedIn ? [entry, stop, tp] : []), ...(reachedOut ? [exit] : [])].filter(v => v != null);
+  const lastC = cs[last], tagVals = [lastC.c, ...(tradeOnScreen ? [entry, stop, tp] : []), ...(tradeOnScreen && reachedOut ? [exit] : [])].filter(v => v != null);
   let grid = "";
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ const clash = tagVals.some(t => Math.abs(y(t) - y(v)) < 13);
     grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="rp-grid"/>${clash ? "" : `<text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax">${esc((+v).toFixed(dec))}</text>`}`; }
-  // Timeframe from candle spacing, and time labels along the bottom.
-  const mins = c => Date.parse(c.d + "T" + c.t + ":00Z") / 6e4, gaps = view.slice(1).map((c, i) => mins(c) - mins(view[i])).filter(g => g > 0).sort((p, q) => p - q), tfm = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0;
-  const tf = !tfm ? "" : tfm < 60 ? tfm + "m" : tfm < 1440 ? (tfm / 60) + "h" : (tfm / 1440) + "D";
-  const every = Math.max(1, Math.ceil(view.length / Math.max(3, Math.floor((W - R) / 90))));
-  let tl = ""; view.forEach((c, i) => { if (i % every || i === 0) return; const label = c.d !== view[i - every]?.d ? fmtDate(c.d).replace(/\s\d{2}$/, "") : c.t; tl += `<line x1="${cx(i)}" x2="${cx(i)}" y1="${T}" y2="${H - B}" class="rp-grid"/><text x="${cx(i)}" y="${H - 7}" text-anchor="middle" class="rp-ax">${esc(label)}</text>`; });
+  // Timeframe from candle spacing, and time labels along the bottom (fixed to the candles, so they move when you drag).
+  const tfm = replay.tf || 0, tf = !tfm ? "" : tfm < 60 ? tfm + "m" : tfm < 1440 ? (tfm / 60) + "h" : (tfm / 1440) + "D";
+  const every = Math.max(1, Math.ceil(N / Math.max(3, Math.floor((W - R) / 90))));
+  let tl = "", tlx = ""; vis.forEach(i => { if (i % every || i < every) return; const c = cs[i], label = c.d !== cs[i - every]?.d ? fmtDate(c.d).replace(/\s\d{2}$/, "") : c.t; tl += `<line x1="${ix(i)}" x2="${ix(i)}" y1="${T}" y2="${H - B}" class="rp-grid"/>`; if (ix(i) > 20 && ix(i) < W - R - 20) tlx += `<text x="${ix(i)}" y="${H - 7}" text-anchor="middle" class="rp-ax">${esc(label)}</text>`; });
   const tag = (v, bg, txt, ink = "#fff") => `<rect x="${W - R + 1}" y="${y(v) - 9}" width="${R - 2}" height="18" rx="2" style="fill:${bg}"/><text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax" style="fill:${ink};font-weight:600">${esc(txt)}</text>`;
-  // TradingView-style position box: green from entry to target (or exit), red from entry to stop.
-  let box = "", lines = "", marks = "";
+  let box = "", lines = "", marks = "", tags = "";
   if (reachedIn){
-    const x0 = cx(iIn - from) - bw / 2, x1 = (reachedOut ? cx(iOut - from) : cx(shown.length - 1)) + bw / 2, bwid = Math.max(bw, x1 - x0);
+    const x0 = ix(iIn) - bw / 2, x1 = (reachedOut ? ix(iOut) : ix(last)) + bw / 2, bwid = Math.max(bw, x1 - x0);
     const tgt = tp != null ? tp : exit, good = isLong ? tgt > entry : tgt < entry;
+    const showLbl = replay.labels !== false, roomy = bwid >= (W < 600 ? 110 : 140);
     if (good && (tp != null || reachedOut)) box += `<rect x="${x0}" y="${Math.min(y(entry), y(tgt))}" width="${bwid}" height="${Math.abs(y(tgt) - y(entry))}" style="fill:${UP};opacity:.18"/>`;
     if (stop != null) box += `<rect x="${x0}" y="${Math.min(y(entry), y(stop))}" width="${bwid}" height="${Math.abs(y(stop) - y(entry))}" style="fill:${DN};opacity:.16"/>`;
     lines += `<line x1="${x0}" x2="${W - R}" y1="${y(entry)}" y2="${y(entry)}" style="stroke:var(--ink)" stroke-width="1"/>`;
-    if (stop != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(stop)}" y2="${y(stop)}" style="stroke:${DN}" stroke-dasharray="4 3"/>` + tag(stop, DN, (W < 600 ? "" : "SL ") + fmtP(stop));
-    if (tp != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(tp)}" y2="${y(tp)}" style="stroke:${UP}" stroke-dasharray="4 3"/>` + tag(tp, UP, (W < 600 ? "" : "TP ") + fmtP(tp));
-    lines += tag(entry, "var(--ink)", fmtP(entry), "var(--surface)");
-    // Position-tool labels: target above the green box, stop below the red box, risk/reward in the middle.
-    const s_ = spec(x), cash = d => Math.abs(d) * s_.lots * s_.contract * s_.rate, mid = x0 + bwid / 2;
+    if (stop != null){ lines += `<line x1="${x0}" x2="${W - R}" y1="${y(stop)}" y2="${y(stop)}" style="stroke:${DN}" stroke-dasharray="4 3"/>`; tags += tag(stop, DN, (W < 600 ? "" : "SL ") + fmtP(stop)); }
+    if (tp != null){ lines += `<line x1="${x0}" x2="${W - R}" y1="${y(tp)}" y2="${y(tp)}" style="stroke:${UP}" stroke-dasharray="4 3"/>`; tags += tag(tp, UP, (W < 600 ? "" : "TP ") + fmtP(tp)); }
+    tags += tag(entry, "var(--ink)", fmtP(entry), "var(--surface)");
+    // Position-tool labels, only when there's room for them (the same numbers are always on the price axis and in Trade details).
+    const s_ = spec(x), cash = dd => Math.abs(dd) * s_.lots * s_.contract * s_.rate, mid = x0 + bwid / 2, short = W < 600, dist = v => fmtP(Math.abs(v - entry));
     const pill = (cxp, cy, txt, bg, ink = "#fff") => { const w = Math.min(W - R - 4, txt.length * 6.4 + 14), lx = Math.max(2, Math.min(W - R - w - 2, cxp - w / 2)); return `<rect x="${lx}" y="${cy - 10}" width="${w}" height="20" rx="3" style="fill:${bg}"/><text x="${lx + w / 2}" y="${cy + 4}" text-anchor="middle" class="rp-mk" style="fill:${ink}">${esc(txt)}</text>`; };
-    const short = W < 600, dist = v => fmtP(Math.abs(v - entry));
-    const tgtTop = isLong ? Math.min(y(entry), y(tgt)) : Math.max(y(entry), y(tgt)), stTop = stop == null ? null : (isLong ? Math.max(y(entry), y(stop)) : Math.min(y(entry), y(stop)));
-    if (good && (tp != null || reachedOut)) marks += pill(mid, isLong ? tgtTop - 14 : tgtTop + 14, short ? `${tp != null ? "TP" : "Exit"} ${fmtP(tgt)} · ${money(cash(tgt - entry))}` : `${tp != null ? "TP" : "Exit"} ${fmtP(tgt)} (${dist(tgt)}) · ${money(cash(tgt - entry))}`, UP);
-    if (stop != null) marks += pill(mid, isLong ? stTop + 14 : stTop - 14, short ? `SL ${fmtP(stop)} · −${money(cash(stop - entry)).replace(/^[+−-]/, "")}` : `SL ${fmtP(stop)} (${dist(stop)}) · Risk ${money(cash(stop - entry)).replace(/^[+−-]/, "")}`, DN);
-    if (stop != null && Math.abs(entry - stop) > 0){
-      const plan = tp != null ? Math.abs(tp - entry) / Math.abs(entry - stop) : null, got = reachedOut ? rMult(x) : null;
-      const txt = [plan != null ? `R:R ${plan.toFixed(2)}` : "", got != null ? `${short ? "Got" : "Result"} ${got >= 0 ? "+" : ""}${got.toFixed(2)}R` : ""].filter(Boolean).join(" · ");
-      if (txt) marks += pill(mid, y(entry) + (isLong ? -16 : 16), txt, "#131722");
+    if (showLbl && roomy){
+      const tgtTop = isLong ? Math.min(y(entry), y(tgt)) : Math.max(y(entry), y(tgt)), stTop = stop == null ? null : (isLong ? Math.max(y(entry), y(stop)) : Math.min(y(entry), y(stop)));
+      if (good && (tp != null || reachedOut)) marks += pill(mid, isLong ? tgtTop - 14 : tgtTop + 14, short ? `${tp != null ? "TP" : "Exit"} ${fmtP(tgt)} · ${money(cash(tgt - entry))}` : `${tp != null ? "TP" : "Exit"} ${fmtP(tgt)} (${dist(tgt)}) · ${money(cash(tgt - entry))}`, UP);
+      if (stop != null) marks += pill(mid, isLong ? stTop + 14 : stTop - 14, short ? `SL ${fmtP(stop)} · −${money(cash(stop - entry)).replace(/^[+−-]/, "")}` : `SL ${fmtP(stop)} (${dist(stop)}) · Risk ${money(cash(stop - entry)).replace(/^[+−-]/, "")}`, DN);
+      if (stop != null && Math.abs(entry - stop) > 0 && Math.abs(y(tgt) - y(entry)) > 34){
+        const plan = tp != null ? Math.abs(tp - entry) / Math.abs(entry - stop) : null, got = reachedOut ? rMult(x) : null;
+        const txt = [plan != null ? `R:R ${plan.toFixed(2)}` : "", got != null ? `${short ? "Got" : "Result"} ${got >= 0 ? "+" : ""}${got.toFixed(2)}R` : ""].filter(Boolean).join(" · ");
+        if (txt) marks += pill(mid, y(entry) + (isLong ? -16 : 16), txt, "#131722");
+      }
     }
-    const ci = iIn - from, c = view[ci], up = isLong;
-    // Entry flag sits exactly on the entry price at the entry candle, pointing at it from the left like an execution marker.
-    const ex0 = x0, ey = y(entry), lbl = `${up ? "Buy" : "Sell"} ${spec(x).lots}`, lw = lbl.length * 6.6 + 16;
-    marks += `<path d="M${ex0},${ey} l-8,-7 h${-lw + 8} v14 h${lw - 8} z" style="fill:#2962FF"/><text x="${ex0 - lw / 2 - 4}" y="${ey + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(lbl)}</text><circle cx="${ex0}" cy="${ey}" r="3.5" style="fill:#2962FF;stroke:#fff" stroke-width="1.5"/>`;
-    void c;
-    // Mark the first candle (while in the trade) that touched the stop or the target.
-    const hitAt = (lvl, worse) => { if (lvl == null || (lvl - entry) * d0 * (worse ? -1 : 1) <= 0) return -1; for (let i = iIn - from; i <= Math.min(iOut - from, shown.length - 1); i++){ const k_ = view[i]; if (worse ? (isLong ? k_.l <= lvl : k_.h >= lvl) : (isLong ? k_.h >= lvl : k_.l <= lvl)) return i; } return -1; };
-    const d0 = isLong ? 1 : -1, sI = hitAt(stop, true), tI = hitAt(tp, false);
-    const hitMark = (i, lvl, txt, col) => { const hx = cx(i), hy = y(lvl), tw = txt.length * 6.4 + 12, above = (col === DN) !== isLong ? false : true; void above;
+    // Entry flag on the entry price, pointing at the entry candle.
+    const ey = y(entry), lbl = `${isLong ? "Buy" : "Sell"} ${s_.lots}`, lw = lbl.length * 6.6 + 16;
+    marks += `<path d="M${x0},${ey} l-8,-7 h${-lw + 8} v14 h${lw - 8} z" style="fill:#2962FF"/><text x="${x0 - lw / 2 - 4}" y="${ey + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(lbl)}</text><circle cx="${x0}" cy="${ey}" r="3.5" style="fill:#2962FF;stroke:#fff" stroke-width="1.5"/>`;
+    // First candle (while in the trade) that touched the stop or the target.
+    const hitAt = (lvl, worse) => { if (lvl == null || (lvl - entry) * d0 * (worse ? -1 : 1) <= 0) return -1; for (let i = iIn; i <= Math.min(iOut, last); i++){ const k_ = cs[i]; if (worse ? (isLong ? k_.l <= lvl : k_.h >= lvl) : (isLong ? k_.h >= lvl : k_.l <= lvl)) return i; } return -1; };
+    const sI = hitAt(stop, true), tI = hitAt(tp, false);
+    const hitMark = (i, lvl, txt, col) => { const hx = ix(i), hy = y(lvl), tw = txt.length * 6.4 + 12, ly = (col === DN) === isLong ? hy - 27 : hy + 9;
       return `<circle cx="${hx}" cy="${hy}" r="6" style="fill:${col};stroke:#fff" stroke-width="1.5"/>${col === DN ? `<path d="M${hx - 3},${hy - 3} l6,6 M${hx + 3},${hy - 3} l-6,6" style="stroke:#fff" stroke-width="1.6"/>` : `<path d="M${hx - 3.2},${hy} l2.2,2.4 l4,-4.6" style="stroke:#fff;fill:none" stroke-width="1.7"/>`}`
-        + `<rect x="${Math.max(2, Math.min(W - R - tw - 2, hx - tw / 2))}" y="${(col === DN) === isLong ? hy - 27 : hy + 9}" width="${tw}" height="18" rx="3" style="fill:${col}"/><text x="${Math.max(2 + tw / 2, Math.min(W - R - tw / 2 - 2, hx))}" y="${(col === DN) === isLong ? hy - 14 : hy + 22}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(txt)}</text>`; };
-    if (!warn && sI >= 0) marks += hitMark(sI, stop, `SL hit ${view[sI].t}`, DN);
-    if (!warn && tI >= 0 && (sI < 0 || tI < sI)) marks += hitMark(tI, tp, `TP hit ${view[tI].t}`, UP);
-    if (reachedOut){ const co = iOut - from, d = view[co], pl = pnl(x);
-      lines += `<line x1="${cx(co)}" x2="${W - R}" y1="${y(exit)}" y2="${y(exit)}" style="stroke:${pl >= 0 ? UP : DN}" stroke-width="1"/>` + tag(exit, pl >= 0 ? UP : DN, fmtP(exit));
-      // Exit flag on the exit price, pointing back at the exit candle.
-      const near = v => v != null && Math.abs(exit - v) <= Math.max(Math.abs(entry - (stop ?? entry)) * 0.05, Math.abs(entry) * 0.00005), fx = cx(co) + bw / 2, fy = y(exit), cl = `${near(stop) ? "Stopped out" : near(tp) ? "TP hit" : "Close"} ${money(pl)}`, cw = cl.length * 6.6 + 16, flip = fx + cw + 4 > W - R;
+        + (showLbl && bwid >= 90 ? `<rect x="${Math.max(2, Math.min(W - R - tw - 2, hx - tw / 2))}" y="${ly}" width="${tw}" height="18" rx="3" style="fill:${col}"/><text x="${Math.max(2 + tw / 2, Math.min(W - R - tw / 2 - 2, hx))}" y="${ly + 13}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(txt)}</text>` : ""); };
+    if (!warn && sI >= 0) marks += hitMark(sI, stop, `SL hit ${cs[sI].t}`, DN);
+    if (!warn && tI >= 0 && (sI < 0 || tI < sI)) marks += hitMark(tI, tp, `TP hit ${cs[tI].t}`, UP);
+    if (reachedOut){ const pl = pnl(x), near = v => v != null && Math.abs(exit - v) <= Math.max(Math.abs(entry - (stop ?? entry)) * 0.05, Math.abs(entry) * 0.00005);
+      lines += `<line x1="${ix(iOut)}" x2="${W - R}" y1="${y(exit)}" y2="${y(exit)}" style="stroke:${pl >= 0 ? UP : DN}" stroke-width="1"/>`; tags += tag(exit, pl >= 0 ? UP : DN, fmtP(exit));
+      const fx = ix(iOut) + bw / 2, fy = y(exit), cl = `${near(stop) ? "Stopped out" : near(tp) ? "TP hit" : "Close"} ${money(pl)}`, cw = cl.length * 6.6 + 16, flip = fx + cw + 4 > W - R;
       marks += flip ? `<path d="M${fx - bw},${fy} l-8,-7 h${-cw + 8} v14 h${cw - 8} z" style="fill:#FF6D00"/><text x="${fx - bw - cw / 2 - 4}" y="${fy + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(cl)}</text>`
         : `<path d="M${fx},${fy} l8,-7 h${cw - 8} v14 h${-cw + 8} z" style="fill:#FF6D00"/><text x="${fx + cw / 2 + 4}" y="${fy + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(cl)}</text>`;
-      marks += `<circle cx="${cx(co)}" cy="${fy}" r="3.5" style="fill:#FF6D00;stroke:#fff" stroke-width="1.5"/>`; void d; }
+      marks += `<circle cx="${ix(iOut)}" cy="${fy}" r="3.5" style="fill:#FF6D00;stroke:#fff" stroke-width="1.5"/>`; }
   }
-  const candles = shown.map((c, i) => { const col = c.c >= c.o ? UP : DN, bx = Math.max(1, bw * .7); return `<line x1="${cx(i)}" x2="${cx(i)}" y1="${y(c.h)}" y2="${y(c.l)}" style="stroke:${col}"/><rect x="${cx(i) - bx / 2}" y="${y(Math.max(c.o, c.c))}" width="${bx}" height="${Math.max(1, Math.abs(y(c.o) - y(c.c)))}" style="fill:${col}"/>`; }).join("");
+  const candles = vis.map(i => { const c = cs[i], col = c.c >= c.o ? UP : DN, bx = Math.max(1, bw * .7); return `<line x1="${ix(i)}" x2="${ix(i)}" y1="${y(c.h)}" y2="${y(c.l)}" style="stroke:${col}"/><rect x="${ix(i) - bx / 2}" y="${y(Math.max(c.o, c.c))}" width="${bx}" height="${Math.max(1, Math.abs(y(c.o) - y(c.c)))}" style="fill:${col}"/>`; }).join("");
   const lastCol = lastC.c >= lastC.o ? UP : DN;
-  const last = `<line x1="${L}" x2="${W - R}" y1="${y(lastC.c)}" y2="${y(lastC.c)}" style="stroke:${lastCol}" stroke-dasharray="1 3"/>` + tag(lastC.c, lastCol, fmtP(lastC.c));
+  const lastLine = `<line x1="${L}" x2="${W - R}" y1="${y(lastC.c)}" y2="${y(lastC.c)}" style="stroke:${lastCol}" stroke-dasharray="1 3"/>`; tags += tag(lastC.c, lastCol, fmtP(lastC.c));
   const ohlc = c => { const col = c.c >= c.o ? UP : DN, ch = c.c - c.o; return `<span>O<b style="color:${col}">${esc(fmtP(c.o))}</b></span><span>H<b style="color:${col}">${esc(fmtP(c.h))}</b></span><span>L<b style="color:${col}">${esc(fmtP(c.l))}</b></span><span>C<b style="color:${col}">${esc(fmtP(c.c))}</b></span><span style="color:${col}">${ch >= 0 ? "+" : ""}${esc(fmtP(ch))}</span>`; };
   host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-box"><div class="rp-head"><b>${esc(x.symbol)}${tf ? " · " + esc(tf) : ""}</b><span class="rp-when">${esc(lastC.d + " " + lastC.t)}</span><span class="rp-ohlc">${ohlc(lastC)}</span></div>
-    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="rp-svg" role="img" aria-label="Candle chart for ${esc(x.symbol)}">
-    <rect x="${W - R}" y="0" width="${R}" height="${H}" class="rp-axbg"/>${grid}${tl}${box}${candles}${lines}${last}${marks}<g class="rp-xh"></g></svg></div>`
-    + (`<div class="rp-legend"><span><i style="width:14px;height:10px;border-radius:2px;background:#2962FF"></i>Entry</span><span><i style="width:14px;height:10px;border-radius:2px;background:#FF6D00"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span></div>`);
-  // Crosshair, like a trading platform: follows the mouse or finger, shows price and time on the axes and OHLC up top.
-  const svg = host.querySelector("svg"), xh = svg.querySelector(".rp-xh"), head = host.querySelector(".rp-ohlc"), when = host.querySelector(".rp-when");
-  const move = e => { const r = svg.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e, mx = (pt.clientX - r.left) * W / r.width, my = (pt.clientY - r.top) * H / r.height;
-    if (mx > W - R || my < T || my > H - B){ xh.innerHTML = ""; head.innerHTML = ohlc(lastC); when.textContent = lastC.d + " " + lastC.t; return; }
-    const i = Math.max(0, Math.min(shown.length - 1, Math.floor((mx - L) / bw))), c = shown[i], v = lo + (1 - (my - T) / (H - T - B)) * (hi - lo);
-    xh.innerHTML = `<line x1="${cx(i)}" x2="${cx(i)}" y1="${T}" y2="${H - B}" class="rp-cross"/><line x1="${L}" x2="${W - R}" y1="${my}" y2="${my}" class="rp-cross"/>`
-      + `<rect x="${W - R + 1}" y="${my - 9}" width="${R - 2}" height="18" rx="2" style="fill:#131722"/><text x="${W - R + 6}" y="${my + 4}" class="rp-ax" style="fill:#fff">${esc(fmtP(v))}</text>`
-      + `<rect x="${Math.min(W - R - 92, Math.max(0, cx(i) - 46))}" y="${H - B + 2}" width="92" height="19" rx="2" style="fill:#131722"/><text x="${Math.min(W - R - 46, Math.max(46, cx(i)))}" y="${H - 8}" text-anchor="middle" class="rp-ax" style="fill:#fff">${esc(fmtDate(c.d).replace(/\s\d{2}$/, "") + " " + c.t)}</text>`;
-    head.innerHTML = ohlc(c); when.textContent = c.d + " " + c.t; };
-  svg.onmousemove = move; svg.ontouchstart = svg.ontouchmove = move; svg.onmouseleave = () => { xh.innerHTML = ""; head.innerHTML = ohlc(lastC); when.textContent = lastC.d + " " + lastC.t; };
-  if (!warn){ const inT = cs.slice(iIn, iOut + 1); rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }); }
-  $("#rpPos").textContent = `${shown.length} / ${view.length} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
-  replay.max = view.length;
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="rp-svg" role="img" aria-label="Candle chart for ${esc(x.symbol)}"><defs><clipPath id="rpClip"><rect x="0" y="0" width="${W - R}" height="${H - B}"/></clipPath></defs>
+    <rect x="${W - R}" y="0" width="${R}" height="${H}" class="rp-axbg"/>${grid}<g clip-path="url(#rpClip)">${tl}${box}${candles}${lines}${lastLine}${marks}</g>${tlx}${tags}<g class="rp-xh"></g></svg></div>
+    <div class="rp-legend"><span><i style="width:14px;height:10px;border-radius:2px;background:#2962FF"></i>Entry</span><span><i style="width:14px;height:10px;border-radius:2px;background:#FF6D00"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span><span class="rp-tip">Drag to move · scroll or pinch to zoom · double-click to reset</span></div>`;
+  replay.geo = { W, H, L, R, T, B, bw, N, left, last, lo, hi, fmtP, ohlc, ix, cs, lastC };
+  $("#rpPos").textContent = `${replay.idx} / ${replay.max} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
+  // Best/worst price while in the trade, from the smallest candles in the file (bigger ones include price from before you entered).
+  if (!warn){ const src = replay.base?.length ? replay.base : cs, tIn = inKey.slice(0, 16), tOut = outKey.slice(0, 16); let inT = src.filter(c => key(c) >= tIn && key(c) <= tOut); if (!inT.length) inT = cs.slice(iIn, iOut + 1);
+    rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }); }
+}
+// Drag to pan, wheel or pinch to zoom, crosshair on hover. Bound once to the chart box, which stays put between redraws.
+let rpRaf = 0;
+const rpRedraw = () => { if (rpRaf) return; rpRaf = requestAnimationFrame(() => { rpRaf = 0; drawReplay(); }); };
+function rpZoom(f){ replay.n = Math.max(12, Math.min(800, Math.round((replay.n || replay.geo?.N || 60) * f))); rpRedraw(); }
+function rpFit(){ replay.n = 0; replay.pan = 0; rpRedraw(); }
+function bindReplayChart(host){
+  if (host.dataset.bound) return; host.dataset.bound = "1";
+  const pts = new Map(); let drag = null, pinch = null;
+  const svgPt = e => { const svg = host.querySelector("svg"), g = replay.geo; if (!svg || !g) return null; const r = svg.getBoundingClientRect(); return { r, mx: (e.clientX - r.left) * g.W / r.width, my: (e.clientY - r.top) * g.H / r.height }; };
+  const cross = e => { const g = replay.geo, p = svgPt(e); if (!g || !p) return; const svg = host.querySelector("svg"), xh = svg.querySelector(".rp-xh"), head = host.querySelector(".rp-ohlc"), when = host.querySelector(".rp-when");
+    const reset = () => { xh.innerHTML = ""; head.innerHTML = g.ohlc(g.lastC); when.textContent = g.lastC.d + " " + g.lastC.t; };
+    const { mx, my } = p; if (mx > g.W - g.R || mx < 0 || my < g.T || my > g.H - g.B) return reset();
+    const i = Math.max(0, Math.min(g.last, Math.round(g.left + (mx - g.L) / g.bw - 0.5))), c = g.cs[i], v = g.lo + (1 - (my - g.T) / (g.H - g.T - g.B)) * (g.hi - g.lo), cxp = g.ix(i);
+    xh.innerHTML = `<line x1="${cxp}" x2="${cxp}" y1="${g.T}" y2="${g.H - g.B}" class="rp-cross"/><line x1="${g.L}" x2="${g.W - g.R}" y1="${my}" y2="${my}" class="rp-cross"/>`
+      + `<rect x="${g.W - g.R + 1}" y="${my - 9}" width="${g.R - 2}" height="18" rx="2" style="fill:#131722"/><text x="${g.W - g.R + 6}" y="${my + 4}" class="rp-ax" style="fill:#fff">${esc(g.fmtP(v))}</text>`
+      + `<rect x="${Math.min(g.W - g.R - 92, Math.max(0, cxp - 46))}" y="${g.H - g.B + 2}" width="92" height="19" rx="2" style="fill:#131722"/><text x="${Math.min(g.W - g.R - 46, Math.max(46, cxp))}" y="${g.H - 8}" text-anchor="middle" class="rp-ax" style="fill:#fff">${esc(fmtDate(c.d).replace(/\s\d{2}$/, "") + " " + c.t)}</text>`;
+    head.innerHTML = g.ohlc(c); when.textContent = c.d + " " + c.t; };
+  host.addEventListener("pointerdown", e => { if (!e.target.closest("svg")) return; pts.set(e.pointerId, e); try { host.setPointerCapture(e.pointerId); } catch {}
+    if (pts.size === 2){ const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1, n: replay.n || replay.geo?.N || 60 }; drag = null; }
+    else { drag = { x: e.clientX, pan: replay.pan || 0, moved: false }; } });
+  host.addEventListener("pointermove", e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, e);
+    if (pinch && pts.size >= 2){ const [a, b] = [...pts.values()]; const dd = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1; replay.n = Math.max(12, Math.min(800, Math.round(pinch.n * pinch.d / dd))); rpRedraw(); return; }
+    if (drag && pts.has(e.pointerId)){ const g = replay.geo, p = svgPt(e); if (!g || !p) return; const dx = (e.clientX - drag.x) * g.W / p.r.width; if (Math.abs(dx) > 3) drag.moved = true;
+      if (drag.moved){ replay.pan = drag.pan + dx / g.bw; host.querySelector(".rp-svg")?.classList.add("grab"); rpRedraw(); } return; }
+    if (e.pointerType === "mouse") cross(e); });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size){ if (drag && !drag.moved && e.pointerType !== "mouse") cross(e); drag = null; } };
+  host.addEventListener("pointerup", up); host.addEventListener("pointercancel", up);
+  host.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !drag){ const svg = host.querySelector("svg"); if (svg && replay.geo){ svg.querySelector(".rp-xh").innerHTML = ""; host.querySelector(".rp-ohlc").innerHTML = replay.geo.ohlc(replay.geo.lastC); host.querySelector(".rp-when").textContent = replay.geo.lastC.d + " " + replay.geo.lastC.t; } } });
+  host.addEventListener("wheel", e => { if (!e.target.closest("svg")) return; e.preventDefault(); if (Math.abs(e.deltaX) > Math.abs(e.deltaY)){ replay.pan = (replay.pan || 0) - e.deltaX / ((replay.geo?.bw) || 8); rpRedraw(); return; } rpZoom(e.deltaY > 0 ? 1.12 : 1 / 1.12); }, { passive: false });
+  host.addEventListener("dblclick", e => { if (!e.target.closest(".rp-warn")) rpFit(); });
 }
 function replayStep(d){ replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
 function replayPlay(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; $("#rpPlay").textContent = "▶ Play"; return; }
@@ -3086,7 +3119,7 @@ function renderElite(){
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
       <div class="actions"><button type="button" class="btn small" id="rpBack">◀ Step</button><button type="button" class="btn small primary" id="rpPlay">▶ Play</button><button type="button" class="btn small" id="rpFwd">Step ▶</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
-      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</div>
+      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button></div>
       <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
       <div id="rpInfo"></div></section>
     <section class="panel"><div class="panel-head"><h2>Planned vs actual</h2><span class="label">${planned.length} trades with a plan</span></div>
@@ -3109,11 +3142,14 @@ function renderElite(){
   $("#rrRun").onclick = () => { const w = Math.min(99, Math.max(1, +$("#rrW").value || 45)) / 100, rr = +$("#rrR").value || 2, sample = Array.from({ length: 100 }, (_, i) => i < w * 100 ? rr : -1);
     const m = monteCarlo(sample, { n: Math.min(500, Math.max(10, +$("#rrN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value || 1, ddLimit: +(a.rules?.maxPct ?? 10), target: +(a.rules?.targetPct ?? 10) });
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
-  const rpLoad = () => { replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; drawReplay(); };
+  const rpLoad = () => { replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; drawReplay(); };
   $("#rpTrade").onchange = rpLoad;
   $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.tf = baseTf(replay.base); replay.candles = resample(replay.base, replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; } rpLoad(); };
   setTfButtons();
-  $("#rpTfs").querySelectorAll("[data-tf]").forEach(b => b.onclick = () => { if (!replay.base?.length) return; const last = replay.shownKey; replay.tf = +b.dataset.tf; replay.candles = resample(replay.base, replay.tf); replay.atKey = last; setTfButtons(); drawReplay(); });
+  $("#rpTfs").querySelectorAll("[data-tf]").forEach(b => b.onclick = () => { if (!replay.base?.length) return; const last = replay.shownKey; replay.tf = +b.dataset.tf; replay.candles = resample(replay.base, replay.tf); replay.atKey = last; replay.pan = 0; setTfButtons(); drawReplay(); });
+  $("#rpOut").onclick = () => rpZoom(1.35); $("#rpIn").onclick = () => rpZoom(1 / 1.35); $("#rpFitB").onclick = rpFit;
+  $("#rpLbl").onclick = e => { replay.labels = replay.labels === false; e.currentTarget.setAttribute("aria-pressed", String(replay.labels !== false)); drawReplay(); };
+  $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
   $("#rpPlay").onclick = replayPlay; $("#rpBack").onclick = () => replayStep(-1); $("#rpFwd").onclick = () => replayStep(1);
   $("#rgEdit2").onclick = openRules; $("#eliteRep").onclick = openReportBuilder;
 }
