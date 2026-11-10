@@ -2987,10 +2987,18 @@ function drawReplay(){
     const ex0 = x0, ey = y(entry), lbl = `${up ? "Buy" : "Sell"} ${spec(x).lots}`, lw = lbl.length * 6.6 + 16;
     marks += `<path d="M${ex0},${ey} l-8,-7 h${-lw + 8} v14 h${lw - 8} z" style="fill:#2962FF"/><text x="${ex0 - lw / 2 - 4}" y="${ey + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(lbl)}</text><circle cx="${ex0}" cy="${ey}" r="3.5" style="fill:#2962FF;stroke:#fff" stroke-width="1.5"/>`;
     void c;
+    // Mark the first candle (while in the trade) that touched the stop or the target.
+    const hitAt = (lvl, worse) => { if (lvl == null || (lvl - entry) * d0 * (worse ? -1 : 1) <= 0) return -1; for (let i = iIn - from; i <= Math.min(iOut - from, shown.length - 1); i++){ const k_ = view[i]; if (worse ? (isLong ? k_.l <= lvl : k_.h >= lvl) : (isLong ? k_.h >= lvl : k_.l <= lvl)) return i; } return -1; };
+    const d0 = isLong ? 1 : -1, sI = hitAt(stop, true), tI = hitAt(tp, false);
+    const hitMark = (i, lvl, txt, col) => { const hx = cx(i), hy = y(lvl), tw = txt.length * 6.4 + 12, above = (col === DN) !== isLong ? false : true; void above;
+      return `<circle cx="${hx}" cy="${hy}" r="6" style="fill:${col};stroke:#fff" stroke-width="1.5"/>${col === DN ? `<path d="M${hx - 3},${hy - 3} l6,6 M${hx + 3},${hy - 3} l-6,6" style="stroke:#fff" stroke-width="1.6"/>` : `<path d="M${hx - 3.2},${hy} l2.2,2.4 l4,-4.6" style="stroke:#fff;fill:none" stroke-width="1.7"/>`}`
+        + `<rect x="${Math.max(2, Math.min(W - R - tw - 2, hx - tw / 2))}" y="${(col === DN) === isLong ? hy - 27 : hy + 9}" width="${tw}" height="18" rx="3" style="fill:${col}"/><text x="${Math.max(2 + tw / 2, Math.min(W - R - tw / 2 - 2, hx))}" y="${(col === DN) === isLong ? hy - 14 : hy + 22}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(txt)}</text>`; };
+    if (sI >= 0) marks += hitMark(sI, stop, `SL hit ${view[sI].t}`, DN);
+    if (tI >= 0 && (sI < 0 || tI < sI)) marks += hitMark(tI, tp, `TP hit ${view[tI].t}`, UP);
     if (reachedOut){ const co = iOut - from, d = view[co], pl = pnl(x);
       lines += `<line x1="${cx(co)}" x2="${W - R}" y1="${y(exit)}" y2="${y(exit)}" style="stroke:${pl >= 0 ? UP : DN}" stroke-width="1"/>` + tag(exit, pl >= 0 ? UP : DN, fmtP(exit));
       // Exit flag on the exit price, pointing back at the exit candle.
-      const fx = cx(co) + bw / 2, fy = y(exit), cl = `Close ${money(pl)}`, cw = cl.length * 6.6 + 16, flip = fx + cw + 4 > W - R;
+      const near = v => v != null && Math.abs(exit - v) <= Math.max(Math.abs(entry - (stop ?? entry)) * 0.05, Math.abs(entry) * 0.00005), fx = cx(co) + bw / 2, fy = y(exit), cl = `${near(stop) ? "Stopped out" : near(tp) ? "TP hit" : "Close"} ${money(pl)}`, cw = cl.length * 6.6 + 16, flip = fx + cw + 4 > W - R;
       marks += flip ? `<path d="M${fx - bw},${fy} l-8,-7 h${-cw + 8} v14 h${cw - 8} z" style="fill:#FF6D00"/><text x="${fx - bw - cw / 2 - 4}" y="${fy + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(cl)}</text>`
         : `<path d="M${fx},${fy} l8,-7 h${cw - 8} v14 h${-cw + 8} z" style="fill:#FF6D00"/><text x="${fx + cw / 2 + 4}" y="${fy + 4}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(cl)}</text>`;
       marks += `<circle cx="${cx(co)}" cy="${fy}" r="3.5" style="fill:#FF6D00;stroke:#fff" stroke-width="1.5"/>`; void d; }
