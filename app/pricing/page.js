@@ -34,7 +34,7 @@ export default async function Pricing({ searchParams }) {
               ? "Move up or down a plan any time from Manage billing. Upgrades start straight away; downgrades start at your next renewal."
               : user
               ? trial && TRIAL_DAYS ? `Your journal is ready. Start your ${TRIAL_DAYS}-day free trial to open it. You won't be charged until the trial ends, and you can cancel any time.` : "Choose a plan to open your journal."
-              : `${TRIAL_DAYS ? `Try any plan free for ${TRIAL_DAYS} days. ` : ""}Features marked "Coming soon" unlock on your plan as they launch.`}
+              : `${TRIAL_DAYS ? `Try any plan free for ${TRIAL_DAYS} days. ` : ""}Every feature listed works today.`}
           </p>
           {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Pick a plan when you're ready.</div>}
           {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.</div>}

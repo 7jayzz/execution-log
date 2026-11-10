@@ -43,8 +43,11 @@ export async function POST(request) {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ code: "unavailable", message: "AI coach not configured" }, { status: 503 });
   const w = await who(); if (w.error) return w.error; const { user, elite } = w;
 
-  const { prompt } = await request.json().catch(() => ({}));
+  const { prompt, images } = await request.json().catch(() => ({}));
   if (typeof prompt !== "string" || !prompt.trim() || prompt.length > 80000) return NextResponse.json({ code: "bad_request", message: "Bad prompt" }, { status: 400 });
+  // Chart screenshots (Elite): up to 3 images, JPEG/PNG/WebP, sent as base64.
+  const imgs = Array.isArray(images) ? images.slice(0, 3).filter((m) => m && /^image\/(jpeg|png|webp)$/.test(m.media_type) && typeof m.data === "string" && m.data.length < 2_000_000) : [];
+  if (imgs.length && !elite) return NextResponse.json({ code: "upgrade", message: "Screenshot reviews are part of Elite" }, { status: 403 });
 
   // Allowance: daily on Elite, monthly free replies on other plans.
   const admin = createAdminClient(), u = await usage(admin, user.id, elite), day = u.day;
@@ -59,7 +62,7 @@ export async function POST(request) {
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     // Sonnet 5.5 thinks by default and that thinking counts toward max_tokens, which can leave no room for the answer.
     // "between_tools" turns up-front thinking off, so the whole allowance goes to the reply.
-    body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: 2500, thinking: { type: "between_tools" }, output_config: { effort: "medium" }, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: 2500, thinking: { type: "between_tools" }, output_config: { effort: "medium" }, messages: [{ role: "user", content: imgs.length ? [...imgs.map((m) => ({ type: "image", source: { type: "base64", media_type: m.media_type, data: m.data } })), { type: "text", text: prompt }] : prompt }] }),
   });
   if (!res.ok) { console.error("Anthropic error", res.status, await res.text().catch(() => "")); return NextResponse.json({ code: "unavailable", message: "Coach unavailable" }, { status: 502 }); }
   const data = await res.json();

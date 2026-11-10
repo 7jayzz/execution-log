@@ -22,6 +22,9 @@ async function saveSubscription(admin, sub) {
     return;
   }
   const item = sub.items?.data?.[0];
+  // Keep the price → plan list up to date (used for screenshot storage limits in the database).
+  const plan = planForPrice(item?.price?.id) || item?.price?.product?.metadata?.plan;
+  if (item?.price?.id && plan) await admin.from("plan_prices").upsert({ price_id: item.price.id, plan }, { onConflict: "price_id" });
   const { error } = await admin.from("subscriptions").upsert(
     {
       user_id: userId,

@@ -522,6 +522,11 @@ details.adv[open] summary{margin-bottom:10px}
 .cg-note{font-size:13px;color:var(--muted);padding-inline-start:36px}.cg-tabs{display:flex;flex-wrap:wrap;gap:6px}.cg-tabs button{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
 .cg-tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .cg-tips{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2);font-size:13.5px;line-height:1.55}.cg-tips ul{margin:6px 0 0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px}
+.sto-bar{height:10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}.sto-bar i{display:block;height:100%;border-radius:999px}
+.rp-saved{margin-top:14px;display:flex;flex-direction:column;gap:8px}.rs-item{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--surface-2)}.rs-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 260px}.rs-main p{margin:4px 0 0;font-size:13.5px;line-height:1.5}
+.shot-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.shot-opt{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;cursor:pointer;font:inherit;color:var(--ink)}.shot-opt:hover{border-color:var(--accent)}.shot-opt img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;background:var(--surface)}.shot-opt>span{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.dl-chips{display:inline-flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto}.dl-chip{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}.dl-chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.bt-grid .bt-sig{display:contents}.bt-grid .bt-sig[hidden]{display:none}.bt-check{grid-column:1/-1}.bt-report{display:flex;flex-direction:column;gap:14px;margin-top:6px}.bt-curve{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}.bt-curve svg{width:100%;height:160px;display:block}.bt-curve .ln{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}.bt-tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.bt-tbl{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:13px}.bt-tbl table{width:100%;border-collapse:collapse;margin-top:6px}.bt-tbl td,.bt-tbl th{padding:4px 2px;border-bottom:1px solid var(--line)}.bt-tbl th{font-size:11px;color:var(--muted);text-align:left}.bt-tbl .r{text-align:right}.bt-trades summary{cursor:pointer;font-weight:600}.bt-file{cursor:pointer}
 .rp-ready{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:260px;padding:24px;border:1px dashed var(--line-2);border-radius:8px;background:var(--surface)}.rp-ready>b{font-size:20px}.rp-ready .btn{margin:6px 0;padding:10px 26px;font-size:15px}.rp-lock .v{font-size:18px;opacity:.7}
 .rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
 .rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
@@ -1307,7 +1312,7 @@ function renderRangeBar(){
   const lbl = r.k === "all" ? "" : (b.from && b.to ? (b.from === b.to ? fmtDate(b.from) : `${fmtDate(b.from)} – ${fmtDate(b.to)}`) : "");
   host.innerHTML = `<div class="seg range-seg" role="group" aria-label="${esc(t("dateRange"))}">${RANGES.map(k => `<button type="button" data-rg="${k}" aria-pressed="${r.k === k}">${esc(t(RANGE_KEY[k]))}</button>`).join("")}</div>
     ${r.k === "custom" ? `<div class="range-custom"><label>${esc(t("rgFrom"))}<input type="date" id="rgFrom" value="${esc(r.from || "")}"></label><label>${esc(t("rgTo"))}<input type="date" id="rgTo" value="${esc(r.to || "")}"></label></div>` : ""}
-    ${lbl ? `<span class="hint range-lbl">${esc(lbl)}</span>` : ""}<button type="button" class="btn small dash-edit" id="dashEdit">Customise</button>`;
+    ${lbl ? `<span class="hint range-lbl">${esc(lbl)}</span>` : ""}<span id="dashLayouts" class="dl-chips"></span><button type="button" class="btn small dash-edit" id="dashEdit">Customise</button>`;
   $("#dashEdit").onclick = openDashEdit;
   host.querySelectorAll("[data-rg]").forEach(btn => btn.onclick = () => {
     const k = btn.dataset.rg, today = localToday();
@@ -2695,7 +2700,10 @@ const readCf = root => { const o = {}; root.querySelectorAll("[data-cf]").forEac
 /* ---------- Pro: custom dashboard ---------- */
 const DASH_BLOCKS = [["alerts", "Alerts"], ["open", "Open positions"], ["tape", "Last trade"], ["strip", "Stats"], ["charts", "Balance curve & recent trades"], ["calendar", "Daily P&L calendar"]];
 const DASH_HIDE = [["alerts", "Alerts"], ["tape", "Last trade"], ["strip", "Stats"], ["chart", "Balance curve"], ["recent", "Recent trades"], ["calendar", "Calendar"]];
-function dashCfg(){ const d = state.settings?.dash || {}; return { order: Array.isArray(d.order) ? d.order : DASH_BLOCKS.map(b => b[0]), hidden: Array.isArray(d.hidden) ? d.hidden : [] }; }
+// Elite: several named dashboard layouts (e.g. "Trading day", "Weekly review") and a one-tap switcher.
+const dashLayouts = () => Array.isArray(state.settings?.dashLayouts) ? state.settings.dashLayouts.filter(l => l && l.id && l.name) : [];
+const activeLayout = () => hasTier("elite") ? dashLayouts().find(l => l.id === state.settings?.dashActive) || null : null;
+function dashCfg(){ const L_ = activeLayout(); const d = L_ || state.settings?.dash || {}; return { order: Array.isArray(d.order) ? d.order : DASH_BLOCKS.map(b => b[0]), hidden: Array.isArray(d.hidden) ? d.hidden : [] }; }
 function applyDash(){
   const pg = document.querySelector('.page[data-page="dashboard"]'); if (!pg) return;
   const on = hasTier("pro"), c = on ? dashCfg() : { order: DASH_BLOCKS.map(b => b[0]), hidden: [] };
@@ -2709,23 +2717,38 @@ function applyDash(){
   hide(chartP, c.hidden.includes("chart")); hide(recentP, c.hidden.includes("recent"));
   if (els.charts){ els.charts.classList.toggle("single", c.hidden.includes("chart") !== c.hidden.includes("recent")); hide(els.charts, c.hidden.includes("chart") && c.hidden.includes("recent")); }
   const rb = $("#dashEdit"); if (rb) rb.hidden = false;
+  const dl = $("#dashLayouts");
+  if (dl){ const ls_ = hasTier("elite") ? dashLayouts() : [], act = activeLayout()?.id || "";
+    dl.innerHTML = ls_.length ? [`<button type="button" class="dl-chip" data-dl="" aria-pressed="${!act}">Default</button>`, ...ls_.map(l => `<button type="button" class="dl-chip" data-dl="${esc(l.id)}" aria-pressed="${l.id === act}">${esc(l.name)}</button>`)].join("") : "";
+    dl.querySelectorAll("[data-dl]").forEach(b => b.onclick = async () => { if (await saveCfg({ dashActive: b.dataset.dl || null })){ applyDash(); } }); }
 }
 function openDashEdit(){
   if (!hasTier("pro")){ goUpgrade(); return; }
   let c = dashCfg(); c = { order: [...c.order], hidden: [...c.hidden] };
   DASH_BLOCKS.forEach(([k]) => { if (!c.order.includes(k)) c.order.push(k); });
+  const elite = hasTier("elite"), act = activeLayout();
   const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Customise dashboard</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <p class="hint" style="margin:0">Choose what shows on your dashboard and in what order.</p>
+    ${elite ? `<div class="f"><label for="dName">Layout</label><div class="row-flex"><input class="ctl" id="dName" maxlength="24" placeholder="Default" value="${esc(act?.name || "")}"><button type="button" class="btn small" id="dNew">Save as new layout</button></div><span class="hint">Elite: save different layouts, like "Trading day" or "Weekly review", and switch with one tap on the dashboard.${act ? ` You're editing <b>${esc(act.name)}</b>.` : ""}</span></div>` : `<p class="hint" style="margin:0"><span class="tier-pill elite">Elite</span> Save several layouts and switch between them in one tap.</p>`}
     <div class="section-title">Order</div><div id="dOrder" class="cf-list"></div>
     <div class="section-title">Show</div><div class="cf-list">${DASH_HIDE.map(([k, l]) => `<label class="check"><input type="checkbox" data-dshow="${k}" ${c.hidden.includes(k) ? "" : "checked"}><span>${esc(l)}</span></label>`).join("")}</div>
-    <div class="drawer-foot"><button type="button" class="btn" id="dReset">Reset</button><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="dSave">${esc(t("saveChanges"))}</button></div></div></div>`);
+    <div class="drawer-foot"><span class="actions"><button type="button" class="btn" id="dReset">Reset</button>${elite && act ? `<button type="button" class="btn danger" id="dDel">Delete layout</button>` : ""}</span><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="dSave">${esc(t("saveChanges"))}</button></div></div></div>`);
   const name = k => DASH_BLOCKS.find(b => b[0] === k)?.[1] || k;
   const draw = () => { $("#dOrder").innerHTML = c.order.map((k, i) => `<div class="cf-row"><b>${esc(name(k))}</b><span></span><span class="actions"><button type="button" class="btn small" data-up="${i}" ${i ? "" : "disabled"}>↑</button><button type="button" class="btn small" data-dn="${i}" ${i < c.order.length - 1 ? "" : "disabled"}>↓</button></span></div>`).join("");
     $("#dOrder").querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const i = +b.dataset.up; [c.order[i - 1], c.order[i]] = [c.order[i], c.order[i - 1]]; draw(); });
     $("#dOrder").querySelectorAll("[data-dn]").forEach(b => b.onclick = () => { const i = +b.dataset.dn; [c.order[i + 1], c.order[i]] = [c.order[i], c.order[i + 1]]; draw(); }); };
   draw();
   $("#dReset").onclick = () => { c = { order: DASH_BLOCKS.map(b => b[0]), hidden: [] }; draw(); $("#drawerHost").querySelectorAll("[data-dshow]").forEach(x => x.checked = true); };
-  $("#dSave").onclick = async () => { c.hidden = [...$("#drawerHost").querySelectorAll("[data-dshow]")].filter(x => !x.checked).map(x => x.dataset.dshow); close(); if (await saveCfg({ dash: c })){ applyDash(); toast("Dashboard saved"); } };
+  const grab = () => { c.hidden = [...$("#drawerHost").querySelectorAll("[data-dshow]")].filter(x => !x.checked).map(x => x.dataset.dshow); };
+  $("#dSave").onclick = async () => { grab();
+    if (elite && act){ const nm = ($("#dName")?.value || "").trim() || act.name; const list = dashLayouts().map(l => l.id === act.id ? { ...l, name: nm, order: c.order, hidden: c.hidden } : l); close(); if (await saveCfg({ dashLayouts: list })){ applyDash(); toast(`Layout "${nm}" saved`); } return; }
+    close(); if (await saveCfg({ dash: c })){ applyDash(); toast("Dashboard saved"); } };
+  if (elite){
+    $("#dNew").onclick = async () => { grab(); const nm = ($("#dName").value || "").trim(); if (!nm){ $("#dName").focus(); toast("Give the layout a name"); return; }
+      if (dashLayouts().length >= 6){ toast("You can save up to 6 layouts"); return; }
+      const id = "dl" + Date.now().toString(36); close(); if (await saveCfg({ dashLayouts: [...dashLayouts(), { id, name: nm, order: c.order, hidden: c.hidden }], dashActive: id })){ applyDash(); toast(`Layout "${nm}" saved`); } };
+    const del = $("#dDel"); if (del){ let armed = false; del.onclick = async () => { if (!armed){ armed = true; del.textContent = "Tap again to delete"; return; } close(); if (await saveCfg({ dashLayouts: dashLayouts().filter(l => l.id !== act.id), dashActive: null })){ applyDash(); toast("Layout deleted"); } }; }
+  }
 }
 
 /* ---------- Pro: screenshot annotation ---------- */
@@ -2833,7 +2856,7 @@ const COACH_PROMPTS = {
 /* ---------- Saved coach chats ---------- */
 state.coachChats = state.coachChats || [];
 const COACH_LABELS = { last: "Last trade review", week: "Weekly review", month: "Monthly review", plan: "Improvement plan" };
-const chTitle = c => c.ask === "ask" ? (c.question || "Question") : (COACH_LABELS[c.ask] || "Coach review");
+const chTitle = c => c.ask === "ask" || c.ask === "shot" ? (c.question || (c.ask === "shot" ? "Screenshot review" : "Question")) : (COACH_LABELS[c.ask] || "Coach review");
 async function saveCoachChat({ ask, question, text }){
   const id = "coach" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const a = activeAcct();
@@ -2869,20 +2892,34 @@ function renderCoachHist(){
       if (ok !== false) toast("Saved to Notes"); };
   });
 }
-async function askCoach(kind, question){
+// Screenshot review (Elite): pick a trade that has a chart screenshot, and the coach reviews the picture with the trade's numbers.
+function pickShotTrade(){
+  if (!hasTier("elite")){ const out = $("#coachOut"); if (out){ out.innerHTML = `<p class="hint" style="margin:0 0 10px">Screenshot reviews are part of Elite. Your coach looks at your chart screenshot and tells you what it sees: entry location, stop placement, structure and what to improve.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button>`; bindUpgrade(out); } return; }
+  const list = sorted().filter(x => shotsOf(x).length).reverse().slice(0, 40);
+  if (!list.length){ toast("Add a chart screenshot to a trade first (open the trade → Screenshots)"); return; }
+  const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Review a screenshot</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Pick a trade. Your coach looks at its chart screenshot${list.some(x => shotsOf(x).length > 1) ? "s (up to 3)" : ""} together with your entry, stop, target and notes.</p>
+    <div class="shot-pick">${list.map(x => `<button type="button" class="shot-opt" data-id="${esc(x.id)}"><img src="${shotUrl(shotsOf(x)[0])}" alt="" loading="lazy"><span><b>${esc(x.symbol)} ${x.side === "short" ? "sell" : "buy"}</b><span class="hint">${esc(fmtDate(x.date))} ${esc(x.timeIn || "")} · ${esc(money(pnl(x)))}</span></span></button>`).join("")}</div></div>`);
+  document.querySelectorAll(".shot-opt").forEach(b => b.onclick = () => { close(); const x = state.trades.find(t_ => t_.id === b.dataset.id); if (x) askCoach("shot", null, x); });
+}
+async function askCoach(kind, question, shotTrade){
   const out = $("#coachOut"), sample = await getSample();
   if (!sample){ out.innerHTML = `<p class="hint">${HOSTED ? "The AI coach isn't switched on for this site yet." : "The AI coach isn't available in this view."}</p>`; return; }
-  const data = coachData(kind === "month" ? 200 : 80);
-  const task = kind === "ask" ? `Answer this question about my trading, using only my data: "${question}"` : COACH_PROMPTS[kind];
+  const x0 = shotTrade, data = x0 ? { account: coachData(1).account, trade: { date: x0.date, time: x0.timeIn || "", exitTime: x0.timeOut || "", symbol: x0.symbol, side: x0.side === "long" ? "buy" : "sell", lots: spec(x0).lots, entry: +x0.entry, exit: +x0.exit, stop: num(x0.stop), target: num(x0.tp), pnl: +pnl(x0).toFixed(2), r: rMult(x0) != null ? +rMult(x0).toFixed(2) : null, setup: x0.setup || "", grade: x0.grade || "", followedPlan: x0.plan, fomo: !!x0.fomo, revenge: !!x0.revenge, emotion: x0.mood || "", notes: (x0.notes || "").slice(0, 600) } } : coachData(kind === "month" ? 200 : 80);
+  const task = kind === "shot" ? "Review this trade using the chart screenshot(s) and the trade data. Describe what you can see on the chart (trend, structure, key levels) and judge the entry location, the stop placement and the target. Say what was done well, what to improve, and one rule to add to my plan. If the screenshot is unclear or doesn't show the trade, say so plainly instead of guessing." : kind === "ask" ? `Answer this question about my trading, using only my data: "${question}"` : COACH_PROMPTS[kind];
   const prompt = `You are the AI Trading Coach inside The Execution Log, a trading journal. ${task}
 Rules: base everything on the data below; quote real numbers; be direct and practical; British English; no financial advice or market predictions; plain text with short headings and bullet points; under 350 words. Today is ${localToday()}. Money is in ${S().ccy}.
 DATA (JSON):
 ${JSON.stringify(data)}`;
   out.innerHTML = `<p class="hint">Your coach is reading your journal…</p>`;
   $("#coachBtns").querySelectorAll("button").forEach(b => b.disabled = true);
-  try { const r = await sample(prompt, { onText: ({ text }) => { out.innerHTML = `<div class="coach-text">${esc(text)}</div>`; } });
+  let images;
+  if (x0){ out.innerHTML = `<p class="hint">Loading your screenshot…</p>`; try { images = (await Promise.all(shotsOf(x0).slice(0, 3).map(id => fetch(shotUrl(id)).then(r => r.ok ? r.blob() : null)))).filter(Boolean); } catch { images = []; }
+    if (!images.length){ out.innerHTML = `<p class="err">Couldn't load that trade's screenshot. Try again, or re-upload it on the trade.</p>`; $("#coachBtns")?.querySelectorAll("button").forEach(b => b.disabled = false); return; }
+    out.innerHTML = `<p class="hint">Your coach is looking at your chart…</p>`; }
+  try { const r = await sample(prompt, { images, onText: ({ text }) => { out.innerHTML = `<div class="coach-text">${esc(text)}</div>`; } });
     out.innerHTML = `<div class="coach-text">${esc(r.text)}</div>`;
-    if (r.text) await saveCoachChat({ ask: kind, question: kind === "ask" ? question : "", text: r.text }); }
+    if (r.text) await saveCoachChat({ ask: kind, question: kind === "ask" ? question : x0 ? `Screenshot review: ${x0.symbol} ${x0.side === "short" ? "sell" : "buy"} · ${fmtDate(x0.date)}` : "", text: r.text }); }
   catch (e){ if (e?.code === "upgrade"){ out.innerHTML = `<p class="hint" style="margin:0 0 10px">${esc(e.friendly || "The AI coach is part of the Elite plan.")}</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button>`; bindUpgrade(out); return; }
     out.innerHTML = `<p class="err">${esc(e?.friendly ? e.friendly : e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
   finally { $("#coachBtns")?.querySelectorAll("button").forEach(b => b.disabled = false); }
@@ -2969,6 +3006,7 @@ function drawReplay(){
   // The candle that contains the entry (or exit) time.
   const holder = k => { let i = -1; for (let j = 0; j < cs.length; j++){ if (key(cs[j]) <= k) i = j; else break; } return i < 0 ? 0 : i; };
   const iIn = holder(inKey), iOut = Math.max(iIn, holder(outKey)), from = Math.max(0, iIn - 40);
+  replay.entryIdx = iIn - from + 1;
   if (replay.atKey){ replay.idx = Math.max(1, cs.slice(from).filter(c => key(c) <= replay.atKey).length); replay.atKey = null; }
   replay.max = cs.length - from; replay.idx = Math.min(Math.max(1, replay.idx || 1), replay.max);
   const last = from + replay.idx - 1; replay.shownKey = key(cs[last]);
@@ -3025,7 +3063,6 @@ function drawReplay(){
   let tl = "", tlx = ""; vis.forEach(i => { if (i % every || i < every) return; const c = cs[i], label = c.d !== cs[i - every]?.d ? fmtDate(c.d).replace(/\s\d{2}$/, "") : c.t; tl += `<line x1="${ix(i)}" x2="${ix(i)}" y1="${T}" y2="${H - B}" class="rp-grid"/>`; if (ix(i) > 20 && ix(i) < W - R - 20) tlx += `<text x="${ix(i)}" y="${H - 7}" text-anchor="middle" class="rp-ax">${esc(label)}</text>`; });
   const tag = (v, bg, txt, ink = "#fff") => `<rect x="${W - R + 1}" y="${y(v) - 9}" width="${R - 2}" height="18" rx="2" style="fill:${bg}"/><text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax" style="fill:${ink};font-weight:600">${esc(txt)}</text>`;
   let box = "", lines = "", marks = "", tags = "";
-  replay.entryIdx = iIn - from + 1;
   if (reachedIn && !hard){
     const x0 = ix(iIn) - bw / 2, x1 = (reachedOut ? ix(iOut) : ix(last)) + bw / 2, bwid = Math.max(bw, x1 - x0);
     const tgt = tp != null ? tp : exit, good = isLong ? tgt > entry : tgt < entry;
@@ -3124,6 +3161,187 @@ function replayPlay(){ if (replay.timer){ replayStop(); return; }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
 
+/* ---------- Strategy tester (Elite): your own rules on historical candles ---------- */
+const BT_SIGNALS = { orb: "Opening range breakout", ma: "Moving average crossover", brk: "Breakout of recent high/low", rsi: "RSI reversal" };
+const btState = { base: null, sym: null, last: null };
+const btDefaults = () => ({ name: "", signal: "orb", dir: "both", tf: 5, orbStart: "08:00", orbMins: 30, maFast: 9, maSlow: 21, brkN: 20, rsiN: 14, rsiLo: 30, rsiHi: 70,
+  stopType: "atr", stopPts: 5, stopAtr: 1.5, rr: 2, from: "08:00", to: "17:00", maxDay: 2, closeEnd: true, risk: 1, start: 10000 });
+const btRules = () => Array.isArray(state.settings?.btRules) ? state.settings.btRules : [];
+const ema = (vals, n) => { const k = 2 / (n + 1); let e = null; return vals.map(v => (e = e == null ? v : v * k + e * (1 - k))); };
+function rsiArr(cl, n){ const out = cl.map(() => null); let g = 0, l = 0; for (let i = 1; i < cl.length; i++){ const d = cl[i] - cl[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0);
+  if (i <= n){ g += up; l += dn; if (i === n){ g /= n; l /= n; out[i] = l ? 100 - 100 / (1 + g / l) : 100; } } else { g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n; out[i] = l ? 100 - 100 / (1 + g / l) : 100; } } return out; }
+function atrArr(cs, n = 14){ let a = null; return cs.map((c, i) => { const p = cs[i - 1], tr = p ? Math.max(c.h - c.l, Math.abs(c.h - p.c), Math.abs(c.l - p.c)) : c.h - c.l; a = a == null ? tr : (a * (n - 1) + tr) / n; return a; }); }
+const tmin = t_ => { const [h, m] = String(t_ || "0:0").split(":").map(Number); return h * 60 + m; };
+// Bar-by-bar: enter at the close of the signal candle, then check stop and target on the following candles.
+// If one candle touches both, we count the stop (the cautious assumption).
+function runBacktest(cs, r){
+  const cl = cs.map(c => c.c), fast = r.signal === "ma" ? ema(cl, r.maFast) : null, slow = r.signal === "ma" ? ema(cl, r.maSlow) : null, rsi = r.signal === "rsi" ? rsiArr(cl, r.rsiN) : null, atr = atrArr(cs);
+  const trades = [], perDay = {}, orb = {}; let pos = null;
+  const inWin = c => { const m = tmin(c.t); return m >= tmin(r.from) && m < tmin(r.to); };
+  const close = (i, price, why) => { const c = cs[i], R = (price - pos.entry) * pos.dir / pos.risk; trades.push({ ...pos, exitDate: c.d, exitTime: c.t, exit: price, R, why, bars: i - pos.i }); pos = null; };
+  for (let i = 1; i < cs.length; i++){
+    const c = cs[i], p = cs[i - 1];
+    if (pos){
+      if (c.d !== pos.date && r.closeEnd){ close(i - 1, p.c, "Day end"); }
+      else {
+        const hitS = pos.dir > 0 ? c.l <= pos.stop : c.h >= pos.stop, hitT = pos.dir > 0 ? c.h >= pos.tgt : c.l <= pos.tgt;
+        if (hitS){ close(i, pos.stop, "Stop"); continue; } if (hitT){ close(i, pos.tgt, "Target"); continue; }
+        if (r.closeEnd && tmin(c.t) >= tmin(r.to)){ close(i, c.c, "Session end"); continue; }
+        continue;
+      }
+    }
+    // Opening range: track the high/low from the start time for N minutes each day.
+    if (r.signal === "orb"){ const m = tmin(c.t), s0 = tmin(r.orbStart); const o = orb[c.d] ||= { hi: -Infinity, lo: Infinity, done: false, used: 0 };
+      if (m >= s0 && m < s0 + r.orbMins){ o.hi = Math.max(o.hi, c.h); o.lo = Math.min(o.lo, c.l); continue; } if (m >= s0 + r.orbMins) o.done = true; }
+    if (!inWin(c) || (perDay[c.d] || 0) >= r.maxDay) continue;
+    let dir = 0;
+    if (r.signal === "orb"){ const o = orb[c.d]; if (o && o.done && isFinite(o.hi)){ if (c.c > o.hi && p.c <= o.hi && !(o.used & 1)) { dir = 1; o.used |= 1; } else if (c.c < o.lo && p.c >= o.lo && !(o.used & 2)) { dir = -1; o.used |= 2; } } }
+    else if (r.signal === "ma"){ if (i > r.maSlow){ if (fast[i] > slow[i] && fast[i - 1] <= slow[i - 1]) dir = 1; else if (fast[i] < slow[i] && fast[i - 1] >= slow[i - 1]) dir = -1; } }
+    else if (r.signal === "brk"){ if (i > r.brkN){ const w = cs.slice(i - r.brkN, i), hh = Math.max(...w.map(k => k.h)), ll = Math.min(...w.map(k => k.l)); if (c.c > hh) dir = 1; else if (c.c < ll) dir = -1; } }
+    else if (r.signal === "rsi"){ if (rsi[i] != null && rsi[i - 1] != null){ if (rsi[i - 1] < r.rsiLo && rsi[i] >= r.rsiLo) dir = 1; else if (rsi[i - 1] > r.rsiHi && rsi[i] <= r.rsiHi) dir = -1; } }
+    if (!dir || (r.dir === "long" && dir < 0) || (r.dir === "short" && dir > 0)) continue;
+    const dist = r.stopType === "atr" ? atr[i] * r.stopAtr : +r.stopPts; if (!(dist > 0)) continue;
+    pos = { i, date: c.d, time: c.t, dir, entry: c.c, stop: c.c - dir * dist, tgt: c.c + dir * dist * r.rr, risk: dist };
+    perDay[c.d] = (perDay[c.d] || 0) + 1;
+  }
+  if (pos) close(cs.length - 1, cs[cs.length - 1].c, "End of data");
+  // Money: compound at a fixed % risk per trade.
+  let bal = +r.start || 10000, peak = bal, dd = 0, streak = 0, worstStreak = 0; const curve = [bal];
+  trades.forEach(t_ => { t_.pnl = bal * (r.risk / 100) * t_.R; bal += t_.pnl; t_.bal = bal; curve.push(bal); peak = Math.max(peak, bal); dd = Math.max(dd, (peak - bal) / peak);
+    streak = t_.R < 0 ? streak + 1 : 0; worstStreak = Math.max(worstStreak, streak); });
+  const wins = trades.filter(t_ => t_.R > 0), losses = trades.filter(t_ => t_.R <= 0), gw = wins.reduce((q, t_) => q + t_.R, 0), gl = -losses.reduce((q, t_) => q + t_.R, 0);
+  const days = [...new Set(cs.map(c => c.d))];
+  return { trades, curve, n: trades.length, winRate: trades.length ? wins.length / trades.length : 0, pf: gl ? gw / gl : null, expR: trades.length ? (gw - gl) / trades.length : 0, netR: gw - gl,
+    end: bal, ret: (bal / (+r.start || 10000) - 1), maxDD: dd, worstStreak, avgBars: trades.length ? trades.reduce((q, t_) => q + t_.bars, 0) / trades.length : 0, from: days[0], to: days[days.length - 1], days: days.length };
+}
+function btForm(r){
+  const opt = (id, v, list) => `<select id="${id}" class="ctl">${list.map(([k, l]) => `<option value="${k}"${String(k) === String(v) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  const num_ = (id, v, step = "any", lbl = "") => `<div class="f"><label for="${id}">${esc(lbl)}</label><input id="${id}" class="ctl" type="number" step="${step}" value="${esc(String(v))}"></div>`;
+  const time_ = (id, v, lbl) => `<div class="f"><label for="${id}">${esc(lbl)}</label><input id="${id}" class="ctl" type="time" value="${esc(v)}"></div>`;
+  return `<div class="fgrid bt-grid">
+    <div class="f"><label for="btSig">Entry signal</label>${opt("btSig", r.signal, Object.entries(BT_SIGNALS))}</div>
+    <div class="f"><label for="btDir">Direction</label>${opt("btDir", r.dir, [["both", "Long and short"], ["long", "Long only"], ["short", "Short only"]])}</div>
+    <div class="f"><label for="btTf">Timeframe</label>${opt("btTf", r.tf, [[1, "1 minute"], [5, "5 minutes"], [15, "15 minutes"], [30, "30 minutes"], [60, "1 hour"], [240, "4 hours"]])}</div>
+    <div class="bt-sig" data-for="orb">${time_("btOrbS", r.orbStart, "Range starts at")}${num_("btOrbM", r.orbMins, 1, "Range length (minutes)")}</div>
+    <div class="bt-sig" data-for="ma">${num_("btMaF", r.maFast, 1, "Fast EMA")}${num_("btMaS", r.maSlow, 1, "Slow EMA")}</div>
+    <div class="bt-sig" data-for="brk">${num_("btBrkN", r.brkN, 1, "Break the high/low of the last … candles")}</div>
+    <div class="bt-sig" data-for="rsi">${num_("btRsiN", r.rsiN, 1, "RSI length")}${num_("btRsiLo", r.rsiLo, 1, "Buy when RSI rises back above")}${num_("btRsiHi", r.rsiHi, 1, "Sell when RSI falls back below")}</div>
+    <div class="f"><label for="btStopT">Stop loss</label>${opt("btStopT", r.stopType, [["atr", "ATR multiple"], ["pts", "Fixed price distance"]])}</div>
+    ${num_("btStopV", r.stopType === "atr" ? r.stopAtr : r.stopPts, "any", r.stopType === "atr" ? "× ATR(14)" : "Distance (price)")}
+    ${num_("btRR", r.rr, "any", "Take profit (R multiple)")}
+    ${time_("btFrom", r.from, "Trade from")}${time_("btTo", r.to, "Trade until")}
+    ${num_("btMax", r.maxDay, 1, "Max trades per day")}
+    ${num_("btRisk", r.risk, "any", "Risk per trade (%)")}${num_("btStart", r.start, "any", "Starting balance")}
+    <label class="check bt-check"><input type="checkbox" id="btClose" ${r.closeEnd ? "checked" : ""}><span>Close open trades at the end of the session</span></label></div>`;
+}
+function btRead(){ const v = id => $("#" + id)?.value, n = (id, d) => { const x = +v(id); return isFinite(x) && v(id) !== "" ? x : d; }; const d = btDefaults(), st = v("btStopT");
+  return { ...d, name: ($("#btName")?.value || "").trim(), signal: v("btSig"), dir: v("btDir"), tf: n("btTf", 5), orbStart: v("btOrbS") || d.orbStart, orbMins: Math.max(1, n("btOrbM", 30)), maFast: Math.max(2, n("btMaF", 9)), maSlow: Math.max(3, n("btMaS", 21)),
+    brkN: Math.max(2, n("btBrkN", 20)), rsiN: Math.max(2, n("btRsiN", 14)), rsiLo: n("btRsiLo", 30), rsiHi: n("btRsiHi", 70), stopType: st, stopAtr: st === "atr" ? Math.max(0.1, n("btStopV", 1.5)) : d.stopAtr, stopPts: st === "pts" ? Math.max(0, n("btStopV", 5)) : d.stopPts,
+    rr: Math.max(0.1, n("btRR", 2)), from: v("btFrom") || d.from, to: v("btTo") || d.to, maxDay: Math.max(1, n("btMax", 2)), closeEnd: !!$("#btClose")?.checked, risk: Math.max(0.01, n("btRisk", 1)), start: Math.max(1, n("btStart", 10000)) }; }
+function btFill(r){ const host = $("#btRules"); if (!host) return; host.innerHTML = btForm(r); const show = () => host.querySelectorAll(".bt-sig").forEach(el => el.hidden = el.dataset.for !== $("#btSig").value); show();
+  $("#btSig").onchange = show; $("#btStopT").onchange = () => { const cur = btRead(); btFill(cur); }; }
+function btReport(res, r){
+  const host = $("#btOut"); if (!host) return; btState.last = { res, r };
+  if (!res.n){ host.innerHTML = `<p class="hint">No trades matched these rules on ${esc(String(res.days))} day${res.days === 1 ? "" : "s"} of candles. Try a wider trading window, a different signal, or a bigger file.</p>`; return; }
+  const k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  const pct = v => (v * 100).toFixed(1) + "%", sgn = v => (v >= 0 ? "+" : "") + v.toFixed(2);
+  const W = 680, H = 160, pts = res.curve, lo = Math.min(...pts), hi = Math.max(...pts), d = pts.map((v, i) => `${i ? "L" : "M"}${(i / Math.max(1, pts.length - 1) * W).toFixed(1)},${(H - 6 - (v - lo) / ((hi - lo) || 1) * (H - 12)).toFixed(1)}`).join(" ");
+  const grp = f => { const g = {}; res.trades.forEach(t_ => { const kk = f(t_); (g[kk] ||= []).push(t_.R); }); return Object.entries(g).map(([kk, v]) => ({ k: kk, n: v.length, r: v.reduce((q, x) => q + x, 0), w: v.filter(x => x > 0).length / v.length })); };
+  const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"], byDay = grp(t_ => new Date(t_.date + "T12:00:00Z").getUTCDay()).sort((p, q) => p.k - q.k).map(g => ({ ...g, k: DOW[g.k] }));
+  const byHour = grp(t_ => t_.time.slice(0, 2) + ":00").sort((p, q) => p.k.localeCompare(q.k)), byDir = grp(t_ => t_.dir > 0 ? "Long" : "Short"), byExit = grp(t_ => t_.why);
+  const tbl = (title, rows) => `<div class="bt-tbl"><b>${esc(title)}</b><table><thead><tr><th></th><th class="r">Trades</th><th class="r">Win rate</th><th class="r">Net R</th></tr></thead><tbody>${rows.map(g => `<tr><td>${esc(String(g.k))}</td><td class="r">${g.n}</td><td class="r">${pct(g.w)}</td><td class="r ${g.r >= 0 ? "pos" : "neg"}">${sgn(g.r)}</td></tr>`).join("")}</tbody></table></div>`;
+  const best = [...byHour].sort((p, q) => q.r - p.r)[0], worst = [...byDay].sort((p, q) => p.r - q.r)[0];
+  const sum = [`${res.n} trades over ${res.days} day${res.days === 1 ? "" : "s"} (${fmtDate(res.from)} to ${fmtDate(res.to)}).`, `Win rate ${pct(res.winRate)}, expectancy ${sgn(res.expR)}R per trade, ${res.pf == null ? "no losing trades" : "profit factor " + res.pf.toFixed(2)}.`,
+    `At ${r.risk}% risk per trade, ${money(+r.start, false)} would have become ${money(res.end, false)} (${(res.ret >= 0 ? "+" : "") + pct(res.ret)}), with a worst drawdown of ${pct(res.maxDD)}.`,
+    best && best.n >= 2 ? `Best hour: ${best.k} (${sgn(best.r)}R).` : "", worst && worst.n >= 2 && worst.r < 0 ? `Worst day: ${worst.k} (${sgn(worst.r)}R).` : "", res.days < 20 ? `Only ${res.days} day${res.days === 1 ? "" : "s"} of data: treat this as a first look, and test a few months before trusting it.` : ""].filter(Boolean);
+  host.innerHTML = `<div class="bt-report">
+    <div class="kgrid">${k("Trades", String(res.n), "", `${res.days} days tested`)}${k("Win rate", pct(res.winRate))}${k("Profit factor", res.pf == null ? "—" : res.pf.toFixed(2), res.pf != null && res.pf >= 1 ? "pos" : "neg")}${k("Expectancy", sgn(res.expR) + "R", res.expR >= 0 ? "pos" : "neg", "per trade")}
+      ${k("Net result", sgn(res.netR) + "R", res.netR >= 0 ? "pos" : "neg", money(res.end - r.start))}${k("Return", (res.ret >= 0 ? "+" : "") + pct(res.ret), res.ret >= 0 ? "pos" : "neg", `at ${r.risk}% risk`)}${k("Max drawdown", pct(res.maxDD), "neg")}${k("Worst losing streak", String(res.worstStreak), "", `avg hold ${Math.round(res.avgBars)} candle${Math.round(res.avgBars) === 1 ? "" : "s"}`)}</div>
+    <div class="bt-curve"><span class="label">Equity curve</span><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="curve"><path class="ln" d="${d}"/></svg></div>
+    <ul class="rp-notes">${sum.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <div class="bt-tables">${tbl("By day", byDay)}${tbl("By hour (entry)", byHour)}${tbl("By direction", byDir)}${tbl("How trades ended", byExit)}</div>
+    <details class="bt-trades"><summary>All ${res.n} trades</summary><div class="tbl-wrap"><table><thead><tr><th>Entry</th><th>Side</th><th class="r">Entry</th><th class="r">Stop</th><th class="r">Target</th><th class="r">Exit</th><th>Exit</th><th class="r">R</th><th class="r">P&amp;L</th></tr></thead><tbody>
+      ${res.trades.slice(0, 500).map(t_ => `<tr><td>${esc(fmtDate(t_.date))} ${esc(t_.time)}</td><td>${t_.dir > 0 ? "Buy" : "Sell"}</td><td class="r">${esc(price(t_.entry))}</td><td class="r">${esc(price(t_.stop))}</td><td class="r">${esc(price(t_.tgt))}</td><td class="r">${esc(price(t_.exit))}</td><td>${esc(t_.why)}</td><td class="r ${t_.R >= 0 ? "pos" : "neg"}">${sgn(t_.R)}</td><td class="r ${t_.pnl >= 0 ? "pos" : "neg"}">${esc(money(t_.pnl, false))}</td></tr>`).join("")}</tbody></table></div></details>
+    <div class="actions"><button type="button" class="btn small" id="btCsv">Download trades (CSV)</button><button type="button" class="btn small" id="btNote">Save report to Notes</button></div>
+    <p class="hint" style="margin:0">Backtests use candle prices only: no spread, slippage or commission, and a candle that touches both your stop and target counts as a loss. Past results don't guarantee future ones.</p></div>`;
+  $("#btCsv").onclick = () => { const rows = [["entry_date","entry_time","side","entry","stop","target","exit_date","exit_time","exit","exit_reason","r","pnl","balance"], ...res.trades.map(t_ => [t_.date, t_.time, t_.dir > 0 ? "buy" : "sell", t_.entry, +t_.stop.toFixed(5), +t_.tgt.toFixed(5), t_.exitDate, t_.exitTime, t_.exit, t_.why, +t_.R.toFixed(3), +t_.pnl.toFixed(2), +t_.bal.toFixed(2)])];
+    saveFile(`backtest-${(btState.sym || "candles").toLowerCase()}-${localToday()}.csv`, rows.map(r_ => r_.join(",")).join("\n")); };
+  $("#btNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36);
+    const rules = `${BT_SIGNALS[r.signal]} · ${r.dir === "both" ? "long and short" : r.dir + " only"} · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"} · stop ${r.stopType === "atr" ? r.stopAtr + "× ATR" : r.stopPts} · target ${r.rr}R · ${r.from}–${r.to} · max ${r.maxDay}/day`;
+    const body = `STRATEGY\n${rules}\n${btState.sym ? "Symbol: " + btState.sym + "\n" : ""}\nRESULTS\n${sum.join("\n")}\n\nBY DAY\n${byDay.map(g => `${g.k}: ${g.n} trades, ${sgn(g.r)}R`).join("\n")}\n\nBY HOUR\n${byHour.map(g => `${g.k}: ${g.n} trades, ${sgn(g.r)}R`).join("\n")}`;
+    if (await saveNote(id, { kind: "note", title: `Backtest: ${r.name || BT_SIGNALS[r.signal]}${btState.sym ? " · " + btState.sym : ""} · ${fmtDate(localToday())}`, body, tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Report saved to Notes"); };
+}
+function bindStrategyTester(){
+  const host = $("#btBox"); if (!host) return;
+  const sel = $("#btSaved"), drawSaved = (ls_ = btRules()) => { if (!sel) return; sel.innerHTML = `<option value="">New strategy</option>${ls_.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}`; };
+  drawSaved(); btFill(btDefaults());
+  sel.onchange = () => { const x = btRules().find(v => v.id === sel.value); btFill(x ? { ...btDefaults(), ...x } : btDefaults()); $("#btName").value = x?.name || ""; $("#btDel").hidden = !x; };
+  $("#btFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f));
+    if (!cs.length){ $("#btData").innerHTML = `<span class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</span>`; return; }
+    btState.base = cs; btState.sym = symFromName(f.name); const days = new Set(cs.map(c => c.d)).size;
+    $("#btData").innerHTML = `<span class="hint">${esc(btState.sym || "Candles")} · ${cs.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"} · ${baseTf(cs)}-minute</span>`; };
+  $("#btUseReplay").onclick = () => { if (!replay.base?.length){ toast("Load a candles file in Trade Replay first, or choose one here"); return; } btState.base = replay.base; btState.sym = replay.fileSym; const days = new Set(replay.base.map(c => c.d)).size;
+    $("#btData").innerHTML = `<span class="hint">Using Trade Replay's candles · ${esc(btState.sym || "")} · ${replay.base.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"}</span>`; };
+  $("#btRun").onclick = () => { if (!btState.base?.length){ toast("Choose a candles file first"); return; } const r = btRead(), b = baseTf(btState.base);
+    if (r.tf < b){ toast(`This file has ${b}-minute candles, so test on ${b} minutes or more`); return; }
+    if (r.signal === "ma" && r.maFast >= r.maSlow){ toast("The fast EMA must be shorter than the slow EMA"); return; }
+    btReport(runBacktest(resample(btState.base, r.tf), r), r); $("#btOut").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  $("#btSave").onclick = async () => { const r = btRead(); if (!r.name){ $("#btName").focus(); toast("Give your strategy a name"); return; }
+    const ls_ = btRules(), ex = ls_.find(x => x.id === sel.value) || ls_.find(x => x.name.toLowerCase() === r.name.toLowerCase());
+    if (!ex && ls_.length >= 10){ toast("You can save up to 10 strategies"); return; }
+    const id = ex?.id || "bt" + Date.now().toString(36), list = ex ? ls_.map(x => x.id === id ? { ...r, id } : x) : [...ls_, { ...r, id }];
+    if (await saveCfg({ btRules: list })){ drawSaved(list); sel.value = id; $("#btDel").hidden = false; toast(`Strategy "${r.name}" saved`); } };
+  $("#btDel").onclick = async e => { const b = e.currentTarget; if (!b.dataset.sure){ b.dataset.sure = "1"; b.textContent = "Tap again to delete"; return; } delete b.dataset.sure; b.textContent = "Delete";
+    const left = btRules().filter(x => x.id !== sel.value);
+    if (await saveCfg({ btRules: left })){ drawSaved(left); btFill(btDefaults()); $("#btName").value = ""; b.hidden = true; toast("Strategy deleted"); } };
+}
+
+/* ---------- Saved replay sessions (Elite) ---------- */
+// A saved replay keeps the trade, the candles for that day, the timeframe, where you stopped and your note, so it reopens exactly as you left it.
+state.replays = state.replays || [];
+function saveReplay(){
+  if (!hasTier("elite")){ toast("Saving replays is part of Elite"); goUpgrade(); return; }
+  const x = replay.trade; if (!x || !replay.base?.length){ toast("Load a trade and its candles first"); return; }
+  const prev = state.replays.find(r => r.tradeId === x.id);
+  const close = showDrawer(`<form class="drawer" id="rsForm" novalidate><div class="panel-head"><h2>Save this replay</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">${esc(x.symbol)} ${x.side === "short" ? "sell" : "buy"} · ${esc(fmtDate(x.date))} ${esc(x.timeIn || "")}. It saves the candles, timeframe and where you are, so you can pick it up later.</p>
+    <div class="f"><label for="rsNote">What did you learn from this trade? <span class="opt">(optional)</span></label><textarea id="rsNote" rows="4" maxlength="2000" placeholder="e.g. Entered too early. Should have waited for the retest.">${esc(prev?.note || "")}</textarea></div>
+    <div class="drawer-foot"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">Save replay</button></div></form>`);
+  $("#rsForm").onsubmit = async e => { e.preventDefault();
+    const lo = isoAdd(x.date, -1), hi = isoAdd(x.date, 1), keep = replay.base.filter(c => c.d >= lo && c.d <= hi).slice(0, 4500);
+    const rec = { kind: "replay", tradeId: x.id, label: `${x.symbol} ${x.side === "short" ? "sell" : "buy"} · ${fmtDate(x.date)} ${x.timeIn || ""}`.trim(), note: $("#rsNote").value.trim(),
+      tf: replay.tf || 1, shift: replay.shift || 0, idx: replay.idx || 1, fileSym: replay.fileSym || x.symbol, candles: keep.map(c => [c.d, c.t, c.o, c.h, c.l, c.c]), saved: Date.now() };
+    const id = prev?.id || "rp" + Date.now().toString(36);
+    state.replays = [...state.replays.filter(r => r.id !== id), { id, ...rec }];
+    if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).set(rec); } catch (err){ handleWriteError(err); return; } }
+    close(); toast("Replay saved"); renderSavedReplays(); };
+}
+function openSavedReplay(id){
+  const r = state.replays.find(v => v.id === id); if (!r) return;
+  const x = state.trades.find(t_ => t_.id === r.tradeId); if (!x){ toast("That trade has been deleted"); return; }
+  replayStop();
+  replay.base = (r.candles || []).map(([d, t_, o, h, l, c]) => ({ d, t: t_, o, h, l, c })); replay.fileSym = r.fileSym || x.symbol; replay.shift = r.shift || 0; replay.tf = r.tf || baseTf(replay.base);
+  replay.candles = resample(rpSource(), replay.tf); replay.trade = x; replay.idx = r.idx || 1; replay.pan = 0; replay.started = true;
+  const sel = $("#rpTrade"); if (sel && [...sel.options].some(o => o.value === x.id)) sel.value = x.id;
+  const sh = $("#rpShift"); if (sh) sh.value = String(replay.shift);
+  setTfButtons(); drawReplay(); $("#rpChart")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+async function deleteSavedReplay(id){
+  state.replays = state.replays.filter(r => r.id !== id); renderSavedReplays();
+  if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).delete(); } catch (e){ handleWriteError(e); } }
+}
+function renderSavedReplays(){
+  const host = $("#rpSaved"); if (!host) return;
+  const list = [...state.replays].sort((p, q) => (q.saved || 0) - (p.saved || 0));
+  if (!list.length){ host.innerHTML = ""; return; }
+  host.innerHTML = `<div class="rp-saved"><div class="panel-head"><h2 style="font-size:15px">Saved replays</h2><span class="label">${list.length} saved</span></div>
+    ${list.map(r => `<div class="rs-item" data-id="${esc(r.id)}"><div class="rs-main"><b>${esc(r.label || "Replay")}</b><span class="hint">Saved ${esc(fmtDate(new Date(r.saved || 0).toISOString().slice(0, 10)))}${r.tf ? ` · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"}` : ""}</span>${r.note ? `<p>${esc(r.note)}</p>` : ""}</div>
+      <div class="actions"><button type="button" class="btn small primary" data-rsopen>Open</button><button type="button" class="btn small" data-rsdel>Delete</button></div></div>`).join("")}</div>`;
+  host.querySelectorAll(".rs-item").forEach(el => { const id = el.dataset.id;
+    el.querySelector("[data-rsopen]").onclick = () => openSavedReplay(id);
+    el.querySelector("[data-rsdel]").onclick = e => { const b = e.currentTarget; if (b.dataset.sure){ deleteSavedReplay(id); return; } b.dataset.sure = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { if (b.isConnected){ delete b.dataset.sure; b.textContent = "Delete"; } }, 3000); }; });
+}
+
 /* ---------- Guide: getting candles for Trade Replay ---------- */
 function openCandleGuide(){
   const step = (n, html) => `<li><span class="cg-n">${n}</span><div>${html}</div></li>`;
@@ -3180,6 +3398,7 @@ function eliteTaster(host, sc){
     let teaser = "";
     if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
     else if (h === "Backtesting Studio") teaser = "See the range of results your own trades could produce over the next 100 trades, and your real risk of breaching a drawdown limit.";
+    else if (h === "Strategy tester") teaser = "Write your own entry, stop and target rules and test them on months of real candles, with a full report by day, hour and direction.";
     else if (h === "What if…") teaser = "Replay your real trades with a different stop, target or risk size and see what you'd have made.";
     else if (h === "Risk-to-reward simulator") teaser = "Test any win rate and R:R before you trade it.";
     else if (h === "Planned vs actual") teaser = "Compare where you planned to enter, stop and take profit with what you actually did.";
@@ -3247,7 +3466,7 @@ function renderElite(){
   host.dataset.built = key;
   host.innerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span><span class="hint">${esc(a.name || "")}</span></div>
     <section class="panel"><div class="panel-head"><h2>✦ AI Trading Coach</h2><span class="label">Reads your journal</span></div>
-      <div class="actions" id="coachBtns"><button type="button" class="btn small primary" data-coach="last">Review my last trade</button><button type="button" class="btn small" data-coach="week">Weekly review</button><button type="button" class="btn small" data-coach="month">Monthly review</button><button type="button" class="btn small" data-coach="plan">Improvement plan</button></div>
+      <div class="actions" id="coachBtns"><button type="button" class="btn small primary" data-coach="last">Review my last trade</button><button type="button" class="btn small" data-coach="week">Weekly review</button><button type="button" class="btn small" data-coach="month">Monthly review</button><button type="button" class="btn small" data-coach="plan">Improvement plan</button><button type="button" class="btn small" id="coachShot">📷 Review a screenshot</button></div>
       <div class="row-flex"><input class="ctl" id="coachQ" placeholder="Ask about your trading, e.g. Why do I lose on Fridays?" maxlength="300"><button type="button" class="btn small" id="coachAsk">Ask</button></div>
       <div id="coachOut" class="coach-out"><p class="hint">Pick a review or ask a question. Your coach only sees your journal data, and its answers are coaching, not financial advice.</p></div></section>
     <section class="panel"><div class="panel-head"><h2>Saved coach chats</h2><span class="label" id="chCount"></span></div>
@@ -3263,6 +3482,13 @@ function renderElite(){
       <div class="fgrid sim-in"><div class="f"><label>Next trades</label><input id="mcN" type="number" value="100"></div><div class="f"><label>Risk per trade (%)</label><input id="mcRisk" type="number" step="any" value="${esc(a.risk ?? 1)}"></div>
         <div class="f"><label>Breach level (−%)</label><input id="mcDD" type="number" step="any" value="${esc(a.rules?.maxPct ?? 10)}"></div><div class="f"><label>Target (+%)</label><input id="mcT" type="number" step="any" value="${esc(a.rules?.targetPct ?? 10)}"></div></div>
       <button type="button" class="btn small primary" id="mcRun" ${rs.length < 10 ? "disabled" : ""}>Run Monte Carlo</button><div id="mcOut"></div></section>
+    <section class="panel" id="btBox"><div class="panel-head"><h2>Strategy tester</h2><span class="label">Your rules · historical candles</span></div>
+      <p class="hint" style="margin:0">Test a strategy on real price history before you risk money. Load a candles file (a few months of 1-minute or 5-minute candles works best), set your rules and run it.</p>
+      <div class="lock-mini"><div class="actions"><label class="btn small bt-file">📂 Choose candles file<input id="btFile" type="file" accept=".csv,.txt" hidden></label><button type="button" class="btn small" id="btUseReplay">Use Trade Replay's candles</button><button type="button" class="btn small" id="btHow">📘 How to get candles</button></div><span id="btData"><span class="hint">No candles loaded yet.</span></span></div>
+      <div class="fgrid"><div class="f"><label for="btSaved">Your strategies</label><select id="btSaved" class="ctl"></select></div><div class="f"><label for="btName">Strategy name</label><input id="btName" class="ctl" maxlength="40" placeholder="e.g. London ORB"></div></div>
+      <div id="btRules"></div>
+      <div class="actions"><button type="button" class="btn primary" id="btRun">▶ Run backtest</button><button type="button" class="btn" id="btSave">Save strategy</button><button type="button" class="btn danger" id="btDel" hidden>Delete</button></div>
+      <div id="btOut"></div></section>
     <section class="panel"><div class="panel-head"><h2>Risk-to-reward simulator</h2><span class="label">Any strategy</span></div>
       <div class="fgrid sim-in"><div class="f"><label>Win rate (%)</label><input id="rrW" type="number" value="${ts.length ? Math.round(proStats(ts).winRate * 100) : 45}"></div><div class="f"><label>Reward : risk (1 : x)</label><input id="rrR" type="number" step="any" value="2"></div>
         <div class="f"><label>Risk per trade (%)</label><input id="rrRisk" type="number" step="any" value="${esc(a.risk ?? 1)}"></div><div class="f"><label>Trades</label><input id="rrN" type="number" value="100"></div></div>
@@ -3273,11 +3499,12 @@ function renderElite(){
       <div class="lock-mini"><p class="hint">Load the candles for the day of your trade, then replay it candle by candle. You can export them free from MT5, MT4 or TradingView.</p><button type="button" class="btn small" id="rpHow">📘 How to get your candles</button></div>
       <div class="fgrid"><div class="f"><label for="rpTrade">Trade</label><select id="rpTrade">${ts.slice().reverse().slice(0, 150).map(x => `<option value="${esc(x.id)}">${esc(fmtDate(x.date))} ${esc(x.timeIn || "")} · ${esc(x.symbol)} ${x.side === "long" ? "buy" : "sell"} · ${esc(money(pnl(x)))}</option>`).join("")}</select></div>
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
-      <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button>
+      <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button><button type="button" class="btn small" id="rpSave" title="Save this replay with a note, to come back to later">💾 Save replay</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
       <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button><label class="hint" for="rpShift" style="margin-inline-start:6px">Time shift</label><select id="rpShift" class="ctl" style="width:auto">${[-3, -2, -1, 0, 1, 2, 3].map(h => `<option value="${h}"${h === (replay.shift || 0) ? " selected" : ""}>${h > 0 ? "+" + h : h}h</option>`).join("")}</select></div>
       <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
-      <div id="rpInfo"></div></section>
+      <div id="rpInfo"></div>
+      <div id="rpSaved"></div></section>
     <section class="panel"><div class="panel-head"><h2>Planned vs actual</h2><span class="label">${planned.length} trades with a plan</span></div>
       ${pva ? `<div class="kgrid">${k("Entry slippage", pva.slip == null ? "—" : (pva.slip > 0 ? "+" : "") + pva.slip.toFixed(2) + "R", pva.slip > .1 ? "neg" : "", "Positive means you entered late")}${k("Stops widened", String(pva.widened), pva.widened ? "neg" : "", "Stop moved further than planned")}${k("Exited before target", pva.tgtN ? `${pva.early} / ${pva.tgtN}` : "—", "", "Winning trades closed early")}${k("Trades planned", String(pva.n))}</div>`
         : `<p class="hint" style="margin:0">Add your planned entry, stop and target under Pro details when you log a trade, then compare them with what you actually did.</p>`}</section>
@@ -3289,6 +3516,7 @@ function renderElite(){
         : `<p class="hint" style="margin:0">Set up RuleGuard on the Insights page to see breach history and the consistency rule.</p>`}</section>
     <section class="panel"><div class="panel-head"><h2>Premium reports</h2></div><p class="hint" style="margin:0">Build a PDF with exactly the sections you want, including your challenge status.</p><button type="button" class="btn small primary" id="eliteRep">Build a report</button></section>`;
   host.querySelectorAll("[data-coach]").forEach(b => b.onclick = () => askCoach(b.dataset.coach));
+  $("#coachShot").onclick = pickShotTrade;
   $("#coachAsk").onclick = () => { const q = $("#coachQ").value.trim(); if (q) askCoach("ask", q); };
   $("#coachQ").onkeydown = e => { if (e.key === "Enter") $("#coachAsk").click(); };
   $("#chQ").oninput = () => renderCoachHist();
@@ -3311,7 +3539,10 @@ function renderElite(){
   $("#rpOut").onclick = () => rpZoom(1.35); $("#rpIn").onclick = () => rpZoom(1 / 1.35); $("#rpFitB").onclick = rpFit;
   $("#rpLbl").onclick = e => { replay.labels = replay.labels === false; e.currentTarget.setAttribute("aria-pressed", String(replay.labels !== false)); drawReplay(); };
   $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
-  $("#rpHow").onclick = openCandleGuide;
+  $("#rpHow").onclick = openCandleGuide; $("#btHow").onclick = openCandleGuide;
+  bindStrategyTester();
+  $("#rpSave").onclick = saveReplay;
+  renderSavedReplays();
   $("#rpShift").onchange = e => { replay.shift = +e.target.value || 0; if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
   $("#rpStart").onclick = () => replayJump(1); $("#rpEnd").onclick = () => replayJump(replay.max || 1);
   $("#rpAgain").onclick = () => { replayJump(1); replayPlay(); };
@@ -4411,6 +4642,7 @@ function renderSetData(body){
         ${switchRow("p-hide", t("pHide"), t("pHideD"), !!p.hideMoney)}
         ${switchRow("p-remember", t("pRemember"), t("pRememberD"), p.remember !== false)}
       </div></section>
+    ${HOSTED ? `<section class="panel"><div class="panel-head"><h2>Screenshot storage</h2><span class="label" id="stoPlan"></span></div><div id="stoMeter"><p class="hint" style="margin:0">Checking…</p></div></section>` : ""}
     <section class="panel danger-zone"><div class="panel-head"><h2>${esc(t("dDelete"))}</h2></div>
       <p class="hint" style="margin:0">${esc(t("dDeleteD"))}</p>
       <div class="f"><label for="delConfirm">${esc(t("dDeleteType"))}</label><input id="delConfirm" autocomplete="off" placeholder="DELETE"></div>
@@ -4419,6 +4651,7 @@ function renderSetData(body){
       <p class="hint" style="margin:0">${esc(t("delAcctP"))}</p>
       <div class="actions"><button type="button" class="btn danger" id="delAcct">${esc(t("delAcctBtn"))}</button></div></section>` : ""}`;
   { const da = $("#delAcct"); if (da) da.onclick = openDeleteAccount; }
+  showStorage();
   $("#dImp").onclick = openImport;
   $("#dPdfBtn").onclick = openReportBuilder;
   $("#dAll").onclick = () => saveFile(`the-execution-log-export-${localToday()}.json`, JSON.stringify(exportAll(), null, 2));
@@ -4804,6 +5037,8 @@ function exportAll(){
   const s = state.settings || {};
   return { app: "The Execution Log", exportedAt: new Date().toISOString(), profile: s.profile || null,
     notes: (state.notes || []).map(n => ({ title: n.title || "", body: n.body || "", template: n.tpl || "", pinned: !!n.pinned, created: n.created ? new Date(n.created).toISOString() : null, updated: n.updated ? new Date(n.updated).toISOString() : null })),
+    coachChats: (state.coachChats || []).map(c => ({ type: c.ask, question: c.question || "", answer: c.text || "", account: c.accountName || "", created: c.created ? new Date(c.created).toISOString() : null })),
+    savedReplays: (state.replays || []).map(r => ({ trade: r.label || "", note: r.note || "", timeframeMinutes: r.tf || null, saved: r.saved ? new Date(r.saved).toISOString() : null })),
     preferences: { language: s.lang || lang, theme: s.theme || currentTheme(), accent: s.accent || currentAccent(), notifications: s.notify || {}, privacy: s.privacy || {} },
     accounts: accountsList().map(a => ({ ...acctExport(a), trades: acctTrades(a).map(tradeExport),
       openPositions: openTrades(a).map(x => ({ date: x.date, symbol: x.symbol, direction: x.side === "long" ? "buy" : "sell", lots: spec(x).lots, entry: +x.entry, stopLoss: num(x.stop), takeProfit: num(x.tp), currentPrice: num(x.mark), entryTime: x.timeIn || "", setup: x.setup || "", notes: x.notes || "" })) })) };
@@ -4832,7 +5067,8 @@ async function deleteEverything(){
   if (state.mode !== "live"){ ["tel-range","tel-chart","tel-acct","tel-dismiss"].forEach(k => { try { localStorage.removeItem(k); } catch {} }); enterDemo(); setView("dashboard"); toast(t("dDeleted")); return; }
   try {
     const allShots = state.trades.flatMap(shotsOf);
-    for (const x of [...state.trades, ...(state.notes || [])]) await col.doc(x.id).delete();
+    for (const x of [...state.trades, ...(state.notes || []), ...(state.coachChats || []), ...(state.replays || [])]) await col.doc(x.id).delete();
+    if (state.usage && Object.keys(state.usage).length) await col.doc("usage").delete().catch(() => {});
     deleteShots(allShots);
     await col.doc("settings").delete();
     ["tel-range","tel-chart","tel-acct","tel-dismiss","tel-tut"].forEach(k => { try { localStorage.removeItem(k); } catch {} });
@@ -4947,18 +5183,38 @@ async function getAssets(){
 const shotUrl = id => "/_blob/" + id;
 const IMG_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const shotsOf = x => Array.isArray(x?.shots) ? x.shots.filter(id => typeof id === "string" && /^[0-9a-f]{32}$/.test(id)) : [];
+// Big screenshots are resized (max 2400px wide) and saved as WebP, so they look the same but take far less storage.
+async function shrinkImage(file){
+  if (file.type === "image/gif" || file.size < 400 * 1024) return file;
+  const bmp = await createImageBitmap(file); const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+  const blob = await new Promise(r => c.toBlob(r, "image/webp", 0.88));
+  return blob && blob.size < file.size ? new File([blob], (file.name || "screenshot").replace(/\.\w+$/, "") + ".webp", { type: "image/webp" }) : file;
+}
+async function showStorage(){
+  const host = $("#stoMeter"); if (!host) return; const a = await getAssets(); const u = a?.usage ? await a.usage() : null;
+  if (!u || !u.quota){ host.innerHTML = `<p class="hint" style="margin:0">Storage details aren't available right now.</p>`; return; }
+  const fmt = b => b >= 1073741824 ? parseFloat((b / 1073741824).toFixed(1)) + " GB" : Math.max(0, Math.round(b / 1048576)) + " MB";
+  const pct = Math.min(100, u.used / u.quota * 100), next = { basic: "Pro gives you 2 GB, and Elite 10 GB.", pro: "Elite gives you 10 GB.", elite: "" }[u.plan || "basic"];
+  $("#stoPlan").textContent = `${TIER_NAME[u.plan] || ""} plan`;
+  host.innerHTML = `<div class="sto-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}"><i style="width:${pct.toFixed(1)}%;background:${pct > 90 ? "var(--loss)" : "var(--accent)"}"></i></div>
+    <p class="hint" style="margin:8px 0 0">${fmt(u.used)} of ${fmt(u.quota)} used. Large screenshots are shrunk automatically to save space.${next && pct > 60 ? " " + next : ""}</p>${next && pct > 60 ? `<div class="actions"><button type="button" class="btn small" data-upgrade>${HOSTED ? "Get more storage" : "Preview plans"}</button></div>` : ""}`;
+  bindUpgrade(host);
+}
 async function uploadShot(file){
   const a = await getAssets();
   if (!a) throw { code: "unavailable" };
   if (!IMG_TYPES.includes(file.type)) throw { code: "unsupported_type" };
   if (file.size > 20 * 1024 * 1024) throw { code: "too_large" };
-  return a.upload(file, { type: file.type });
+  const small = await shrinkImage(file).catch(() => file);
+  return a.upload(small, { type: small.type });
 }
 async function deleteShots(ids){
   const a = await getAssets(); if (!a || !ids.length) return;
   for (const id of ids){ try { await a.delete(id); } catch {} }
 }
-const shotErr = e => t(e && e.code === "unavailable" ? "shotsUnavailable" : e && e.code === "unsupported_type" ? "shotsErrType" : e && e.code === "too_large" ? "shotsErrSize" : "shotsErr");
+const shotErr = e => e && e.code === "quota" ? `Your screenshot storage is full on the ${TIER_NAME[tier()]} plan. Delete some old screenshots${tier() === "elite" ? "" : `, or upgrade to ${tier() === "basic" ? "Pro (2 GB) or Elite (10 GB)" : "Elite (10 GB)"}`}.` : t(e && e.code === "unavailable" ? "shotsUnavailable" : e && e.code === "unsupported_type" ? "shotsErrType" : e && e.code === "too_large" ? "shotsErrSize" : "shotsErr");
 function openShot(id){
   const host = $("#lightbox");
   host.innerHTML = `<div class="lb" id="lbOv" role="dialog" aria-modal="true"><img src="${shotUrl(id)}" alt="${esc(t("shotsH"))}"><button type="button" class="iconbtn lb-x" aria-label="${esc(t("close"))}">✕</button></div>`;
@@ -5111,12 +5367,13 @@ render();
       if (THEMES.includes(state.settings?.theme) && state.settings.theme !== state.theme){ applyTheme(state.settings.theme); ls.set("tel-theme", state.settings.theme); }
       if (validHex(state.settings?.accent) && state.settings.accent !== state.accent){ applyAccent(state.settings.accent); ls.set("tel-accent", state.settings.accent); }
       const all = snap.docs.filter(d => d.id !== "settings").map(d => ({ id: d.id, ...d.data() }));
-      state.trades = all.filter(t => t.kind !== "note" && t.date && t.symbol);
+      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.date && t.symbol);
+      state.replays = all.filter(t => t.kind === "replay");
       state.notes = all.filter(t => t.kind === "note");
       state.coachChats = all.filter(t => t.kind === "coach");
       state.usage = all.find(t => t.id === "usage") || state.usage || {};
       if (wasLoading) state.month = null;
-      render(); renderCoachHist();
+      render(); renderCoachHist(); renderSavedReplays();
       if (!snap.metadata.fromCache){ maybeTutorial(); upgradeDemo(); }
     }, () => { clearTimeout(slowTimer); if (state.mode === "loading") enterDemo(); else toast(t("lostConn")); });
   } catch { clearTimeout(slowTimer); enterDemo(); }
