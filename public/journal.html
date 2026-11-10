@@ -473,6 +473,14 @@ details.adv[open] summary{margin-bottom:10px}
 .pro-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}.pro-h{font-size:28px;font-weight:900}
 .lock-card-pro{border:1px dashed var(--line-2);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:var(--surface)}
 .lock-card-pro h3{font-size:22px;max-width:30ch}.lock-card-pro p{margin:0}
+.tease{border:1px solid var(--line);border-radius:var(--r);padding:20px;background:var(--surface);display:flex;flex-direction:column;gap:12px}
+.tease-free{border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;background:var(--surface-2)}
+.tease-free .label{display:block;margin-bottom:4px}.tease-free b{font-size:16px}.tease-free p{margin:6px 0 0;line-height:1.55}
+.tease-more{position:relative;display:flex;flex-direction:column;gap:8px}
+.tease-more .blur{filter:blur(5px);user-select:none;pointer-events:none;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--surface-2)}
+.tease-cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.trial-bar{border:1px solid #C792FF66;background:#C792FF14;border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.trial-bar p{margin:0;line-height:1.5}.lock-mini{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}.lock-mini p{margin:0}
 .pro-bars,.pro-uw{width:100%;height:auto;max-height:210px;display:block}.pb-l{font-size:10.5px;fill:var(--muted);font-family:var(--mono)}.pb-v{font-size:10.5px;fill:var(--ink);font-family:var(--mono);font-weight:700}
 .rg{display:flex;flex-direction:column;gap:14px}.rg-row{display:flex;flex-direction:column;gap:6px}.rg-top{display:flex;justify-content:space-between;gap:10px}
 .rg-bar{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}.rg-bar i{display:block;height:100%;border-radius:99px;background:var(--win)}
@@ -2574,9 +2582,20 @@ function insightsList(ts){
   if (md.length >= 2 && md[0].s.exp < 0) add("warn", `Trading while ${md[0].k.toLowerCase()} hurts you`, `${md[0].s.n} trades logged as ${md[0].k.toLowerCase()} averaged ${money(md[0].s.exp)}. When ${md[md.length - 1].k.toLowerCase()} you averaged ${money(md[md.length - 1].s.exp)}.`, md[0].s.net);
   return out.sort((p, q) => (p.impact || 0) - (q.impact || 0));
 }
+// Not on Pro yet: give one real finding from their own trades for free, and show there's more.
+function insightsTeaser(){
+  const ts = sorted(), ins = insightsList(ts).sort((p, q) => (p.impact ?? 0) - (q.impact ?? 0));
+  if (ts.length < 5) return `<div class="tease"><span class="tier-pill pro">Pro</span><h3 style="margin:0">Your first free insight is ${5 - ts.length} trade${5 - ts.length === 1 ? "" : "s"} away</h3><p class="hint" style="margin:0">Log at least 5 trades and we'll show you one pattern from your own trading for free. Pro finds all of them: revenge trades, FOMO, overtrading, your best and worst sessions, and more.</p><div class="tease-cta"><button type="button" class="btn primary" data-upgrade>${HOSTED ? "See Pro" : "Preview plans"}</button></div></div>`;
+  if (!ins.length) return `<div class="tease"><span class="tier-pill pro">Pro</span><h3 style="margin:0">No costly habits spotted in your last ${ts.length} trades. Nice.</h3><p class="hint" style="margin:0">Pro keeps watching every trade for revenge trades, FOMO, overtrading and rule breaks, and compares your sessions, setups and instruments.</p><div class="tease-cta"><button type="button" class="btn primary" data-upgrade>${HOSTED ? "See Pro" : "Preview plans"}</button></div></div>`;
+  const top = ins[0], rest = ins.slice(1);
+  return `<div class="tease"><div class="tease-free"><span class="label">Free insight from your journal</span><b>${esc(top.title)}</b><p>${esc(top.text)}</p></div>
+    ${rest.length ? `<div class="tease-more"><span class="label">Pro found ${rest.length} more pattern${rest.length === 1 ? "" : "s"} in your trades</span>${rest.slice(0, 3).map(r => { const mask = t_ => t_.replace(/[^\s]/g, "x"); return `<div class="blur" aria-hidden="true"><b>${mask(r.title)}</b><p class="hint" style="margin:4px 0 0">${mask(r.text)}</p></div>`; }).join("")}</div>` : ""}
+    <p class="hint" style="margin:0">Pro also breaks down your results by session, setup, instrument and day, and warns you before you break a prop-firm rule.</p>
+    <div class="tease-cta"><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Unlock with Pro" : "Preview plans"}</button><span class="hint">You keep everything you've logged.</span></div></div>`;
+}
 function renderInsights(){
   const host = $("#insightsPage"); if (!host || state.view !== "insights") return;
-  if (!hasTier("pro")){ host.innerHTML = lockCard("pro", "Execution intelligence and RuleGuard"); bindUpgrade(host); return; }
+  if (!hasTier("pro")){ host.innerHTML = insightsTeaser(); bindUpgrade(host); return; }
   const ts = sorted(), ins = insightsList(ts), a = activeAcct(), st = ruleStatus();
   const today = localToday(), wk = weekStart(today), lwk = isoAdd(wk, -7);
   const thisW = proStats(ts.filter(x => x.date >= wk)), lastW = proStats(ts.filter(x => x.date >= lwk && x.date < wk));
@@ -2858,7 +2877,8 @@ ${JSON.stringify(data)}`;
   try { const r = await sample(prompt, { onText: ({ text }) => { out.innerHTML = `<div class="coach-text">${esc(text)}</div>`; } });
     out.innerHTML = `<div class="coach-text">${esc(r.text)}</div>`;
     if (r.text) await saveCoachChat({ ask: kind, question: kind === "ask" ? question : "", text: r.text }); }
-  catch (e){ out.innerHTML = `<p class="err">${esc(e?.friendly ? e.friendly : e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
+  catch (e){ if (e?.code === "upgrade"){ out.innerHTML = `<p class="hint" style="margin:0 0 10px">${esc(e.friendly || "The AI coach is part of the Elite plan.")}</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button>`; bindUpgrade(out); return; }
+    out.innerHTML = `<p class="err">${esc(e?.friendly ? e.friendly : e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
   finally { $("#coachBtns")?.querySelectorAll("button").forEach(b => b.disabled = false); }
 }
 
@@ -3082,18 +3102,70 @@ function bindReplayChart(host){
   host.addEventListener("keydown", e => { if (e.key === "ArrowRight"){ e.preventDefault(); replayStep(1); } else if (e.key === "ArrowLeft"){ e.preventDefault(); replayStep(-1); } else if (e.key === " "){ e.preventDefault(); replayPlay(); } });
   host.addEventListener("dblclick", e => { if (!e.target.closest(".rp-warn")) rpFit(); });
 }
-function replayStep(d){ replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
+function replayStep(d){ if (!replay.started && !replayAllowed()) return; replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
 function replayStop(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; } if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; }
-function replayJump(i){ replayStop(); replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
+function replayJump(i){ replayStop(); if (!replay.started && !replayAllowed()) return; replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
 function replayPlay(){ if (replay.timer){ replayStop(); return; }
-  if (!replay.started){ replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
+  if (!replay.started){ if (!replayAllowed()) return; replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
+
+/* ---------- Elite taster (Basic and Pro) ---------- */
+// The coach and replay stay usable with a small allowance; everything else becomes a short preview with one real number.
+const FREE_REPLAYS_WEEK = 1;
+function eliteTaster(host, sc){
+  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab"];
+  const head = host.querySelector(".pro-head");
+  if (head) head.outerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span></div>
+    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
+  host.querySelectorAll("section.panel").forEach(sec => {
+    const h = sec.querySelector(".panel-head h2")?.textContent.trim() || "";
+    if (keep.includes(h)) return;
+    let teaser = "";
+    if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
+    else if (h === "Backtesting Studio") teaser = "See the range of results your own trades could produce over the next 100 trades, and your real risk of breaching a drawdown limit.";
+    else if (h === "What if…") teaser = "Replay your real trades with a different stop, target or risk size and see what you'd have made.";
+    else if (h === "Risk-to-reward simulator") teaser = "Test any win rate and R:R before you trade it.";
+    else if (h === "Planned vs actual") teaser = "Compare where you planned to enter, stop and take profit with what you actually did.";
+    else if (h === "All accounts") teaser = "Every account's results and open risk in one place.";
+    else if (h === "Advanced RuleGuard") teaser = "Daily-loss and consistency checks across all your prop-firm accounts.";
+    else if (h === "Premium reports") teaser = "Build polished PDF reports with exactly the sections you want.";
+    else teaser = "Part of the Elite plan.";
+    sec.innerHTML = `<div class="panel-head"><h2>${esc(h)}</h2><span class="tier-pill elite">Elite</span></div><div class="lock-mini"><p class="hint">${teaser}</p><button type="button" class="btn small" data-upgrade>${HOSTED ? "Unlock" : "Preview plans"}</button></div>`;
+  });
+  // Put the two free tools together at the top.
+  const secs = [...host.querySelectorAll("section.panel")], find = t => secs.find(x => x.querySelector(".panel-head h2")?.textContent.trim() === t);
+  const chats = find("Saved coach chats"), rp = find("▶ Trade Replay Lab"); if (chats && rp) chats.after(rp);
+  bindUpgrade(host);
+  showCoachLeft();
+}
+async function showCoachLeft(u){
+  const lbl = document.querySelector("#elitePage .panel-head h2")?.closest("section")?.querySelector(".panel-head .label"); if (!lbl) return;
+  if (!u){ if (!HOSTED || hasTier("elite") || !HOST.coachUsage) return; u = await HOST.coachUsage(); if (!u) return; }
+  if (u.period === "month") lbl.textContent = `${u.left} of ${u.limit} free replies left this month`;
+}
+window.addEventListener("tel-coach-usage", e => showCoachLeft(e.detail));
+// Weekly free replay on Basic/Pro. Watching the same trade again doesn't use another one.
+function replayAllowed(){
+  if (hasTier("elite") || !replay.trade) return true;
+  const weekAgo = Date.now() - 7 * 864e5, used = (state.usage?.replays || []).filter(r => r.at > weekAgo);
+  if (used.some(r => r.trade === replay.trade.id)) return true;
+  if (used.length < FREE_REPLAYS_WEEK){
+    const rec = { ...(state.usage || {}), replays: [...used, { trade: replay.trade.id, at: Date.now() }] }; state.usage = rec;
+    if (state.mode === "live" && !state.readOnly) col.doc("usage").set(rec).catch(() => {});
+    return true;
+  }
+  const next = new Date(Math.min(...used.map(r => r.at)) + 7 * 864e5).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const host = $("#rpChart"); if (host) host.innerHTML = `<div class="rp-ready"><span class="tier-pill elite">Elite</span><b>You've used this week's free replay</b><span class="hint">Your next free replay unlocks on ${esc(next)}. You can still rewatch the trade you already replayed.</span><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Unlimited replays with Elite" : "Preview plans"}</button></div>`;
+  if (host) bindUpgrade(host);
+  return false;
+}
 
 /* ---------- Elite page ---------- */
 function renderElite(){
   const host = $("#elitePage"); if (!host || state.view !== "elite") return;
-  if (!hasTier("elite")){ host.innerHTML = lockCard("elite", "AI Trading Coach, Backtesting Studio, Trade Replay and Execution Score"); bindUpgrade(host); return; }
+  const trial = !hasTier("elite"); // Basic and Pro get a taster: a few free coach replies and replays
+  if (trial && !HOSTED && !state.trades.length){ host.innerHTML = lockCard("elite", "AI Trading Coach, Backtesting Studio, Trade Replay and Execution Score"); bindUpgrade(host); return; }
   const key = [state.trades.length, state.trades.reduce((q, x) => q + (x.created || 0), 0), activeAcct()?.id, tier(), JSON.stringify(activeAcct()?.rules || {}), lang, accountsList().length].join("|");
   if (host.dataset.built === key && host.innerHTML) return;
   const ts = sorted(), a = S(), k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
@@ -3188,6 +3260,7 @@ function renderElite(){
   $("#rpEntry").onclick = () => replayJump((replay.entryIdx || 1) - 2);
   $("#rpPlay").onclick = replayPlay; $("#rpBack").onclick = () => replayStep(-1); $("#rpFwd").onclick = () => replayStep(1);
   $("#rgEdit2").onclick = openRules; $("#eliteRep").onclick = openReportBuilder;
+  if (trial) eliteTaster(host, { avgSc, wkAvg, n: scores.length, loS, hiS });
 }
 function simOut(m){
   const c = S().ccy;
@@ -4983,6 +5056,7 @@ render();
       state.trades = all.filter(t => t.kind !== "note" && t.date && t.symbol);
       state.notes = all.filter(t => t.kind === "note");
       state.coachChats = all.filter(t => t.kind === "coach");
+      state.usage = all.find(t => t.id === "usage") || state.usage || {};
       if (wasLoading) state.month = null;
       render(); renderCoachHist();
       if (!snap.metadata.fromCache){ maybeTutorial(); upgradeDemo(); }
