@@ -507,7 +507,8 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .ch-body{padding:0 14px 12px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
-.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
+.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-box{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}.rp-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px 2px;font-size:12.5px}.rp-head>b{font-size:13.5px}.rp-when{color:var(--muted);font-family:var(--mono,ui-monospace,monospace);font-size:11.5px}.rp-ohlc{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;color:var(--muted)}.rp-ohlc b{font-weight:600;margin-inline-start:2px}.rp-svg{touch-action:pan-y;cursor:crosshair;max-width:100%}.rp-grid{stroke:var(--line);stroke-width:1;opacity:.6}.rp-ax{font:11px var(--mono,ui-monospace,monospace);fill:var(--muted)}.rp-axbg{fill:var(--surface)}.rp-mk{font:600 11px system-ui,sans-serif}.rp-cross{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
+.rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
 .recent-list{display:flex;flex-direction:column;gap:8px}
 .goal-section{display:flex;flex-direction:column;gap:12px;padding-top:6px}
 .goal-section + .goal-section{border-top:1px solid var(--line);padding-top:18px}
@@ -2882,20 +2883,63 @@ function drawReplay(){
     const off = v => v < wLo - tol || v > wHi + tol;
     if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade, the right symbol, and that MT5's chart time matches the times on your trades (brokers often use a different time zone).`;
   }
-  const lv = warn ? [] : [num(x.stop), num(x.tp), +x.entry, +x.exit].filter(v => v != null);
-  const lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv), W = 680, H = 300, L = 8, R = 74, T = 10, B = 22, bw = (W - L - R) / view.length;
-  const y = v => T + (1 - (v - lo) / (hi - lo || 1)) * (H - T - B), cx = i => L + i * bw + bw / 2;
-  const hl = (v, col, lbl, dash, ink = "#fff") => v == null ? "" : `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" style="stroke:${col}" stroke-width="1.2" ${dash ? 'stroke-dasharray="5 4"' : ""}/><rect x="${W - R + 4}" y="${y(v) - 9}" width="${R - 6}" height="18" rx="3" style="fill:${col}"/><text x="${W - R / 2 + 1}" y="${y(v) + 4}" text-anchor="middle" class="tm-tag" style="fill:${ink};font-size:10px">${esc(lbl)}</text>`;
   const reachedIn = from + shown.length - 1 >= iIn, reachedOut = from + shown.length - 1 >= iOut;
-  const shadeTo = reachedOut ? iOut - from : shown.length - 1, shade = reachedIn && !warn ? `<rect x="${cx(iIn - from) - bw / 2}" y="${T}" width="${Math.max(bw, (shadeTo - (iIn - from) + 1) * bw)}" height="${H - T - B}" style="fill:var(--accent);opacity:.1"/>` : "";
-  host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<svg viewBox="0 0 ${W} ${H}" class="rp-svg" role="img">${shade}
-    ${shown.map((c, i) => { const up = c.c >= c.o; const col = up ? "var(--win)" : "var(--loss)"; return `<line x1="${cx(i)}" x2="${cx(i)}" y1="${y(c.h)}" y2="${y(c.l)}" style="stroke:${col}"/><rect x="${cx(i) - bw * .35}" y="${y(Math.max(c.o, c.c))}" width="${bw * .7}" height="${Math.max(1, Math.abs(y(c.o) - y(c.c)))}" style="fill:${col}"/>`; }).join("")}
-    ${warn ? "" : `${reachedIn ? hl(+x.entry, "var(--ink)", "Entry " + price(x.entry), false, "var(--surface)") + hl(num(x.stop), "var(--loss)", "SL", true) + hl(num(x.tp), "var(--win)", "TP", true) : ""}
-    ${reachedOut ? hl(+x.exit, pnl(x) >= 0 ? "var(--win)" : "var(--loss)", "Exit " + price(x.exit)) : ""}
-    ${reachedIn ? `<circle cx="${cx(iIn - from)}" cy="${y(+x.entry)}" r="5" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2"/>` : ""}
-    ${reachedOut ? `<circle cx="${cx(iOut - from)}" cy="${y(+x.exit)}" r="5" style="fill:var(--surface);stroke:var(--accent)" stroke-width="2.5"/>` : ""}`}
-    <text x="${L}" y="${H - 6}" class="pb-l">${esc(view[0].d + " " + view[0].t)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">${esc(shown[shown.length - 1].d + " " + shown[shown.length - 1].t)}</text></svg>`
-    + (warn ? "" : `<div class="rp-legend"><span><i style="width:10px;height:10px;border-radius:50%;background:var(--accent)"></i>Entry</span><span><i style="width:10px;height:10px;border-radius:50%;border:2.5px solid var(--accent);box-sizing:border-box"></i>Exit</span><span><i style="width:16px;border-top:2px dashed var(--loss)"></i>Stop loss</span><span><i style="width:14px;height:10px;background:var(--accent);opacity:.25"></i>Time in the trade</span></div>`);
+  const isLong = x.side !== "short", entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp);
+  // Chart geometry: real pixels, so text stays readable on phones.
+  const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
+  const slots = view.length + 4, bw = (W - L - R) / slots, cx = i => L + i * bw + bw / 2;
+  const lv = warn ? [] : [stop, tp, entry, exit].filter(v => v != null);
+  let lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.08; lo -= pad; hi += pad;
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const UP = "#089981", DN = "#F23645";
+  const raw = (hi - lo) / (H < 400 ? 5 : 7), mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag, step = (nrm < 1.5 ? 1 : nrm < 3 ? 2 : nrm < 7 ? 5 : 10) * mag;
+  const dec = Math.max(0, -Math.floor(Math.log10(step)) + (step / Math.pow(10, Math.floor(Math.log10(step))) === 1 ? 0 : 0));
+  const fmtP = v => (+v).toFixed(Math.max(dec, entry < 10 ? 4 : entry < 1000 ? 3 : 2));
+  const lastC = shown[shown.length - 1], tagVals = [lastC.c, ...(reachedIn && !warn ? [entry, stop, tp] : []), ...(reachedOut && !warn ? [exit] : [])].filter(v => v != null);
+  let grid = "";
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ const clash = tagVals.some(t => Math.abs(y(t) - y(v)) < 13);
+    grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="rp-grid"/>${clash ? "" : `<text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax">${esc((+v).toFixed(dec))}</text>`}`; }
+  // Timeframe from candle spacing, and time labels along the bottom.
+  const mins = c => Date.parse(c.d + "T" + c.t + ":00Z") / 6e4, gaps = view.slice(1).map((c, i) => mins(c) - mins(view[i])).filter(g => g > 0).sort((p, q) => p - q), tfm = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0;
+  const tf = !tfm ? "" : tfm < 60 ? tfm + "m" : tfm < 1440 ? (tfm / 60) + "h" : (tfm / 1440) + "D";
+  const every = Math.max(1, Math.ceil(view.length / Math.max(3, Math.floor((W - R) / 90))));
+  let tl = ""; view.forEach((c, i) => { if (i % every || i === 0) return; const label = c.d !== view[i - every]?.d ? fmtDate(c.d).replace(/\s\d{2}$/, "") : c.t; tl += `<line x1="${cx(i)}" x2="${cx(i)}" y1="${T}" y2="${H - B}" class="rp-grid"/><text x="${cx(i)}" y="${H - 7}" text-anchor="middle" class="rp-ax">${esc(label)}</text>`; });
+  const tag = (v, bg, txt, ink = "#fff") => `<rect x="${W - R + 1}" y="${y(v) - 9}" width="${R - 2}" height="18" rx="2" style="fill:${bg}"/><text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax" style="fill:${ink};font-weight:600">${esc(txt)}</text>`;
+  // TradingView-style position box: green from entry to target (or exit), red from entry to stop.
+  let box = "", lines = "", marks = "";
+  if (reachedIn && !warn){
+    const x0 = cx(iIn - from) - bw / 2, x1 = (reachedOut ? cx(iOut - from) : cx(shown.length - 1)) + bw / 2, bwid = Math.max(bw, x1 - x0);
+    const tgt = tp != null ? tp : exit, good = isLong ? tgt > entry : tgt < entry;
+    if (good && (tp != null || reachedOut)) box += `<rect x="${x0}" y="${Math.min(y(entry), y(tgt))}" width="${bwid}" height="${Math.abs(y(tgt) - y(entry))}" style="fill:${UP};opacity:.18"/>`;
+    if (stop != null) box += `<rect x="${x0}" y="${Math.min(y(entry), y(stop))}" width="${bwid}" height="${Math.abs(y(stop) - y(entry))}" style="fill:${DN};opacity:.16"/>`;
+    lines += `<line x1="${x0}" x2="${W - R}" y1="${y(entry)}" y2="${y(entry)}" style="stroke:var(--ink)" stroke-width="1"/>`;
+    if (stop != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(stop)}" y2="${y(stop)}" style="stroke:${DN}" stroke-dasharray="4 3"/>` + tag(stop, DN, (W < 600 ? "" : "SL ") + fmtP(stop));
+    if (tp != null) lines += `<line x1="${x0}" x2="${W - R}" y1="${y(tp)}" y2="${y(tp)}" style="stroke:${UP}" stroke-dasharray="4 3"/>` + tag(tp, UP, (W < 600 ? "" : "TP ") + fmtP(tp));
+    lines += tag(entry, "var(--ink)", fmtP(entry), "var(--surface)");
+    const ci = iIn - from, c = view[ci], up = isLong;
+    marks += `<path d="M${cx(ci)},${up ? y(c.l) + 6 : y(c.h) - 6} l-6,${up ? 9 : -9} h12 z" style="fill:#2962FF"/><text x="${cx(ci)}" y="${up ? y(c.l) + 27 : y(c.h) - 19}" text-anchor="middle" class="rp-mk" style="fill:#2962FF">${up ? "Buy" : "Sell"} ${esc(String(spec(x).lots ?? x.lots ?? ""))}</text>`;
+    if (reachedOut){ const co = iOut - from, d = view[co], pl = pnl(x);
+      lines += `<line x1="${cx(co)}" x2="${W - R}" y1="${y(exit)}" y2="${y(exit)}" style="stroke:${pl >= 0 ? UP : DN}" stroke-width="1"/>` + tag(exit, pl >= 0 ? UP : DN, fmtP(exit));
+      marks += `<path d="M${cx(co)},${up ? y(d.h) - 6 : y(d.l) + 6} l-6,${up ? -9 : 9} h12 z" style="fill:#FF6D00"/><text x="${cx(co)}" y="${up ? y(d.h) - 19 : y(d.l) + 27}" text-anchor="middle" class="rp-mk" style="fill:${pl >= 0 ? UP : DN}">Close ${esc(money(pl))}</text>`; }
+  }
+  const candles = shown.map((c, i) => { const col = c.c >= c.o ? UP : DN, bx = Math.max(1, bw * .7); return `<line x1="${cx(i)}" x2="${cx(i)}" y1="${y(c.h)}" y2="${y(c.l)}" style="stroke:${col}"/><rect x="${cx(i) - bx / 2}" y="${y(Math.max(c.o, c.c))}" width="${bx}" height="${Math.max(1, Math.abs(y(c.o) - y(c.c)))}" style="fill:${col}"/>`; }).join("");
+  const lastCol = lastC.c >= lastC.o ? UP : DN;
+  const last = `<line x1="${L}" x2="${W - R}" y1="${y(lastC.c)}" y2="${y(lastC.c)}" style="stroke:${lastCol}" stroke-dasharray="1 3"/>` + tag(lastC.c, lastCol, fmtP(lastC.c));
+  const ohlc = c => { const col = c.c >= c.o ? UP : DN, ch = c.c - c.o; return `<span>O<b style="color:${col}">${esc(fmtP(c.o))}</b></span><span>H<b style="color:${col}">${esc(fmtP(c.h))}</b></span><span>L<b style="color:${col}">${esc(fmtP(c.l))}</b></span><span>C<b style="color:${col}">${esc(fmtP(c.c))}</b></span><span style="color:${col}">${ch >= 0 ? "+" : ""}${esc(fmtP(ch))}</span>`; };
+  host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-box"><div class="rp-head"><b>${esc(x.symbol)}${tf ? " · " + esc(tf) : ""}</b><span class="rp-when">${esc(lastC.d + " " + lastC.t)}</span><span class="rp-ohlc">${ohlc(lastC)}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="rp-svg" role="img" aria-label="Candle chart for ${esc(x.symbol)}">
+    <rect x="${W - R}" y="0" width="${R}" height="${H}" class="rp-axbg"/>${grid}${tl}${box}${candles}${lines}${last}${marks}<g class="rp-xh"></g></svg></div>`
+    + (warn ? "" : `<div class="rp-legend"><span><i style="width:0;height:0;border:6px solid transparent;border-bottom:9px solid #2962FF;border-top:0"></i>Entry</span><span><i style="width:0;height:0;border:6px solid transparent;border-top:9px solid #FF6D00;border-bottom:0"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span></div>`);
+  // Crosshair, like a trading platform: follows the mouse or finger, shows price and time on the axes and OHLC up top.
+  const svg = host.querySelector("svg"), xh = svg.querySelector(".rp-xh"), head = host.querySelector(".rp-ohlc"), when = host.querySelector(".rp-when");
+  const move = e => { const r = svg.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e, mx = (pt.clientX - r.left) * W / r.width, my = (pt.clientY - r.top) * H / r.height;
+    if (mx > W - R || my < T || my > H - B){ xh.innerHTML = ""; head.innerHTML = ohlc(lastC); when.textContent = lastC.d + " " + lastC.t; return; }
+    const i = Math.max(0, Math.min(shown.length - 1, Math.floor((mx - L) / bw))), c = shown[i], v = lo + (1 - (my - T) / (H - T - B)) * (hi - lo);
+    xh.innerHTML = `<line x1="${cx(i)}" x2="${cx(i)}" y1="${T}" y2="${H - B}" class="rp-cross"/><line x1="${L}" x2="${W - R}" y1="${my}" y2="${my}" class="rp-cross"/>`
+      + `<rect x="${W - R + 1}" y="${my - 9}" width="${R - 2}" height="18" rx="2" style="fill:#131722"/><text x="${W - R + 6}" y="${my + 4}" class="rp-ax" style="fill:#fff">${esc(fmtP(v))}</text>`
+      + `<rect x="${Math.min(W - R - 92, Math.max(0, cx(i) - 46))}" y="${H - B + 2}" width="92" height="19" rx="2" style="fill:#131722"/><text x="${Math.min(W - R - 46, Math.max(46, cx(i)))}" y="${H - 8}" text-anchor="middle" class="rp-ax" style="fill:#fff">${esc(fmtDate(c.d).replace(/\s\d{2}$/, "") + " " + c.t)}</text>`;
+    head.innerHTML = ohlc(c); when.textContent = c.d + " " + c.t; };
+  svg.onmousemove = move; svg.ontouchstart = svg.ontouchmove = move; svg.onmouseleave = () => { xh.innerHTML = ""; head.innerHTML = ohlc(lastC); when.textContent = lastC.d + " " + lastC.t; };
   $("#rpPos").textContent = `${shown.length} / ${view.length} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   replay.max = view.length;
 }
