@@ -516,6 +516,12 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
 .rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-chart:focus{outline:none}.rp-chart:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cg-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}.cg-steps li{display:flex;gap:12px;align-items:flex-start;line-height:1.55;font-size:14px}
+.cg-n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#1b1400;font-weight:800;font-size:12.5px;display:grid;place-items:center;margin-top:1px}
+.cg-steps code{font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;word-break:break-all}
+.cg-note{font-size:13px;color:var(--muted);padding-inline-start:36px}.cg-tabs{display:flex;flex-wrap:wrap;gap:6px}.cg-tabs button{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.cg-tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.cg-tips{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2);font-size:13.5px;line-height:1.55}.cg-tips ul{margin:6px 0 0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px}
 .rp-ready{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:260px;padding:24px;border:1px dashed var(--line-2);border-radius:8px;background:var(--surface)}.rp-ready>b{font-size:20px}.rp-ready .btn{margin:6px 0;padding:10px 26px;font-size:15px}.rp-lock .v{font-size:18px;opacity:.7}
 .rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
 .rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
@@ -2886,9 +2892,14 @@ ${JSON.stringify(data)}`;
 function parseCandles(text){
   const rows = parseCsv(text.replace(/\t/g, ",")); if (rows.length < 3) return [];
   const head = rows[0].map(h => h.toLowerCase().replace(/[^a-z]/g, "")), at = names => head.findIndex(h => names.includes(h));
-  const iD = at(["date","datetime","time","timestamp"]), iT = head.indexOf("time") !== iD ? head.indexOf("time") : -1, iO = at(["open"]), iH = at(["high"]), iL = at(["low"]), iC = at(["close"]);
+  let iD = at(["date","datetime","time","timestamp"]), iT = head.indexOf("time") !== iD ? head.indexOf("time") : -1, iO = at(["open"]), iH = at(["high"]), iL = at(["low"]), iC = at(["close"]), body = rows.slice(1);
+  // MT4's History Center export has no header row: date, time, open, high, low, close, volume.
+  if ([iD, iO, iH, iL, iC].some(i => i < 0) && /^\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}/.test(String(rows[0][0] || "").trim())){
+    const sep = /^\d{1,2}:\d{2}/.test(String(rows[0][1] || "").trim()); iD = 0; iT = sep ? 1 : -1; iO = sep ? 2 : 1; iH = iO + 1; iL = iO + 2; iC = iO + 3; body = rows; }
   if ([iD, iO, iH, iL, iC].some(i => i < 0)) return [];
-  return rows.slice(1).map(r => { const dt = impDate(iT >= 0 ? `${r[iD]} ${r[iT]}` : r[iD]); return dt ? { d: dt.date, t: dt.time || "00:00", o: impNum(r[iO]), h: impNum(r[iH]), l: impNum(r[iL]), c: impNum(r[iC]) } : null; })
+  // TradingView exports time as a Unix timestamp.
+  const when = v => { const t_ = String(v || "").trim(); if (/^\d{9,13}$/.test(t_)){ const dt = new Date(+t_ * (t_.length > 11 ? 1 : 1000)); return { date: `${dt.getFullYear()}-${p2(dt.getMonth() + 1)}-${p2(dt.getDate())}`, time: `${p2(dt.getHours())}:${p2(dt.getMinutes())}` }; } return impDate(t_); };
+  return body.map(r => { const dt = iT >= 0 ? impDate(`${r[iD]} ${r[iT]}`) : when(r[iD]); return dt ? { d: dt.date, t: dt.time || "00:00", o: impNum(r[iO]), h: impNum(r[iH]), l: impNum(r[iL]), c: impNum(r[iC]) } : null; })
     .filter(c => c && [c.o, c.h, c.l, c.c].every(v => v != null)).sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t));
 }
 let replay = { candles: [], idx: 0, timer: null, trade: null };
@@ -2896,6 +2907,9 @@ let replay = { candles: [], idx: 0, timer: null, trade: null };
 const normSym = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(PRO|ECN|RAW|M|R|I|C)$/, "");
 const sameSym = (a, b) => { const p = normSym(a), q = normSym(b); return !!p && !!q && (p === q || p.startsWith(q) || q.startsWith(p)); };
 function symFromName(name){ const u = String(name || "").toUpperCase(); const keys = Object.keys(INSTR).sort((p, q) => q.length - p.length); return keys.find(k => u.includes(k)) || null; }
+// Move candle times by whole hours, for when the broker's server time differs from the times on your trades.
+function shiftCandles(cs, h){ if (!h) return cs; return cs.map(c => { const dt = new Date(Date.parse(c.d + "T" + c.t + ":00Z") + h * 36e5).toISOString(); return { ...c, d: dt.slice(0, 10), t: dt.slice(11, 16) }; }); }
+const rpSource = () => shiftCandles(replay.base || [], replay.shift || 0);
 // Timeframes: candles from the file can be merged into bigger ones (1m → 5m → 15m …), never split into smaller ones.
 const cMin = c => Date.parse(c.d + "T" + c.t + ":00Z") / 6e4;
 function baseTf(cs){ const g = cs.slice(1, 200).map((c, i) => cMin(c) - cMin(cs[i])).filter(v => v > 0).sort((p, q) => p - q); return g.length ? g[Math.floor(g.length / 2)] : 1; }
@@ -2966,7 +2980,7 @@ function drawReplay(){
   else {
     const win = cs.slice(Math.max(0, iIn - 3), Math.min(cs.length, iOut + 4)), wLo = Math.min(...win.map(c => c.l)), wHi = Math.max(...win.map(c => c.h)), tol = (wHi - wLo) * 0.15 + Math.abs(+x.entry) * 0.0002;
     const off = v => v < wLo - tol || v > wHi + tol;
-    if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade, the right symbol, and that MT5's chart time matches the times on your trades (brokers often use a different time zone).`;
+    if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade and symbol. If it's a time-zone difference, try <b>Time shift</b> (brokers are often 2 or 3 hours ahead of the UK).`;
   }
   const reachedIn = last >= iIn, reachedOut = last >= iOut;
   // Nothing on the chart until you press play (or step), so the replay starts blind.
@@ -3065,7 +3079,7 @@ function drawReplay(){
   $("#rpPos").textContent = `Candle ${replay.idx} of ${replay.max}${hard ? "" : reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   // Best/worst price while in the trade, from the smallest candles in the file (bigger ones include price from before you entered).
   if (warn) rpInfo(x, null, !hard && !reachedOut);
-  if (!warn){ const src = replay.base?.length ? replay.base : cs, tIn = inKey.slice(0, 16), tOut = outKey.slice(0, 16); let inT = src.filter(c => key(c) >= tIn && key(c) <= tOut); if (!inT.length) inT = cs.slice(iIn, iOut + 1);
+  if (!warn){ const src = replay.base?.length ? rpSource() : cs, tIn = inKey.slice(0, 16), tOut = outKey.slice(0, 16); let inT = src.filter(c => key(c) >= tIn && key(c) <= tOut); if (!inT.length) inT = cs.slice(iIn, iOut + 1);
     rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }, !reachedOut); }
 }
 // Drag to pan, wheel or pinch to zoom, crosshair on hover. Bound once to the chart box, which stays put between redraws.
@@ -3109,6 +3123,48 @@ function replayPlay(){ if (replay.timer){ replayStop(); return; }
   if (!replay.started){ if (!replayAllowed()) return; replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
+
+/* ---------- Guide: getting candles for Trade Replay ---------- */
+function openCandleGuide(){
+  const step = (n, html) => `<li><span class="cg-n">${n}</span><div>${html}</div></li>`;
+  const tabs = {
+    mt5: ["MT5 (computer)", `<ol class="cg-steps">
+      ${step(1, "Open <b>MetaTrader 5</b> on your computer. (The phone app can't export candles.)")}
+      ${step(2, "Press <b>Ctrl + U</b>, or go to <b>View → Symbols</b>.")}
+      ${step(3, "Click the <b>Bars</b> tab at the top of the window.")}
+      ${step(4, "Pick your <b>symbol</b> (e.g. XAUUSD) and set the timeframe to <b>M1</b>. M1 lets you switch to 5m, 15m, 1h and 4h in the replay.")}
+      ${step(5, "Set the dates to cover <b>the day of your trade</b> (start of that day to the end of it), then click <b>Request</b>.")}
+      ${step(6, "Click <b>Export Bars</b> and save the file. It's named something like <code>XAUUSD_M1_202611100000_202611102359.csv</code>. Keep that name so we can tell which symbol it is.")}
+      ${step(7, "Back here, pick your trade and click <b>Choose file</b> under <b>Candles file</b>. Then press <b>▶ Play</b>.")}</ol>`],
+    mt4: ["MT4 (computer)", `<ol class="cg-steps">
+      ${step(1, "Open <b>MetaTrader 4</b> on your computer.")}
+      ${step(2, "Go to <b>Tools → History Center</b> (or press <b>F2</b>).")}
+      ${step(3, "Find your <b>symbol</b> in the list, open it and double-click <b>1 Minute (M1)</b>.")}
+      ${step(4, "Click <b>Export</b> and save it as a <b>.csv</b> file. Put the symbol in the file name, e.g. <code>XAUUSD_M1.csv</code>.")}
+      ${step(5, "MT4 only keeps a limited amount of 1-minute history. If your trade is older, open the M1 chart and scroll back first so MT4 downloads it.")}
+      ${step(6, "Back here, pick your trade, click <b>Choose file</b> and press <b>▶ Play</b>.")}</ol>`],
+    tv: ["TradingView", `<ol class="cg-steps">
+      ${step(1, "Open your symbol's chart on <b>TradingView</b> and set it to <b>1 minute</b>.")}
+      ${step(2, "Scroll the chart back so <b>the day of your trade</b> is on screen.")}
+      ${step(3, "Click the arrow next to the layout name (top right), then <b>Export chart data…</b>, and choose <b>ISO time</b> if it asks.")}
+      ${step(4, "Save the file and rename it to start with the symbol, e.g. <code>XAUUSD_tradingview.csv</code>.")}
+      ${step(5, "Back here, pick your trade, click <b>Choose file</b> and press <b>▶ Play</b>.")}
+      <li class="cg-note">Exporting chart data needs a paid TradingView plan. If you don't have one, use MT5 or MT4, which are free.</li></ol>`],
+  };
+  const close = showDrawer(`<div class="drawer cg"><div class="panel-head"><h2>How to get your candles</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Trade Replay needs the price candles for the day of your trade. Pick where you trade:</p>
+    <div class="cg-tabs" role="tablist">${Object.entries(tabs).map(([k, v], i) => `<button type="button" role="tab" data-cg="${k}" aria-selected="${i === 0}">${v[0]}</button>`).join("")}</div>
+    <div id="cgBody">${tabs.mt5[1]}</div>
+    <div class="cg-tips"><b>Tips if it doesn't line up</b><ul>
+      <li><b>"These candles don't match this trade"</b> usually means a time-zone difference. MT5 and MT4 use your broker's server time (often 2 or 3 hours ahead of the UK). Trades imported from the same MT5 account already use that time, so they'll match. If you typed a trade in yourself using UK time, the replay may be off by those hours. Use <b>Time shift</b> above the chart to move the candles until your entry lines up.</li>
+      <li><b>Wrong symbol?</b> We read the symbol from the file name. Keep the name MT5 gives it, or start the name with the symbol.</li>
+      <li><b>One file per day per symbol</b> is plenty. A full day of 1-minute candles is about 1,400 rows.</li>
+      <li>Your candle files stay on your device. They're not uploaded or stored.</li></ul></div>
+    <div class="drawer-foot"><div></div><button type="button" class="btn primary" data-close>Got it</button></div></div>`);
+  const host = document.querySelector(".cg");
+  host?.querySelectorAll("[data-cg]").forEach(b => b.onclick = () => { host.querySelectorAll("[data-cg]").forEach(x => x.setAttribute("aria-selected", String(x === b))); $("#cgBody").innerHTML = tabs[b.dataset.cg][1]; });
+  void close;
+}
 
 /* ---------- Elite taster (Basic and Pro) ---------- */
 // The coach and replay stay usable with a small allowance; everything else becomes a short preview with one real number.
@@ -3214,12 +3270,12 @@ function renderElite(){
     <section class="panel"><div class="panel-head"><h2>What if…</h2><span class="label">Strategy variations on your real trades</span></div>
       ${wi.length ? `<div class="tbl-wrap"><table><thead><tr><th>Scenario</th><th class="r">Trades</th><th class="r">Win %</th><th class="r">PF</th><th class="r">Max DD</th><th class="r">Net</th><th class="r">vs actual</th></tr></thead><tbody>${wi.map((r, i) => `<tr><td><b>${esc(r.label)}</b></td><td class="r num">${r.n}</td><td class="r num">${(r.wr * 100).toFixed(0)}%</td><td class="r num">${r.pf == null ? "—" : r.pf.toFixed(2)}</td><td class="r num">${money(-r.dd)}</td><td class="r num ${cls(r.net)}">${money(r.net)}</td><td class="r num ${i ? cls(r.net - wi[0].net) : ""}">${i ? money(r.net - wi[0].net) : "—"}</td></tr>`).join("")}</tbody></table></div>` : `<p class="hint">Log trades to compare scenarios.</p>`}</section>
     <section class="panel"><div class="panel-head"><h2>▶ Trade Replay Lab</h2><span class="label">Candle by candle</span></div>
-      <p class="hint" style="margin:0">In MT5, open the symbol's chart, press Ctrl+U (Symbols) → Bars, pick the timeframe and dates around your trade, Export, then load the file here. Times must match the times on your trades.</p>
+      <div class="lock-mini"><p class="hint">Load the candles for the day of your trade, then replay it candle by candle. You can export them free from MT5, MT4 or TradingView.</p><button type="button" class="btn small" id="rpHow">📘 How to get your candles</button></div>
       <div class="fgrid"><div class="f"><label for="rpTrade">Trade</label><select id="rpTrade">${ts.slice().reverse().slice(0, 150).map(x => `<option value="${esc(x.id)}">${esc(fmtDate(x.date))} ${esc(x.timeIn || "")} · ${esc(x.symbol)} ${x.side === "long" ? "buy" : "sell"} · ${esc(money(pnl(x)))}</option>`).join("")}</select></div>
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
       <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
-      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button></div>
+      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button><label class="hint" for="rpShift" style="margin-inline-start:6px">Time shift</label><select id="rpShift" class="ctl" style="width:auto">${[-3, -2, -1, 0, 1, 2, 3].map(h => `<option value="${h}"${h === (replay.shift || 0) ? " selected" : ""}>${h > 0 ? "+" + h : h}h</option>`).join("")}</select></div>
       <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
       <div id="rpInfo"></div></section>
     <section class="panel"><div class="panel-head"><h2>Planned vs actual</h2><span class="label">${planned.length} trades with a plan</span></div>
@@ -3244,17 +3300,19 @@ function renderElite(){
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
   const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); };
   $("#rpTrade").onchange = rpLoad;
-  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(replay.base, replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
+  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
     const days = new Set(replay.base.map(c => c.d)), fit = state.trades.filter(t => days.has(t.date) && (!replay.fileSym || sameSym(t.symbol, replay.fileSym))).sort((p, q) => (q.date + (q.timeIn || "")).localeCompare(p.date + (p.timeIn || "")));
     const cur = state.trades.find(t => t.id === $("#rpTrade").value);
     if (fit.length && !fit.includes(cur) && [...$("#rpTrade").options].some(o => o.value === fit[0].id)){ $("#rpTrade").value = fit[0].id; toast(`Showing your ${fit[0].symbol} trade from ${fmtDate(fit[0].date)}, which matches this file`); }
     rpLoad(); };
   setTfButtons();
-  $("#rpTfs").querySelectorAll("[data-tf]").forEach(b => b.onclick = () => { if (!replay.base?.length) return; const last = replay.shownKey; replay.tf = +b.dataset.tf; replay.candles = resample(replay.base, replay.tf); replay.atKey = last; replay.pan = 0; setTfButtons(); drawReplay(); });
+  $("#rpTfs").querySelectorAll("[data-tf]").forEach(b => b.onclick = () => { if (!replay.base?.length) return; const last = replay.shownKey; replay.tf = +b.dataset.tf; replay.candles = resample(rpSource(), replay.tf); replay.atKey = last; replay.pan = 0; setTfButtons(); drawReplay(); });
   $("#rpOut").onclick = () => rpZoom(1.35); $("#rpIn").onclick = () => rpZoom(1 / 1.35); $("#rpFitB").onclick = rpFit;
   $("#rpLbl").onclick = e => { replay.labels = replay.labels === false; e.currentTarget.setAttribute("aria-pressed", String(replay.labels !== false)); drawReplay(); };
   $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
+  $("#rpHow").onclick = openCandleGuide;
+  $("#rpShift").onchange = e => { replay.shift = +e.target.value || 0; if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
   $("#rpStart").onclick = () => replayJump(1); $("#rpEnd").onclick = () => replayJump(replay.max || 1);
   $("#rpAgain").onclick = () => { replayJump(1); replayPlay(); };
   $("#rpEntry").onclick = () => replayJump((replay.entryIdx || 1) - 2);
