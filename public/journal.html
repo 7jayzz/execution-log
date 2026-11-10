@@ -508,6 +508,7 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
 .rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-chart:focus{outline:none}.rp-chart:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rp-ready{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:260px;padding:24px;border:1px dashed var(--line-2);border-radius:8px;background:var(--surface)}.rp-ready>b{font-size:20px}.rp-ready .btn{margin:6px 0;padding:10px 26px;font-size:15px}.rp-lock .v{font-size:18px;opacity:.7}
 .rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
 .rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
 .rp-box{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}.rp-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px 2px;font-size:12.5px}.rp-head>b{font-size:13.5px}.rp-when{color:var(--muted);font-family:var(--mono,ui-monospace,monospace);font-size:11.5px}.rp-ohlc{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;color:var(--muted)}.rp-ohlc b{font-weight:600;margin-inline-start:2px}.rp-svg{touch-action:pan-y;cursor:crosshair;max-width:100%}.rp-grid{stroke:var(--line);stroke-width:1;opacity:.6}.rp-ax{font:11px var(--mono,ui-monospace,monospace);fill:var(--muted)}.rp-axbg{fill:var(--surface)}.rp-mk{font:600 11px system-ui,sans-serif}.rp-cross{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
@@ -2889,7 +2890,7 @@ function resample(cs, tf){
 function setTfButtons(){ const box = $("#rpTfs"); if (!box) return; const base = replay.base?.length ? baseTf(replay.base) : 0; box.hidden = !base;
   box.querySelectorAll("[data-tf]").forEach(b => { const m = +b.dataset.tf; b.disabled = m < base; b.setAttribute("aria-pressed", String(m === replay.tf)); b.title = m < base ? "Your file's candles are bigger than this. Export a smaller timeframe from MT5 to see it." : ""; }); }
 // Trade details under the replay chart: everything about the trade at a glance.
-function rpInfo(x, range){
+function rpInfo(x, range, locked = false){
   const host = $("#rpInfo"); if (!host) return; if (!x){ host.innerHTML = ""; return; }
   const isLong = x.side !== "short", d = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp), s_ = spec(x);
   const cash = v => Math.abs(v) * s_.lots * s_.contract * s_.rate, riskPts = stop != null ? Math.abs(entry - stop) : null, pl = pnl(x), r = rMult(x);
@@ -2899,7 +2900,10 @@ function rpInfo(x, range){
   const left = best != null ? Math.max(0, (best - exit) * d) : null, dur = durationOf(x);
   const fmtD = m => m == null ? "—" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
   const R = v => riskPts ? ` · ${(v / riskPts).toFixed(2)}R` : "";
-  const k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  const k0 = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  // While replaying, keep the outcome hidden until the replay reaches the exit, so you can judge the trade as it happens.
+  const SPOIL = ["Exit", "Result", "Max against you", "Max in your favour", "Left on the table", "Best exit available"];
+  const k = (l, v, c, sub) => locked && SPOIL.includes(l) ? `<div class="ms rp-lock"><span class="label">${esc(/^(Left on the table|Best exit available)$/.test(l) ? "Best price reached" : l)}</span><span class="v">🔒</span><span class="hint">Shown at your exit</span></div>` : k0(l, v, c, sub);
   const tpHit = tp != null && (tp - entry) * d > 0 && best != null && (best - tp) * d >= 0, slHit = stop != null && worst != null && (stop - worst) * d >= 0;
   const notes = [];
   if (tpHit && Math.abs(exit - tp) > riskPts * 0.05) notes.push(`Price reached your TP (${price(tp)}) but you closed at ${price(exit)}.`);
@@ -2919,12 +2923,12 @@ function rpInfo(x, range){
       ${pl > 0 ? k("Left on the table", left != null ? esc(money(cash(left)).replace(/^[+−-]/, "")) : "—", "", left != null ? `${price(left)} past your exit${R(left)}` : "")
         : k("Best exit available", fav != null ? esc(money(cash(fav))) : "—", fav ? "pos" : "", fav != null ? (fav > 0 ? "if you'd closed at the best price" : "it never went your way") : "")}
     </div>
-    ${notes.length ? `<ul class="rp-notes">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
-    ${(x.setup || x.grade || x.mood || x.notes) ? `<p class="hint" style="margin:8px 0 0">${[x.setup && `Setup: ${esc(x.setup)}`, x.grade && `Grade: ${esc(x.grade)}`, x.mood && `Mood: ${esc(x.mood)}`, x.plan === false && "Didn't follow plan", x.fomo && "FOMO", x.revenge && "Revenge trade"].filter(Boolean).join(" · ")}${x.notes ? `<br>“${esc(x.notes)}”` : ""}</p>` : ""}</div>`;
+    ${notes.length && !locked ? `<ul class="rp-notes">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+    ${locked ? (x.setup ? `<p class="hint" style="margin:8px 0 0">Setup: ${esc(x.setup)}</p>` : "") : (x.setup || x.grade || x.mood || x.notes) ? `<p class="hint" style="margin:8px 0 0">${[x.setup && `Setup: ${esc(x.setup)}`, x.grade && `Grade: ${esc(x.grade)}`, x.mood && `Mood: ${esc(x.mood)}`, x.plan === false && "Didn't follow plan", x.fomo && "FOMO", x.revenge && "Revenge trade"].filter(Boolean).join(" · ")}${x.notes ? `<br>“${esc(x.notes)}”` : ""}</p>` : ""}</div>`;
 }
 function drawReplay(){
   const host = $("#rpChart"); if (!host) return; const x = replay.trade, cs = replay.candles;
-  rpInfo(x, null);
+  rpInfo(x, null, false);
   if (!x || !cs.length){ host.innerHTML = `<p class="hint">Pick a trade and load the candles for that symbol.</p>`; return; }
   bindReplayChart(host);
   const key = c => c.d + " " + c.t, inKey = `${x.date} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
@@ -2945,6 +2949,16 @@ function drawReplay(){
     if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade, the right symbol, and that MT5's chart time matches the times on your trades (brokers often use a different time zone).`;
   }
   const reachedIn = last >= iIn, reachedOut = last >= iOut;
+  // Nothing on the chart until you press play (or step), so the replay starts blind.
+  if (!replay.started){
+    rpInfo(x, null, !hard);
+    host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-ready"><span class="label">Ready to replay</span><b>${esc(x.symbol)}${replay.tf ? " · " + esc(replay.tf < 60 ? replay.tf + "m" : replay.tf / 60 + "h") : ""}</b>
+      <span class="hint">${esc(fmtDate(x.date))} · ${x.side === "short" ? "Sell" : "Buy"} ${esc(String(spec(x).lots))} lots at ${esc(x.timeIn || "")}. The chart starts ${esc(String(Math.min(40, iIn - from)))} candles before your entry.</span>
+      <button type="button" class="btn primary" id="rpGo">▶ Play</button><span class="hint">Or go one candle at a time with <b>1 candle ▶</b> or the → key.</span></div>`;
+    $("#rpGo").onclick = () => replayPlay();
+    $("#rpPos").textContent = "Ready";
+    return;
+  }
   const isLong = x.side !== "short", d0 = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp);
   // Geometry in real pixels, so text stays readable on phones.
   const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
@@ -3030,8 +3044,9 @@ function drawReplay(){
   replay.geo = { W, H, L, R, T, B, bw, N, left, last, lo, hi, fmtP, ohlc, ix, cs, lastC };
   $("#rpPos").textContent = `Candle ${replay.idx} of ${replay.max}${hard ? "" : reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   // Best/worst price while in the trade, from the smallest candles in the file (bigger ones include price from before you entered).
+  if (warn) rpInfo(x, null, !hard && !reachedOut);
   if (!warn){ const src = replay.base?.length ? replay.base : cs, tIn = inKey.slice(0, 16), tOut = outKey.slice(0, 16); let inT = src.filter(c => key(c) >= tIn && key(c) <= tOut); if (!inT.length) inT = cs.slice(iIn, iOut + 1);
-    rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }); }
+    rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }, !reachedOut); }
 }
 // Drag to pan, wheel or pinch to zoom, crosshair on hover. Bound once to the chart box, which stays put between redraws.
 let rpRaf = 0;
@@ -3067,10 +3082,11 @@ function bindReplayChart(host){
   host.addEventListener("keydown", e => { if (e.key === "ArrowRight"){ e.preventDefault(); replayStep(1); } else if (e.key === "ArrowLeft"){ e.preventDefault(); replayStep(-1); } else if (e.key === " "){ e.preventDefault(); replayPlay(); } });
   host.addEventListener("dblclick", e => { if (!e.target.closest(".rp-warn")) rpFit(); });
 }
-function replayStep(d){ replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
+function replayStep(d){ replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
 function replayStop(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; } if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; }
-function replayJump(i){ replayStop(); replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
+function replayJump(i){ replayStop(); replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
 function replayPlay(){ if (replay.timer){ replayStop(); return; }
+  if (!replay.started){ replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
 
@@ -3154,7 +3170,7 @@ function renderElite(){
   $("#rrRun").onclick = () => { const w = Math.min(99, Math.max(1, +$("#rrW").value || 45)) / 100, rr = +$("#rrR").value || 2, sample = Array.from({ length: 100 }, (_, i) => i < w * 100 ? rr : -1);
     const m = monteCarlo(sample, { n: Math.min(500, Math.max(10, +$("#rrN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value || 1, ddLimit: +(a.rules?.maxPct ?? 10), target: +(a.rules?.targetPct ?? 10) });
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
-  const rpLoad = () => { replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; drawReplay(); };
+  const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); };
   $("#rpTrade").onchange = rpLoad;
   $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(replay.base, replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
