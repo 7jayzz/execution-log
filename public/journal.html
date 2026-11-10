@@ -499,6 +499,13 @@ details.adv[open] summary{margin-bottom:10px}
 .pro-fan{width:100%;height:auto;display:block}
 .coach-out{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-height:70px}
 .coach-text{white-space:pre-wrap;line-height:1.6;font-size:14px}
+.ch-list{display:flex;flex-direction:column;gap:8px}
+.ch-item{border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.ch-item summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ch-item summary::-webkit-details-marker{display:none}
+.ch-item summary b{font-size:14px;flex:1 1 220px;min-width:0}
+.ch-item .ch-body{padding:0 14px 12px}
+.ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
 .rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center}.rp-svg{width:100%;height:auto;display:block}
 .recent-list{display:flex;flex-direction:column;gap:8px}
@@ -2793,6 +2800,45 @@ const COACH_PROMPTS = {
   month: "Write my monthly trading review from the last 30 days. Cover results, what's working, what's costing me money, my psychology, and a short improvement plan.",
   plan: "Build me a personalised 2-week improvement plan based on my biggest weaknesses in this data. Make each step specific and measurable."
 };
+/* ---------- Saved coach chats ---------- */
+state.coachChats = state.coachChats || [];
+const COACH_LABELS = { last: "Last trade review", week: "Weekly review", month: "Monthly review", plan: "Improvement plan" };
+const chTitle = c => c.ask === "ask" ? (c.question || "Question") : (COACH_LABELS[c.ask] || "Coach review");
+async function saveCoachChat({ ask, question, text }){
+  const id = "coach" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const a = activeAcct();
+  const rec = { kind: "coach", ask, question: question || "", text, accountId: a?.id || "", accountName: a?.name || "", created: Date.now() };
+  state.coachChats = [...state.coachChats, { id, ...rec }]; renderCoachHist();
+  if (state.mode !== "live" || state.readOnly) return;
+  try { await col.doc(id).set(rec); } catch (e){ handleWriteError(e); }
+}
+async function removeCoachChat(id){
+  state.coachChats = state.coachChats.filter(c => c.id !== id); renderCoachHist();
+  if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).delete(); } catch (e){ handleWriteError(e); } }
+}
+function renderCoachHist(){
+  const host = $("#coachHist"); if (!host) return;
+  const q = ($("#chQ")?.value || "").trim().toLowerCase();
+  const all = [...state.coachChats].sort((p, q2) => (q2.created || 0) - (p.created || 0));
+  const list = q ? all.filter(c => (chTitle(c) + " " + c.text + " " + (c.accountName || "")).toLowerCase().includes(q)) : all;
+  const cnt = $("#chCount"); if (cnt) cnt.textContent = all.length ? `${all.length} saved` : "";
+  if (!all.length){ host.innerHTML = `<p class="hint">No saved chats yet. Ask your coach something above and the answer will appear here.</p>`; return; }
+  if (!list.length){ host.innerHTML = `<p class="hint">No chats match "${esc(q)}".</p>`; return; }
+  const openIds = new Set([...host.querySelectorAll(".ch-item[open]")].map(el => el.dataset.id));
+  const when = ms => { const d = new Date(ms || 0); return `${fmtDate(d.toISOString().slice(0, 10))} · ${d.toTimeString().slice(0, 5)}`; };
+  host.innerHTML = list.slice(0, 100).map(c => `<details class="ch-item" data-id="${esc(c.id)}"${openIds.has(c.id) ? " open" : ""}><summary><b>${esc(chTitle(c))}</b><span class="hint">${esc(when(c.created))}${c.accountName ? " · " + esc(c.accountName) : ""}</span></summary>
+    <div class="ch-body"><div class="coach-text">${esc(c.text || "")}</div>
+      <div class="actions"><button type="button" class="btn small" data-chnote>Save as note</button><button type="button" class="btn small" data-chcopy>Copy</button><button type="button" class="btn small" data-chdel>Delete</button></div></div></details>`).join("")
+    + (list.length > 100 ? `<p class="hint">Showing the latest 100. Search to find older chats.</p>` : "");
+  host.querySelectorAll(".ch-item").forEach(el => {
+    const c = state.coachChats.find(x => x.id === el.dataset.id); if (!c) return;
+    el.querySelector("[data-chdel]").onclick = e => { const b = e.currentTarget; if (b.dataset.sure){ removeCoachChat(c.id); return; } b.dataset.sure = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { if (b.isConnected){ delete b.dataset.sure; b.textContent = "Delete"; } }, 3000); };
+    el.querySelector("[data-chcopy]").onclick = async () => { try { await navigator.clipboard.writeText(`${chTitle(c)}\n\n${c.text}`); toast("Copied"); } catch { toast("Couldn't copy"); } };
+    el.querySelector("[data-chnote]").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36);
+      const ok = await saveNote(id, { kind: "note", title: `Coach: ${chTitle(c)} · ${fmtDate(new Date(c.created || now).toISOString().slice(0, 10))}`, body: c.text, tpl: "", pinned: false, created: now, updated: now });
+      if (ok !== false) toast("Saved to Notes"); };
+  });
+}
 async function askCoach(kind, question){
   const out = $("#coachOut"), sample = await getSample();
   if (!sample){ out.innerHTML = `<p class="hint">${HOSTED ? "The AI coach isn't switched on for this site yet." : "The AI coach isn't available in this view."}</p>`; return; }
@@ -2805,7 +2851,8 @@ ${JSON.stringify(data)}`;
   out.innerHTML = `<p class="hint">Your coach is reading your journal…</p>`;
   $("#coachBtns").querySelectorAll("button").forEach(b => b.disabled = true);
   try { const r = await sample(prompt, { onText: ({ text }) => { out.innerHTML = `<div class="coach-text">${esc(text)}</div>`; } });
-    out.innerHTML = `<div class="coach-text">${esc(r.text)}</div>`; }
+    out.innerHTML = `<div class="coach-text">${esc(r.text)}</div>`;
+    if (r.text) await saveCoachChat({ ask: kind, question: kind === "ask" ? question : "", text: r.text }); }
   catch (e){ out.innerHTML = `<p class="err">${esc(e?.friendly ? e.friendly : e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
   finally { $("#coachBtns")?.querySelectorAll("button").forEach(b => b.disabled = false); }
 }
@@ -2877,6 +2924,10 @@ function renderElite(){
       <div class="actions" id="coachBtns"><button type="button" class="btn small primary" data-coach="last">Review my last trade</button><button type="button" class="btn small" data-coach="week">Weekly review</button><button type="button" class="btn small" data-coach="month">Monthly review</button><button type="button" class="btn small" data-coach="plan">Improvement plan</button></div>
       <div class="row-flex"><input class="ctl" id="coachQ" placeholder="Ask about your trading, e.g. Why do I lose on Fridays?" maxlength="300"><button type="button" class="btn small" id="coachAsk">Ask</button></div>
       <div id="coachOut" class="coach-out"><p class="hint">Pick a review or ask a question. Your coach only sees your journal data, and its answers are coaching, not financial advice.</p></div></section>
+    <section class="panel"><div class="panel-head"><h2>Saved coach chats</h2><span class="label" id="chCount"></span></div>
+      <p class="hint" style="margin:0">Every answer from your coach is saved here automatically, so you can look back at old reviews and see how you've improved.</p>
+      <input class="ctl" id="chQ" placeholder="Search your coach chats" maxlength="100">
+      <div id="coachHist" class="ch-list"></div></section>
     <section class="panel"><div class="panel-head"><h2>Execution Score</h2><span class="label">0–100 per trade</span></div>
       ${scores.length ? `<div class="kgrid">${k("Average score", String(avgSc), scoreCls(avgSc), `${scores.length} trades`)}${k("This week", wkAvg == null ? "—" : String(wkAvg), wkAvg == null ? "" : scoreCls(wkAvg))}${k("Score 80+", hiS.n ? money(hiS.exp) : "—", cls(hiS.exp), hiS.n ? `per trade · ${hiS.n} trades` : "")}${k("Score under 55", loS.n ? money(loS.exp) : "—", cls(loS.exp), loS.n ? `per trade · ${loS.n} trades` : "")}</div>
         <p class="hint" style="margin:0">Plan followed 30 · no FOMO/revenge 20 · stop set 15 · risk within plan 15 · journaled 10 · grade 10.</p>
@@ -2912,6 +2963,8 @@ function renderElite(){
   host.querySelectorAll("[data-coach]").forEach(b => b.onclick = () => askCoach(b.dataset.coach));
   $("#coachAsk").onclick = () => { const q = $("#coachQ").value.trim(); if (q) askCoach("ask", q); };
   $("#coachQ").onkeydown = e => { if (e.key === "Enter") $("#coachAsk").click(); };
+  $("#chQ").oninput = () => renderCoachHist();
+  renderCoachHist();
   $("#mcRun").onclick = () => { const m = monteCarlo(rs, { n: Math.min(500, Math.max(10, +$("#mcN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#mcRisk").value || 1, ddLimit: +$("#mcDD").value || 10, target: +$("#mcT").value || 10 });
     $("#mcOut").innerHTML = simOut(m); };
   $("#rrRun").onclick = () => { const w = Math.min(99, Math.max(1, +$("#rrW").value || 45)) / 100, rr = +$("#rrR").value || 2, sample = Array.from({ length: 100 }, (_, i) => i < w * 100 ? rr : -1);
@@ -4716,8 +4769,9 @@ render();
       const all = snap.docs.filter(d => d.id !== "settings").map(d => ({ id: d.id, ...d.data() }));
       state.trades = all.filter(t => t.kind !== "note" && t.date && t.symbol);
       state.notes = all.filter(t => t.kind === "note");
+      state.coachChats = all.filter(t => t.kind === "coach");
       if (wasLoading) state.month = null;
-      render();
+      render(); renderCoachHist();
       if (!snap.metadata.fromCache){ maybeTutorial(); upgradeDemo(); }
     }, () => { clearTimeout(slowTimer); if (state.mode === "loading") enterDemo(); else toast(t("lostConn")); });
   } catch { clearTimeout(slowTimer); enterDemo(); }
