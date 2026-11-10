@@ -2895,10 +2895,11 @@ function rpInfo(x, range){
   const fmtD = m => m == null ? "—" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
   const R = v => riskPts ? ` · ${(v / riskPts).toFixed(2)}R` : "";
   const k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
-  const tpHit = tp != null && best != null && (best - tp) * d >= 0, slHit = stop != null && worst != null && (stop - worst) * d >= 0;
+  const tpHit = tp != null && (tp - entry) * d > 0 && best != null && (best - tp) * d >= 0, slHit = stop != null && worst != null && (stop - worst) * d >= 0;
   const notes = [];
   if (tpHit && Math.abs(exit - tp) > riskPts * 0.05) notes.push(`Price reached your TP (${price(tp)}) but you closed at ${price(exit)}.`);
-  if (left && left > (riskPts || 0) * 0.5) notes.push(`While you were in the trade, price got ${price(left)} further in your favour than where you closed. That's ${money(cash(left)).replace(/^[+−-]/, "")} you gave back.`);
+  if (pl <= 0 && fav && fav * s_.lots > 0 && (best - entry) * d > 0) notes.push(`This trade was ${money(cash(fav))} in profit at one point before it turned into a loss.`);
+  if (pl > 0 && left && left > (riskPts || 0) * 0.5) notes.push(`While you were in the trade, price got ${price(left)} further in your favour than where you closed. That's ${money(cash(left)).replace(/^[+−-]/, "")} you gave back.`);
   if (adv != null && riskPts && adv / riskPts > 0.8 && pl > 0) notes.push(`Price came within ${Math.round((1 - adv / riskPts) * 100)}% of your stop before it worked.`);
   if (slHit && pl > 0) notes.push("Price went through your stop level. Check if your stop was moved.");
   host.innerHTML = `<div class="rp-info"><div class="panel-head"><h2 style="font-size:15px">Trade details</h2><span class="label">${esc(x.symbol)} · ${isLong ? "Buy" : "Sell"} ${esc(String(s_.lots))} lots</span></div>
@@ -2910,7 +2911,8 @@ function rpInfo(x, range){
       ${k("Result", esc(money(pl)), pl >= 0 ? "pos" : "neg", r != null ? `${r >= 0 ? "+" : ""}${r.toFixed(2)}R` : "")}
       ${k("Max against you", adv != null ? esc(price(adv)) : "—", "neg", adv != null ? `${money(cash(adv)).replace(/^[+−-]/, "−")}${R(adv)}` : "Load candles to see")}
       ${k("Max in your favour", fav != null ? esc(price(fav)) : "—", "pos", fav != null ? `${money(cash(fav))}${R(fav)}` : "Load candles to see")}
-      ${k("Left on the table", left != null ? esc(money(cash(left)).replace(/^[+−-]/, "")) : "—", "", left != null ? `${price(left)} past your exit${R(left)}` : "")}
+      ${pl > 0 ? k("Left on the table", left != null ? esc(money(cash(left)).replace(/^[+−-]/, "")) : "—", "", left != null ? `${price(left)} past your exit${R(left)}` : "")
+        : k("Best exit available", fav != null ? esc(money(cash(fav))) : "—", fav ? "pos" : "", fav != null ? (fav > 0 ? "if you'd closed at the best price" : "it never went your way") : "")}
     </div>
     ${notes.length ? `<ul class="rp-notes">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
     ${(x.setup || x.grade || x.mood || x.notes) ? `<p class="hint" style="margin:8px 0 0">${[x.setup && `Setup: ${esc(x.setup)}`, x.grade && `Grade: ${esc(x.grade)}`, x.mood && `Mood: ${esc(x.mood)}`, x.plan === false && "Didn't follow plan", x.fomo && "FOMO", x.revenge && "Revenge trade"].filter(Boolean).join(" · ")}${x.notes ? `<br>“${esc(x.notes)}”` : ""}</p>` : ""}</div>`;
