@@ -508,6 +508,7 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
 .rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
+.rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
 .rp-box{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}.rp-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px 2px;font-size:12.5px}.rp-head>b{font-size:13.5px}.rp-when{color:var(--muted);font-family:var(--mono,ui-monospace,monospace);font-size:11.5px}.rp-ohlc{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;color:var(--muted)}.rp-ohlc b{font-weight:600;margin-inline-start:2px}.rp-svg{touch-action:pan-y;cursor:crosshair;max-width:100%}.rp-grid{stroke:var(--line);stroke-width:1;opacity:.6}.rp-ax{font:11px var(--mono,ui-monospace,monospace);fill:var(--muted)}.rp-axbg{fill:var(--surface)}.rp-mk{font:600 11px system-ui,sans-serif}.rp-cross{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
 .rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
 .recent-list{display:flex;flex-direction:column;gap:8px}
@@ -2882,8 +2883,41 @@ function resample(cs, tf){
 }
 function setTfButtons(){ const box = $("#rpTfs"); if (!box) return; const base = replay.base?.length ? baseTf(replay.base) : 0; box.hidden = !base;
   box.querySelectorAll("[data-tf]").forEach(b => { const m = +b.dataset.tf; b.disabled = m < base; b.setAttribute("aria-pressed", String(m === replay.tf)); b.title = m < base ? "Your file's candles are bigger than this. Export a smaller timeframe from MT5 to see it." : ""; }); }
+// Trade details under the replay chart: everything about the trade at a glance.
+function rpInfo(x, range){
+  const host = $("#rpInfo"); if (!host) return; if (!x){ host.innerHTML = ""; return; }
+  const isLong = x.side !== "short", d = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp), s_ = spec(x);
+  const cash = v => Math.abs(v) * s_.lots * s_.contract * s_.rate, riskPts = stop != null ? Math.abs(entry - stop) : null, pl = pnl(x), r = rMult(x);
+  // Worst and best price while in the trade: from the candles if loaded, otherwise from what was logged.
+  const worst = range ? (isLong ? range.lo : range.hi) : num(x.mae), best = range ? (isLong ? range.hi : range.lo) : num(x.mfe);
+  const adv = worst != null ? Math.max(0, (entry - worst) * d) : null, fav = best != null ? Math.max(0, (best - entry) * d) : null;
+  const left = best != null ? Math.max(0, (best - exit) * d) : null, dur = durationOf(x);
+  const fmtD = m => m == null ? "—" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+  const R = v => riskPts ? ` · ${(v / riskPts).toFixed(2)}R` : "";
+  const k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  const tpHit = tp != null && best != null && (best - tp) * d >= 0, slHit = stop != null && worst != null && (stop - worst) * d >= 0;
+  const notes = [];
+  if (tpHit && Math.abs(exit - tp) > riskPts * 0.05) notes.push(`Price reached your TP (${price(tp)}) but you closed at ${price(exit)}.`);
+  if (left && left > (riskPts || 0) * 0.5) notes.push(`While you were in the trade, price got ${price(left)} further in your favour than where you closed. That's ${money(cash(left)).replace(/^[+−-]/, "")} you gave back.`);
+  if (adv != null && riskPts && adv / riskPts > 0.8 && pl > 0) notes.push(`Price came within ${Math.round((1 - adv / riskPts) * 100)}% of your stop before it worked.`);
+  if (slHit && pl > 0) notes.push("Price went through your stop level. Check if your stop was moved.");
+  host.innerHTML = `<div class="rp-info"><div class="panel-head"><h2 style="font-size:15px">Trade details</h2><span class="label">${esc(x.symbol)} · ${isLong ? "Buy" : "Sell"} ${esc(String(s_.lots))} lots</span></div>
+    <div class="kgrid">
+      ${k("Entry", esc(price(entry)), "", `${fmtDate(x.date)} ${x.timeIn || ""}`)}
+      ${k("Exit", esc(price(exit)), pl >= 0 ? "pos" : "neg", x.timeOut ? `at ${x.timeOut} · held ${fmtD(dur)}` : "")}
+      ${k("Stop loss", stop != null ? esc(price(stop)) : "—", "neg", riskPts ? `${price(riskPts)} away · risk ${money(cash(riskPts)).replace(/^[+−-]/, "")}` : "No stop logged")}
+      ${k("Take profit", tp != null ? esc(price(tp)) : "—", "pos", tp != null && riskPts ? `${price(Math.abs(tp - entry))} away · R:R ${(Math.abs(tp - entry) / riskPts).toFixed(2)}` : "No TP logged")}
+      ${k("Result", esc(money(pl)), pl >= 0 ? "pos" : "neg", r != null ? `${r >= 0 ? "+" : ""}${r.toFixed(2)}R` : "")}
+      ${k("Max against you", adv != null ? esc(price(adv)) : "—", "neg", adv != null ? `${money(cash(adv)).replace(/^[+−-]/, "−")}${R(adv)}` : "Load candles to see")}
+      ${k("Max in your favour", fav != null ? esc(price(fav)) : "—", "pos", fav != null ? `${money(cash(fav))}${R(fav)}` : "Load candles to see")}
+      ${k("Left on the table", left != null ? esc(money(cash(left)).replace(/^[+−-]/, "")) : "—", "", left != null ? `${price(left)} past your exit${R(left)}` : "")}
+    </div>
+    ${notes.length ? `<ul class="rp-notes">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+    ${(x.setup || x.grade || x.mood || x.notes) ? `<p class="hint" style="margin:8px 0 0">${[x.setup && `Setup: ${esc(x.setup)}`, x.grade && `Grade: ${esc(x.grade)}`, x.mood && `Mood: ${esc(x.mood)}`, x.plan === false && "Didn't follow plan", x.fomo && "FOMO", x.revenge && "Revenge trade"].filter(Boolean).join(" · ")}${x.notes ? `<br>“${esc(x.notes)}”` : ""}</p>` : ""}</div>`;
+}
 function drawReplay(){
   const host = $("#rpChart"); if (!host) return; const x = replay.trade, cs = replay.candles;
+  rpInfo(x, null);
   if (!x || !cs.length){ host.innerHTML = `<p class="hint">Pick a trade and load the candles for that symbol.</p>`; return; }
   const key = c => c.d + " " + c.t, inKey = `${x.date} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
   // The candle that contains the entry (or exit) time.
@@ -2977,6 +3011,7 @@ function drawReplay(){
       + `<rect x="${Math.min(W - R - 92, Math.max(0, cx(i) - 46))}" y="${H - B + 2}" width="92" height="19" rx="2" style="fill:#131722"/><text x="${Math.min(W - R - 46, Math.max(46, cx(i)))}" y="${H - 8}" text-anchor="middle" class="rp-ax" style="fill:#fff">${esc(fmtDate(c.d).replace(/\s\d{2}$/, "") + " " + c.t)}</text>`;
     head.innerHTML = ohlc(c); when.textContent = c.d + " " + c.t; };
   svg.onmousemove = move; svg.ontouchstart = svg.ontouchmove = move; svg.onmouseleave = () => { xh.innerHTML = ""; head.innerHTML = ohlc(lastC); when.textContent = lastC.d + " " + lastC.t; };
+  if (!warn){ const inT = cs.slice(iIn, iOut + 1); rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }); }
   $("#rpPos").textContent = `${shown.length} / ${view.length} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   replay.max = view.length;
 }
@@ -3042,7 +3077,8 @@ function renderElite(){
       <div class="actions"><button type="button" class="btn small" id="rpBack">◀ Step</button><button type="button" class="btn small primary" id="rpPlay">▶ Play</button><button type="button" class="btn small" id="rpFwd">Step ▶</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
       <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</div>
-      <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div></section>
+      <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
+      <div id="rpInfo"></div></section>
     <section class="panel"><div class="panel-head"><h2>Planned vs actual</h2><span class="label">${planned.length} trades with a plan</span></div>
       ${pva ? `<div class="kgrid">${k("Entry slippage", pva.slip == null ? "—" : (pva.slip > 0 ? "+" : "") + pva.slip.toFixed(2) + "R", pva.slip > .1 ? "neg" : "", "Positive means you entered late")}${k("Stops widened", String(pva.widened), pva.widened ? "neg" : "", "Stop moved further than planned")}${k("Exited before target", pva.tgtN ? `${pva.early} / ${pva.tgtN}` : "—", "", "Winning trades closed early")}${k("Trades planned", String(pva.n))}</div>`
         : `<p class="hint" style="margin:0">Add your planned entry, stop and target under Pro details when you log a trade, then compare them with what you actually did.</p>`}</section>
