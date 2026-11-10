@@ -2038,10 +2038,10 @@ const GUIDES = {
     { sel: "#noteNew", title: "New note", body: "Start a blank note or use a template, such as a pre-market plan or a weekly review." },
     { sel: "#noteQ", title: "Search", body: "Find any note by its words. Pin your trading plan so it always sits at the top." }
   ] },
-  elite: { name: "Elite tools", tier: "elite", steps: [
+  elite: { name: "Elite tools", tier: "pro", steps: [
     { title: "Elite tools", body: "Your AI coach, Trade Replay, the strategy tester and the deeper risk tools. Here's how each one works." },
     { sel: "#coachBtns", title: "AI Trading Coach", body: "One tap reviews your last trade, your week or your month using your real journal data. Or type any question below, like \"why do I lose on Fridays?\"." },
-    { sel: "#coachShot", title: "Screenshot review", body: "Pick a trade with a chart screenshot and the coach looks at the chart itself: structure, entry location, stop and target." },
+    { sel: "#coachShot", tier: "elite", title: "Screenshot review", body: "Pick a trade with a chart screenshot and the coach looks at the chart itself: structure, entry location, stop and target." },
     { sel: "#coachHist", title: "Saved coach chats", body: "Every answer is saved automatically. Search them, copy them or save one as a note." },
     { sel: "#rpTrade", title: "Trade Replay: pick a trade", body: "Choose any trade you've logged." },
     { sel: "#rpHow", title: "Get the candles", body: "Replay needs a candles file for that symbol and day. This guide shows how to export one for free from MT5, MT4 or TradingView in under a minute." },
@@ -2049,8 +2049,8 @@ const GUIDES = {
     { sel: "#btBox", title: "Strategy tester", body: "Test a strategy on months of real price history before you risk money. Load a candles file, set your rules and run it." },
     { sel: "#btSig", title: "Build your own rules", body: "Pick \"Build my own rules\" to combine indicators, price levels and candle patterns, for example \"close above the 200 EMA and RSI crosses above 40\". Or describe it in plain English and the coach builds it for you." },
     { sel: "#btRun", title: "Run and read the report", body: "You get win rate, profit factor, drawdown, an equity curve and breakdowns by day and hour. Save the strategy to test it again on new data." },
-    { sel: "#mcRun", title: "Monte Carlo", body: "Shuffles your real results 1,000 times to show the range of outcomes over your next trades, and how likely you are to hit a drawdown limit." },
-    { sel: "#eliteRep", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status." }
+    { sel: "#mcRun", tier: "elite", title: "Monte Carlo", body: "Shuffles your real results 1,000 times to show the range of outcomes over your next trades, and how likely you are to hit a drawdown limit." },
+    { sel: "#eliteRep", tier: "elite", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status." }
   ] },
   settings: { name: "Settings", tier: "pro", steps: [
     { title: "Settings", body: "Accounts, notifications, appearance, your data and your plan all live here." },
@@ -2076,7 +2076,7 @@ function openGuidesHub(){
     <p class="hint" style="margin:0">A short walkthrough for each page. You can also open the guide for the page you're on with the 📘 button next to its title.</p>
     <div class="guide-list">
       <button type="button" class="guide-row" data-g="__main"><b>Getting started</b><span class="hint">The basics: logging trades, accounts, the calendar</span></button>
-      ${Object.entries(GUIDES).map(([k, g]) => { const ok = guideAllowed(k); return `<button type="button" class="guide-row" data-g="${k}" ${ok ? "" : "disabled"}><b>${esc(g.name)} ${pill(g.tier)}${ok && !seen.includes(k) ? ' <span class="guide-new">New</span>' : ""}</b><span class="hint">${ok ? `${g.steps.filter(s_ => !s_.tier || hasTier(s_.tier)).length} steps` : `Included with ${g.tier === "elite" ? "Elite" : "Pro"}`}</span></button>`; }).join("")}
+      ${Object.entries(GUIDES).map(([k, g]) => { const ok = guideAllowed(k); return `<button type="button" class="guide-row" data-g="${k}" ${ok ? "" : "disabled"}><b>${esc(g.name)} ${pill(k === "elite" ? "elite" : g.tier)}${ok && !seen.includes(k) ? ' <span class="guide-new">New</span>' : ""}</b><span class="hint">${ok ? `${g.steps.filter(s_ => !s_.tier || hasTier(s_.tier)).length} steps` : `Included with ${g.tier === "elite" ? "Elite" : "Pro"}`}</span></button>`; }).join("")}
     </div></div>`);
   document.querySelectorAll(".guide-row").forEach(b => b.onclick = () => { if (b.disabled) return; close(); const k = b.dataset.g; setTimeout(() => k === "__main" ? openTutorial(0) : openGuide(k), 80); });
 }
@@ -3600,7 +3600,7 @@ function btDrawBuild(){
     if (el.classList.contains("c-a") && el.value === "rsi"){ const b = row.querySelector(".c-b"); if (b && b.value !== "value" && b.value !== "rsi"){ sync(); const arr = btState[side]; arr[+row.dataset.i].b = { k: "value", v: 50 }; btDrawBuild(); return; } }
     sync(); btDrawBuild(); });
   host.querySelectorAll(".c-del").forEach(b => b.onclick = () => { sync(); btState[b.dataset.side].splice(+b.dataset.i, 1); btDrawBuild(); });
-  host.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { sync(); const arr = btState[b.dataset.add]; if (arr.length >= 8){ toast("Up to 8 conditions per side"); return; }
+  host.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { sync(); const arr = btState[b.dataset.add]; const mx = btLim().conds; if (arr.length >= mx){ toast(hasTier("elite") ? "Up to 8 conditions per side" : `Pro backtests use up to ${mx} conditions per side. Elite allows 8.`, 4500); return; }
     arr.push(b.dataset.kind === "pat" ? { pat: b.dataset.add === "sell" ? "bear" : "bull" } : b.dataset.add === "sell" ? { a: { k: "close" }, op: "xb", b: { k: "ema", n: 50 } } : { a: { k: "close" }, op: "xa", b: { k: "ema", n: 50 } }); btDrawBuild(); });
   $("#btSellM").onchange = e => { sync(); btState.sellMode = e.target.value; if (btState.sellMode === "own" && !btState.sell.length) btState.sell = btState.buy.map(mirrorCond); btDrawBuild(); };
   $("#btPreset").onchange = e => { const p = BT_PRESETS[+e.target.value]; if (!p) return; const cur = btRead();
@@ -3623,9 +3623,9 @@ Strategy: ${JSON.stringify(q)}`;
   try {
     const r = await sample(prompt, { onText: () => {} }), txt = String(r.text || ""), m = txt.match(/\{[\s\S]*\}/);
     let j = null; try { j = m ? JSON.parse(m[0]) : null; } catch {}
-    const buy = cleanConds(j?.buy); if (!buy.length) throw { friendly: "I couldn't turn that into rules. Try naming the indicators and levels, e.g. \"close crosses above the 50 EMA\"." };
+    const buy = cleanConds(j?.buy).slice(0, btLim().conds); if (!buy.length) throw { friendly: "I couldn't turn that into rules. Try naming the indicators and levels, e.g. \"close crosses above the 50 EMA\"." };
     const cur = btRead(), n = (v, lo, hi, d) => isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d, hm = v => /^\d{2}:\d{2}$/.test(v || "") ? v : null;
-    const next = { ...cur, signal: "custom", buy, sell: cleanConds(j.sell), sellMode: j.sellMode === "own" && cleanConds(j.sell).length ? "own" : "mirror",
+    const next = { ...cur, signal: "custom", buy, sell: cleanConds(j.sell).slice(0, btLim().conds), sellMode: j.sellMode === "own" && cleanConds(j.sell).length ? "own" : "mirror",
       dir: ["both", "long", "short"].includes(j.dir) ? j.dir : cur.dir, tf: [1, 5, 15, 30, 60, 240].includes(+j.tf) ? +j.tf : cur.tf,
       stopType: ["atr", "pts", "candle", "swing"].includes(j.stopType) ? j.stopType : cur.stopType, stopAtr: n(j.stopAtr, .1, 20, cur.stopAtr), stopPts: n(j.stopPts, 0, 1e6, cur.stopPts), swingN: Math.round(n(j.swingN, 2, 200, cur.swingN)),
       rr: n(j.rr, .1, 20, cur.rr), from: hm(j.from) || cur.from, to: hm(j.to) || cur.to, maxDay: Math.round(n(j.maxDay, 1, 50, cur.maxDay)),
@@ -3700,10 +3700,15 @@ function bindStrategyTester(){
     if (r.signal === "ma" && r.maFast >= r.maSlow){ toast("The fast EMA must be shorter than the slow EMA"); return; }
     if (r.signal === "custom" && !cleanConds(r.buy).length && !cleanConds(sellRules(r)).length){ toast("Add at least one condition to your rules"); return; }
     if (!r.days.length){ toast("Pick at least one day to trade"); return; }
-    btReport(runBacktest(resample(btState.base, r.tf), r), r); $("#btOut").scrollIntoView({ behavior: "smooth", block: "start" }); };
+    const lim = btLim(); let base = btState.base, trimmed = false;
+    if (isFinite(lim.days)){ const ds = [...new Set(base.map(c => c.d))]; if (ds.length > lim.days){ const keep = new Set(ds.slice(-lim.days)); base = base.filter(c => keep.has(c.d)); trimmed = true; } }
+    if (r.signal === "custom" && (cleanConds(r.buy).length > lim.conds || (r.sellMode === "own" && cleanConds(r.sell).length > lim.conds))){ toast(`Pro backtests use up to ${lim.conds} conditions per side. Remove one, or upgrade to Elite for 8.`, 5000); return; }
+    const { name: _n, ...rk } = r; if (!btAllowed(btHash(JSON.stringify(rk) + "|" + base.length + "|" + base[0].d + base[0].t + "|" + base[base.length - 1].d + base[base.length - 1].t))) return;
+    btReport(runBacktest(resample(base, r.tf), r), r);
+    if (trimmed) $("#btOut")?.insertAdjacentHTML("afterbegin", `<p class="set-note" style="margin:0 0 10px">Pro tests the most recent ${lim.days} days of your file (${esc(fmtDate(base[0].d))} to ${esc(fmtDate(base[base.length - 1].d))}). Elite tests your full history.</p>`); $("#btOut").scrollIntoView({ behavior: "smooth", block: "start" }); };
   $("#btSave").onclick = async () => { const r = btRead(); if (!r.name){ $("#btName").focus(); toast("Give your strategy a name"); return; }
     const ls_ = btRules(), ex = ls_.find(x => x.id === sel.value) || ls_.find(x => x.name.toLowerCase() === r.name.toLowerCase());
-    if (!ex && ls_.length >= 10){ toast("You can save up to 10 strategies"); return; }
+    if (!ex && ls_.length >= btLim().saved){ toast(hasTier("elite") ? "You can save up to 10 strategies" : `Pro saves up to ${PRO_BT.saved} strategies. Delete one, or upgrade to Elite for 10.`, 5000); return; }
     const id = ex?.id || "bt" + Date.now().toString(36), list = ex ? ls_.map(x => x.id === id ? { ...r, id } : x) : [...ls_, { ...r, id }];
     if (await saveCfg({ btRules: list })){ drawSaved(list); sel.value = id; $("#btDel").hidden = false; toast(`Strategy "${r.name}" saved`); } };
   $("#btDel").onclick = async e => { const b = e.currentTarget; if (!b.dataset.sure){ b.dataset.sure = "1"; b.textContent = "Tap again to delete"; return; } delete b.dataset.sure; b.textContent = "Delete";
@@ -3802,18 +3807,41 @@ function openCandleGuide(){
 /* ---------- Elite taster (Basic and Pro) ---------- */
 // The coach and replay stay usable with a small allowance; everything else becomes a short preview with one real number.
 const FREE_REPLAYS_WEEK = 1;
+// Strategy tester on Pro: a weekly allowance and smaller limits. Elite is unlimited. Basic doesn't get it.
+const PRO_BT = { week: 5, conds: 3, saved: 2, days: 30 };
+const btLim = () => hasTier("elite") ? { week: Infinity, conds: 8, saved: 10, days: Infinity } : PRO_BT;
+const btUsed = () => { const wk = Date.now() - 7 * 864e5; return (state.usage?.bt || []).filter(r => r.at > wk); };
+function btShowLeft(){
+  const lbl = $("#btBox .panel-head .label"); if (!lbl) return;
+  if (hasTier("elite")){ lbl.textContent = "Your rules · historical candles"; return; }
+  const left = Math.max(0, PRO_BT.week - btUsed().length); lbl.textContent = `Pro: ${left} of ${PRO_BT.week} tests left this week`;
+}
+// Re-running the exact same rules on the same data doesn't use another test.
+function btAllowed(key){
+  if (hasTier("elite")) return true;
+  const used = btUsed(); if (used.some(r => r.k === key)) return true;
+  if (used.length < PRO_BT.week){
+    const rec = { ...(state.usage || {}), bt: [...used, { k: key, at: Date.now() }] }; state.usage = rec;
+    if (state.mode === "live" && !state.readOnly) col.doc("usage").set(rec).catch(() => {});
+    btShowLeft(); return true;
+  }
+  const next = new Date(Math.min(...used.map(r => r.at)) + 7 * 864e5).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const out = $("#btOut"); if (out){ out.innerHTML = `<div class="lock-mini"><p class="hint"><b>You've used this week's ${PRO_BT.week} Pro backtests.</b> Your next one unlocks on ${esc(next)}. You can still re-run a test you've already done this week. Elite gives you unlimited tests on your full history, 8 conditions per side and 10 saved strategies.</p><button type="button" class="btn small" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`; bindUpgrade(out); }
+  return false;
+}
+function btHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return h.toString(36); }
 function eliteTaster(host, sc){
-  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab"];
+  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab", ...(hasTier("pro") ? ["Strategy tester"] : [])];
   const head = host.querySelector(".pro-head");
   if (head) head.outerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span></div>
-    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
+    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>${hasTier("pro") ? `, plus <b>${PRO_BT.week} strategy backtests a week</b> with your Pro plan` : ""}. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
   host.querySelectorAll("section.panel").forEach(sec => {
     const h = sec.querySelector(".panel-head h2")?.textContent.trim() || "";
     if (keep.includes(h)) return;
     let teaser = "";
     if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
     else if (h === "Backtesting Studio") teaser = "See the range of results your own trades could produce over the next 100 trades, and your real risk of breaching a drawdown limit.";
-    else if (h === "Strategy tester") teaser = "Write your own entry, stop and target rules and test them on months of real candles, with a full report by day, hour and direction.";
+    else if (h === "Strategy tester") teaser = "Write your own entry, stop and target rules and test them on months of real candles, with a full report by day, hour and direction. Pro includes 5 tests a week. Elite is unlimited.";
     else if (h === "What if…") teaser = "Replay your real trades with a different stop, target or risk size and see what you'd have made.";
     else if (h === "Risk-to-reward simulator") teaser = "Test any win rate and R:R before you trade it.";
     else if (h === "Planned vs actual") teaser = "Compare where you planned to enter, stop and take profit with what you actually did.";
@@ -3827,7 +3855,7 @@ function eliteTaster(host, sc){
   const secs = [...host.querySelectorAll("section.panel")], find = t => secs.find(x => x.querySelector(".panel-head h2")?.textContent.trim() === t);
   const chats = find("Saved coach chats"), rp = find("▶ Trade Replay Lab"); if (chats && rp) chats.after(rp);
   bindUpgrade(host);
-  showCoachLeft();
+  showCoachLeft(); btShowLeft();
 }
 async function showCoachLeft(u){
   const lbl = document.querySelector("#elitePage .panel-head h2")?.closest("section")?.querySelector(".panel-head .label"); if (!lbl) return;
