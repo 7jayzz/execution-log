@@ -2942,14 +2942,14 @@ function drawReplay(){
   // Chart geometry: real pixels, so text stays readable on phones.
   const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
   const slots = view.length + 4, bw = (W - L - R) / slots, cx = i => L + i * bw + bw / 2;
-  const lv = warn ? [] : [stop, tp, entry, exit].filter(v => v != null);
+  const lv = [stop, tp, entry, exit].filter(v => v != null);
   let lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.12; lo -= pad; hi += pad;
   const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const UP = "#089981", DN = "#F23645";
   const raw = (hi - lo) / (H < 400 ? 5 : 7), mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag, step = (nrm < 1.5 ? 1 : nrm < 3 ? 2 : nrm < 7 ? 5 : 10) * mag;
   const dec = Math.max(0, -Math.floor(Math.log10(step)) + (step / Math.pow(10, Math.floor(Math.log10(step))) === 1 ? 0 : 0));
   const fmtP = v => (+v).toFixed(Math.max(dec, entry < 10 ? 4 : entry < 1000 ? 3 : 2));
-  const lastC = shown[shown.length - 1], tagVals = [lastC.c, ...(reachedIn && !warn ? [entry, stop, tp] : []), ...(reachedOut && !warn ? [exit] : [])].filter(v => v != null);
+  const lastC = shown[shown.length - 1], tagVals = [lastC.c, ...(reachedIn ? [entry, stop, tp] : []), ...(reachedOut ? [exit] : [])].filter(v => v != null);
   let grid = "";
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ const clash = tagVals.some(t => Math.abs(y(t) - y(v)) < 13);
     grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="rp-grid"/>${clash ? "" : `<text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax">${esc((+v).toFixed(dec))}</text>`}`; }
@@ -2961,7 +2961,7 @@ function drawReplay(){
   const tag = (v, bg, txt, ink = "#fff") => `<rect x="${W - R + 1}" y="${y(v) - 9}" width="${R - 2}" height="18" rx="2" style="fill:${bg}"/><text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax" style="fill:${ink};font-weight:600">${esc(txt)}</text>`;
   // TradingView-style position box: green from entry to target (or exit), red from entry to stop.
   let box = "", lines = "", marks = "";
-  if (reachedIn && !warn){
+  if (reachedIn){
     const x0 = cx(iIn - from) - bw / 2, x1 = (reachedOut ? cx(iOut - from) : cx(shown.length - 1)) + bw / 2, bwid = Math.max(bw, x1 - x0);
     const tgt = tp != null ? tp : exit, good = isLong ? tgt > entry : tgt < entry;
     if (good && (tp != null || reachedOut)) box += `<rect x="${x0}" y="${Math.min(y(entry), y(tgt))}" width="${bwid}" height="${Math.abs(y(tgt) - y(entry))}" style="fill:${UP};opacity:.18"/>`;
@@ -2993,8 +2993,8 @@ function drawReplay(){
     const hitMark = (i, lvl, txt, col) => { const hx = cx(i), hy = y(lvl), tw = txt.length * 6.4 + 12, above = (col === DN) !== isLong ? false : true; void above;
       return `<circle cx="${hx}" cy="${hy}" r="6" style="fill:${col};stroke:#fff" stroke-width="1.5"/>${col === DN ? `<path d="M${hx - 3},${hy - 3} l6,6 M${hx + 3},${hy - 3} l-6,6" style="stroke:#fff" stroke-width="1.6"/>` : `<path d="M${hx - 3.2},${hy} l2.2,2.4 l4,-4.6" style="stroke:#fff;fill:none" stroke-width="1.7"/>`}`
         + `<rect x="${Math.max(2, Math.min(W - R - tw - 2, hx - tw / 2))}" y="${(col === DN) === isLong ? hy - 27 : hy + 9}" width="${tw}" height="18" rx="3" style="fill:${col}"/><text x="${Math.max(2 + tw / 2, Math.min(W - R - tw / 2 - 2, hx))}" y="${(col === DN) === isLong ? hy - 14 : hy + 22}" text-anchor="middle" class="rp-mk" style="fill:#fff">${esc(txt)}</text>`; };
-    if (sI >= 0) marks += hitMark(sI, stop, `SL hit ${view[sI].t}`, DN);
-    if (tI >= 0 && (sI < 0 || tI < sI)) marks += hitMark(tI, tp, `TP hit ${view[tI].t}`, UP);
+    if (!warn && sI >= 0) marks += hitMark(sI, stop, `SL hit ${view[sI].t}`, DN);
+    if (!warn && tI >= 0 && (sI < 0 || tI < sI)) marks += hitMark(tI, tp, `TP hit ${view[tI].t}`, UP);
     if (reachedOut){ const co = iOut - from, d = view[co], pl = pnl(x);
       lines += `<line x1="${cx(co)}" x2="${W - R}" y1="${y(exit)}" y2="${y(exit)}" style="stroke:${pl >= 0 ? UP : DN}" stroke-width="1"/>` + tag(exit, pl >= 0 ? UP : DN, fmtP(exit));
       // Exit flag on the exit price, pointing back at the exit candle.
@@ -3010,7 +3010,7 @@ function drawReplay(){
   host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-box"><div class="rp-head"><b>${esc(x.symbol)}${tf ? " · " + esc(tf) : ""}</b><span class="rp-when">${esc(lastC.d + " " + lastC.t)}</span><span class="rp-ohlc">${ohlc(lastC)}</span></div>
     <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="rp-svg" role="img" aria-label="Candle chart for ${esc(x.symbol)}">
     <rect x="${W - R}" y="0" width="${R}" height="${H}" class="rp-axbg"/>${grid}${tl}${box}${candles}${lines}${last}${marks}<g class="rp-xh"></g></svg></div>`
-    + (warn ? "" : `<div class="rp-legend"><span><i style="width:14px;height:10px;border-radius:2px;background:#2962FF"></i>Entry</span><span><i style="width:14px;height:10px;border-radius:2px;background:#FF6D00"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span></div>`);
+    + (`<div class="rp-legend"><span><i style="width:14px;height:10px;border-radius:2px;background:#2962FF"></i>Entry</span><span><i style="width:14px;height:10px;border-radius:2px;background:#FF6D00"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span></div>`);
   // Crosshair, like a trading platform: follows the mouse or finger, shows price and time on the axes and OHLC up top.
   const svg = host.querySelector("svg"), xh = svg.querySelector(".rp-xh"), head = host.querySelector(".rp-ohlc"), when = host.querySelector(".rp-when");
   const move = e => { const r = svg.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e, mx = (pt.clientX - r.left) * W / r.width, my = (pt.clientY - r.top) * H / r.height;
