@@ -507,7 +507,8 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .ch-body{padding:0 14px 12px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
-.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
+.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-chart:focus{outline:none}.rp-chart:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rp-tfs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}.rp-sep{width:1px;height:22px;background:var(--line);margin:0 4px}.rp-tip{color:var(--muted);opacity:.8}.rp-svg.grab{cursor:grabbing}.rp-svg{user-select:none;-webkit-user-select:none}.rp-tfs .btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}.rp-tfs .btn:disabled{opacity:.35}
 .rp-info{margin-top:12px;display:flex;flex-direction:column;gap:10px}.rp-notes{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
 .rp-box{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}.rp-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px 2px;font-size:12.5px}.rp-head>b{font-size:13.5px}.rp-when{color:var(--muted);font-family:var(--mono,ui-monospace,monospace);font-size:11.5px}.rp-ohlc{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;color:var(--muted)}.rp-ohlc b{font-weight:600;margin-inline-start:2px}.rp-svg{touch-action:pan-y;cursor:crosshair;max-width:100%}.rp-grid{stroke:var(--line);stroke-width:1;opacity:.6}.rp-ax{font:11px var(--mono,ui-monospace,monospace);fill:var(--muted)}.rp-axbg{fill:var(--surface)}.rp-mk{font:600 11px system-ui,sans-serif}.rp-cross{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
 .rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
@@ -2870,6 +2871,10 @@ function parseCandles(text){
     .filter(c => c && [c.o, c.h, c.l, c.c].every(v => v != null)).sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t));
 }
 let replay = { candles: [], idx: 0, timer: null, trade: null };
+// Work out the symbol from an MT5 export's file name (e.g. "XAUUSD_M1_202611100000.csv"), and compare symbols ignoring broker suffixes like ".r" or "m".
+const normSym = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(PRO|ECN|RAW|M|R|I|C)$/, "");
+const sameSym = (a, b) => { const p = normSym(a), q = normSym(b); return !!p && !!q && (p === q || p.startsWith(q) || q.startsWith(p)); };
+function symFromName(name){ const u = String(name || "").toUpperCase(); const keys = Object.keys(INSTR).sort((p, q) => q.length - p.length); return keys.find(k => u.includes(k)) || null; }
 // Timeframes: candles from the file can be merged into bigger ones (1m → 5m → 15m …), never split into smaller ones.
 const cMin = c => Date.parse(c.d + "T" + c.t + ":00Z") / 6e4;
 function baseTf(cs){ const g = cs.slice(1, 200).map((c, i) => cMin(c) - cMin(cs[i])).filter(v => v > 0).sort((p, q) => p - q); return g.length ? g[Math.floor(g.length / 2)] : 1; }
@@ -2930,9 +2935,10 @@ function drawReplay(){
   replay.max = cs.length - from; replay.idx = Math.min(Math.max(1, replay.idx || 1), replay.max);
   const last = from + replay.idx - 1; replay.shownKey = key(cs[last]);
   // Do these candles actually belong to this trade? Check the day, then that the entry and exit prices traded inside them.
-  let warn = "";
+  let warn = "", hard = false;
   const days = [...new Set(cs.map(c => c.d))];
-  if (!days.includes(x.date)) warn = `<b>These candles don't cover this trade.</b> The file has ${esc(days.length === 1 ? fmtDate(days[0]) : fmtDate(days[0]) + " to " + fmtDate(days[days.length - 1]))}, but this trade was on ${esc(fmtDate(x.date))}. Pick a different trade, or export candles for that day.`;
+  if (replay.fileSym && x.symbol && !sameSym(replay.fileSym, x.symbol)){ hard = true; warn = `<b>This file is ${esc(replay.fileSym)} but the trade is ${esc(x.symbol)}.</b> Export ${esc(x.symbol)} candles for ${esc(fmtDate(x.date))} from MT5 and load that file, or pick one of your ${esc(replay.fileSym)} trades.`; }
+  else if (!days.includes(x.date)){ hard = true; warn = `<b>These candles don't cover this trade.</b> The file has ${esc(days.length === 1 ? fmtDate(days[0]) : fmtDate(days[0]) + " to " + fmtDate(days[days.length - 1]))}, but this trade was on ${esc(fmtDate(x.date))}. Pick a different trade, or export candles for that day.`; }
   else {
     const win = cs.slice(Math.max(0, iIn - 3), Math.min(cs.length, iOut + 4)), wLo = Math.min(...win.map(c => c.l)), wHi = Math.max(...win.map(c => c.h)), tol = (wHi - wLo) * 0.15 + Math.abs(+x.entry) * 0.0002;
     const off = v => v < wLo - tol || v > wHi + tol;
@@ -2946,21 +2952,21 @@ function drawReplay(){
   // "Fit" (n = 0) shows the whole file if it's short, otherwise a comfortable number of candles.
   if (replay.n) replay.n = Math.max(12, Math.min(800, replay.n));
   let N = replay.n || Math.max(20, Math.min(defN, replay.max + 6));
-  if (!replay.n && !replay.pan && last >= iIn) N = Math.min(400, Math.max(N, last + 4 - (iIn - Math.ceil(80 / ((W - R) / N))) + 1)); // keep the entry on screen while fitting
+  if (!replay.n && !replay.pan && last >= iIn) { const need = last + 4 - iIn + 1; N = Math.min(400, Math.max(N, Math.ceil(need * (W - R) / Math.max(60, W - R - 100)))); } // keep the entry on screen while fitting
   const bw = (W - L - R) / N;
   replay.pan = Math.max(-(N * 0.6), Math.min(last, replay.pan || 0));
   const right = last + 4 - replay.pan, left = right - N + 1, ix = i => L + (i - left) * bw + bw / 2;
   const iA = Math.max(0, Math.ceil(left - 0.5)), iB = Math.min(last, Math.floor(right + 0.5)), vis = [];
   for (let i = iA; i <= iB; i++) vis.push(i);
   const UP = "#089981", DN = "#F23645";
-  const tradeOnScreen = reachedIn && iIn <= right && iIn - 0 >= left - 50;
+  const tradeOnScreen = !hard && reachedIn && iIn <= right && iIn - 0 >= left - 50;
   const lv = tradeOnScreen ? [stop, tp, entry, reachedOut ? exit : null].filter(v => v != null) : [];
   const visC = vis.length ? vis.map(i => cs[i]) : [cs[last]];
   let lo = Math.min(...visC.map(c => c.l), ...lv), hi = Math.max(...visC.map(c => c.h), ...lv); const pad = (hi - lo || 1) * 0.12; lo -= pad; hi += pad;
   const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const raw = (hi - lo) / (H < 400 ? 5 : 7), mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag, step = (nrm < 1.5 ? 1 : nrm < 3 ? 2 : nrm < 7 ? 5 : 10) * mag;
   const dec = Math.max(0, -Math.floor(Math.log10(step)));
-  const fmtP = v => (+v).toFixed(Math.max(dec, entry < 10 ? 4 : entry < 1000 ? 3 : 2));
+  const refP = hard ? cs[last].c : entry, fmtP = v => (+v).toFixed(Math.max(dec, refP < 10 ? 4 : refP < 1000 ? 3 : 2));
   const lastC = cs[last], tagVals = [lastC.c, ...(tradeOnScreen ? [entry, stop, tp] : []), ...(tradeOnScreen && reachedOut ? [exit] : [])].filter(v => v != null);
   let grid = "";
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ const clash = tagVals.some(t => Math.abs(y(t) - y(v)) < 13);
@@ -2971,7 +2977,8 @@ function drawReplay(){
   let tl = "", tlx = ""; vis.forEach(i => { if (i % every || i < every) return; const c = cs[i], label = c.d !== cs[i - every]?.d ? fmtDate(c.d).replace(/\s\d{2}$/, "") : c.t; tl += `<line x1="${ix(i)}" x2="${ix(i)}" y1="${T}" y2="${H - B}" class="rp-grid"/>`; if (ix(i) > 20 && ix(i) < W - R - 20) tlx += `<text x="${ix(i)}" y="${H - 7}" text-anchor="middle" class="rp-ax">${esc(label)}</text>`; });
   const tag = (v, bg, txt, ink = "#fff") => `<rect x="${W - R + 1}" y="${y(v) - 9}" width="${R - 2}" height="18" rx="2" style="fill:${bg}"/><text x="${W - R + 6}" y="${y(v) + 4}" class="rp-ax" style="fill:${ink};font-weight:600">${esc(txt)}</text>`;
   let box = "", lines = "", marks = "", tags = "";
-  if (reachedIn){
+  replay.entryIdx = iIn - from + 1;
+  if (reachedIn && !hard){
     const x0 = ix(iIn) - bw / 2, x1 = (reachedOut ? ix(iOut) : ix(last)) + bw / 2, bwid = Math.max(bw, x1 - x0);
     const tgt = tp != null ? tp : exit, good = isLong ? tgt > entry : tgt < entry;
     const showLbl = replay.labels !== false, roomy = bwid >= (W < 600 ? 110 : 140);
@@ -3016,12 +3023,12 @@ function drawReplay(){
   const lastCol = lastC.c >= lastC.o ? UP : DN;
   const lastLine = `<line x1="${L}" x2="${W - R}" y1="${y(lastC.c)}" y2="${y(lastC.c)}" style="stroke:${lastCol}" stroke-dasharray="1 3"/>`; tags += tag(lastC.c, lastCol, fmtP(lastC.c));
   const ohlc = c => { const col = c.c >= c.o ? UP : DN, ch = c.c - c.o; return `<span>O<b style="color:${col}">${esc(fmtP(c.o))}</b></span><span>H<b style="color:${col}">${esc(fmtP(c.h))}</b></span><span>L<b style="color:${col}">${esc(fmtP(c.l))}</b></span><span>C<b style="color:${col}">${esc(fmtP(c.c))}</b></span><span style="color:${col}">${ch >= 0 ? "+" : ""}${esc(fmtP(ch))}</span>`; };
-  host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-box"><div class="rp-head"><b>${esc(x.symbol)}${tf ? " · " + esc(tf) : ""}</b><span class="rp-when">${esc(lastC.d + " " + lastC.t)}</span><span class="rp-ohlc">${ohlc(lastC)}</span></div>
+  host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<div class="rp-box"><div class="rp-head"><b>${esc(hard && replay.fileSym ? replay.fileSym : x.symbol)}${tf ? " · " + esc(tf) : ""}</b><span class="rp-when">${esc(lastC.d + " " + lastC.t)}</span><span class="rp-ohlc">${ohlc(lastC)}</span></div>
     <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="rp-svg" role="img" aria-label="Candle chart for ${esc(x.symbol)}"><defs><clipPath id="rpClip"><rect x="0" y="0" width="${W - R}" height="${H - B}"/></clipPath></defs>
     <rect x="${W - R}" y="0" width="${R}" height="${H}" class="rp-axbg"/>${grid}<g clip-path="url(#rpClip)">${tl}${box}${candles}${lines}${lastLine}${marks}</g>${tlx}${tags}<g class="rp-xh"></g></svg></div>
     <div class="rp-legend"><span><i style="width:14px;height:10px;border-radius:2px;background:#2962FF"></i>Entry</span><span><i style="width:14px;height:10px;border-radius:2px;background:#FF6D00"></i>Exit</span><span><i style="width:14px;height:10px;background:${UP};opacity:.35"></i>Reward</span><span><i style="width:14px;height:10px;background:${DN};opacity:.3"></i>Risk</span><span class="rp-tip">Drag to move · scroll or pinch to zoom · double-click to reset</span></div>`;
   replay.geo = { W, H, L, R, T, B, bw, N, left, last, lo, hi, fmtP, ohlc, ix, cs, lastC };
-  $("#rpPos").textContent = `${replay.idx} / ${replay.max} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
+  $("#rpPos").textContent = `Candle ${replay.idx} of ${replay.max}${hard ? "" : reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   // Best/worst price while in the trade, from the smallest candles in the file (bigger ones include price from before you entered).
   if (!warn){ const src = replay.base?.length ? replay.base : cs, tIn = inKey.slice(0, 16), tOut = outKey.slice(0, 16); let inT = src.filter(c => key(c) >= tIn && key(c) <= tOut); if (!inT.length) inT = cs.slice(iIn, iOut + 1);
     rpInfo(x, { lo: Math.min(...inT.map(c => c.l)), hi: Math.max(...inT.map(c => c.h)) }); }
@@ -3056,10 +3063,15 @@ function bindReplayChart(host){
   host.addEventListener("pointerup", up); host.addEventListener("pointercancel", up);
   host.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !drag){ const svg = host.querySelector("svg"); if (svg && replay.geo){ svg.querySelector(".rp-xh").innerHTML = ""; host.querySelector(".rp-ohlc").innerHTML = replay.geo.ohlc(replay.geo.lastC); host.querySelector(".rp-when").textContent = replay.geo.lastC.d + " " + replay.geo.lastC.t; } } });
   host.addEventListener("wheel", e => { if (!e.target.closest("svg")) return; e.preventDefault(); if (Math.abs(e.deltaX) > Math.abs(e.deltaY)){ replay.pan = (replay.pan || 0) - e.deltaX / ((replay.geo?.bw) || 8); rpRedraw(); return; } rpZoom(e.deltaY > 0 ? 1.12 : 1 / 1.12); }, { passive: false });
+  host.tabIndex = 0;
+  host.addEventListener("keydown", e => { if (e.key === "ArrowRight"){ e.preventDefault(); replayStep(1); } else if (e.key === "ArrowLeft"){ e.preventDefault(); replayStep(-1); } else if (e.key === " "){ e.preventDefault(); replayPlay(); } });
   host.addEventListener("dblclick", e => { if (!e.target.closest(".rp-warn")) rpFit(); });
 }
 function replayStep(d){ replay.idx = Math.max(1, Math.min(replay.max || 1, replay.idx + d)); drawReplay(); }
-function replayPlay(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; $("#rpPlay").textContent = "▶ Play"; return; }
+function replayStop(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; } if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; }
+function replayJump(i){ replayStop(); replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
+function replayPlay(){ if (replay.timer){ replayStop(); return; }
+  if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
 
 /* ---------- Elite page ---------- */
@@ -3117,7 +3129,7 @@ function renderElite(){
       <p class="hint" style="margin:0">In MT5, open the symbol's chart, press Ctrl+U (Symbols) → Bars, pick the timeframe and dates around your trade, Export, then load the file here. Times must match the times on your trades.</p>
       <div class="fgrid"><div class="f"><label for="rpTrade">Trade</label><select id="rpTrade">${ts.slice().reverse().slice(0, 150).map(x => `<option value="${esc(x.id)}">${esc(fmtDate(x.date))} ${esc(x.timeIn || "")} · ${esc(x.symbol)} ${x.side === "long" ? "buy" : "sell"} · ${esc(money(pnl(x)))}</option>`).join("")}</select></div>
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
-      <div class="actions"><button type="button" class="btn small" id="rpBack">◀ Step</button><button type="button" class="btn small primary" id="rpPlay">▶ Play</button><button type="button" class="btn small" id="rpFwd">Step ▶</button>
+      <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
       <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button></div>
       <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
@@ -3144,12 +3156,20 @@ function renderElite(){
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
   const rpLoad = () => { replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; drawReplay(); };
   $("#rpTrade").onchange = rpLoad;
-  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.tf = baseTf(replay.base); replay.candles = resample(replay.base, replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; } rpLoad(); };
+  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(replay.base, replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
+    // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
+    const days = new Set(replay.base.map(c => c.d)), fit = state.trades.filter(t => days.has(t.date) && (!replay.fileSym || sameSym(t.symbol, replay.fileSym))).sort((p, q) => (q.date + (q.timeIn || "")).localeCompare(p.date + (p.timeIn || "")));
+    const cur = state.trades.find(t => t.id === $("#rpTrade").value);
+    if (fit.length && !fit.includes(cur) && [...$("#rpTrade").options].some(o => o.value === fit[0].id)){ $("#rpTrade").value = fit[0].id; toast(`Showing your ${fit[0].symbol} trade from ${fmtDate(fit[0].date)}, which matches this file`); }
+    rpLoad(); };
   setTfButtons();
   $("#rpTfs").querySelectorAll("[data-tf]").forEach(b => b.onclick = () => { if (!replay.base?.length) return; const last = replay.shownKey; replay.tf = +b.dataset.tf; replay.candles = resample(replay.base, replay.tf); replay.atKey = last; replay.pan = 0; setTfButtons(); drawReplay(); });
   $("#rpOut").onclick = () => rpZoom(1.35); $("#rpIn").onclick = () => rpZoom(1 / 1.35); $("#rpFitB").onclick = rpFit;
   $("#rpLbl").onclick = e => { replay.labels = replay.labels === false; e.currentTarget.setAttribute("aria-pressed", String(replay.labels !== false)); drawReplay(); };
   $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
+  $("#rpStart").onclick = () => replayJump(1); $("#rpEnd").onclick = () => replayJump(replay.max || 1);
+  $("#rpAgain").onclick = () => { replayJump(1); replayPlay(); };
+  $("#rpEntry").onclick = () => replayJump((replay.entryIdx || 1) - 2);
   $("#rpPlay").onclick = replayPlay; $("#rpBack").onclick = () => replayStep(-1); $("#rpFwd").onclick = () => replayStep(1);
   $("#rgEdit2").onclick = openRules; $("#eliteRep").onclick = openReportBuilder;
 }
