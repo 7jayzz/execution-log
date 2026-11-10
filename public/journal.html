@@ -507,7 +507,7 @@ details.adv[open] summary{margin-bottom:10px}
 .ch-item .ch-body{padding:0 14px 12px}
 .ch-item .actions{margin-top:10px}
 .sim-in{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:700px){.sim-in{grid-template-columns:1fr 1fr}}
-.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center}.rp-svg{width:100%;height:auto;display:block}
+.rp-chart{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;min-height:120px;display:grid;place-items:center;gap:8px}.rp-chart>*{width:100%}.rp-warn{border:1px solid var(--loss);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface)}.rp-warn b{color:var(--loss)}.rp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}.rp-legend i{display:inline-block;vertical-align:middle;margin-inline-end:6px}.rp-svg{width:100%;height:auto;display:block}
 .recent-list{display:flex;flex-direction:column;gap:8px}
 .goal-section{display:flex;flex-direction:column;gap:12px;padding-top:6px}
 .goal-section + .goal-section{border-top:1px solid var(--line);padding-top:18px}
@@ -2873,18 +2873,29 @@ function drawReplay(){
   const key = c => c.d + " " + c.t, inKey = `${x.date} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
   let iIn = cs.findIndex(c => key(c) >= inKey); if (iIn < 0) iIn = cs.length - 1; let iOut = cs.findIndex(c => key(c) >= outKey); if (iOut < 0) iOut = cs.length - 1;
   const from = Math.max(0, iIn - 40), to = Math.min(cs.length - 1, iOut + 25), view = cs.slice(from, to + 1), shown = view.slice(0, Math.max(1, replay.idx));
-  const lv = [num(x.stop), num(x.tp), +x.entry, +x.exit].filter(v => v != null);
+  // Do these candles actually belong to this trade? Check the day, then that the entry and exit prices traded inside them.
+  let warn = "";
+  const days = [...new Set(cs.map(c => c.d))];
+  if (!days.includes(x.date)) warn = `<b>These candles don't cover this trade.</b> The file has ${esc(days.length === 1 ? fmtDate(days[0]) : fmtDate(days[0]) + " to " + fmtDate(days[days.length - 1]))}, but this trade was on ${esc(fmtDate(x.date))}. Pick a different trade, or export candles for that day.`;
+  else {
+    const win = cs.slice(Math.max(0, iIn - 3), Math.min(cs.length, iOut + 4)), wLo = Math.min(...win.map(c => c.l)), wHi = Math.max(...win.map(c => c.h)), tol = (wHi - wLo) * 0.15 + Math.abs(+x.entry) * 0.0002;
+    const off = v => v < wLo - tol || v > wHi + tol;
+    if (off(+x.entry) || off(+x.exit)) warn = `<b>These candles don't match this trade.</b> Around ${esc(x.timeIn || "the trade time")} the price was between ${esc(price(wLo))} and ${esc(price(wHi))}, but your ${off(+x.entry) ? `entry was ${esc(price(x.entry))}` : `exit was ${esc(price(x.exit))}`}. Check you picked the right trade, the right symbol, and that MT5's chart time matches the times on your trades (brokers often use a different time zone).`;
+  }
+  const lv = warn ? [] : [num(x.stop), num(x.tp), +x.entry, +x.exit].filter(v => v != null);
   const lo = Math.min(...view.map(c => c.l), ...lv), hi = Math.max(...view.map(c => c.h), ...lv), W = 680, H = 300, L = 8, R = 74, T = 10, B = 22, bw = (W - L - R) / view.length;
   const y = v => T + (1 - (v - lo) / (hi - lo || 1)) * (H - T - B), cx = i => L + i * bw + bw / 2;
   const hl = (v, col, lbl, dash, ink = "#fff") => v == null ? "" : `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" style="stroke:${col}" stroke-width="1.2" ${dash ? 'stroke-dasharray="5 4"' : ""}/><rect x="${W - R + 4}" y="${y(v) - 9}" width="${R - 6}" height="18" rx="3" style="fill:${col}"/><text x="${W - R / 2 + 1}" y="${y(v) + 4}" text-anchor="middle" class="tm-tag" style="fill:${ink};font-size:10px">${esc(lbl)}</text>`;
   const reachedIn = from + shown.length - 1 >= iIn, reachedOut = from + shown.length - 1 >= iOut;
-  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="rp-svg" role="img">
+  const shadeTo = reachedOut ? iOut - from : shown.length - 1, shade = reachedIn && !warn ? `<rect x="${cx(iIn - from) - bw / 2}" y="${T}" width="${Math.max(bw, (shadeTo - (iIn - from) + 1) * bw)}" height="${H - T - B}" style="fill:var(--accent);opacity:.1"/>` : "";
+  host.innerHTML = (warn ? `<div class="rp-warn">${warn}</div>` : "") + `<svg viewBox="0 0 ${W} ${H}" class="rp-svg" role="img">${shade}
     ${shown.map((c, i) => { const up = c.c >= c.o; const col = up ? "var(--win)" : "var(--loss)"; return `<line x1="${cx(i)}" x2="${cx(i)}" y1="${y(c.h)}" y2="${y(c.l)}" style="stroke:${col}"/><rect x="${cx(i) - bw * .35}" y="${y(Math.max(c.o, c.c))}" width="${bw * .7}" height="${Math.max(1, Math.abs(y(c.o) - y(c.c)))}" style="fill:${col}"/>`; }).join("")}
-    ${reachedIn ? hl(+x.entry, "var(--ink)", "Entry " + price(x.entry), false, "var(--surface)") + hl(num(x.stop), "var(--loss)", "SL", true) + hl(num(x.tp), "var(--win)", "TP", true) : ""}
+    ${warn ? "" : `${reachedIn ? hl(+x.entry, "var(--ink)", "Entry " + price(x.entry), false, "var(--surface)") + hl(num(x.stop), "var(--loss)", "SL", true) + hl(num(x.tp), "var(--win)", "TP", true) : ""}
     ${reachedOut ? hl(+x.exit, pnl(x) >= 0 ? "var(--win)" : "var(--loss)", "Exit " + price(x.exit)) : ""}
     ${reachedIn ? `<circle cx="${cx(iIn - from)}" cy="${y(+x.entry)}" r="5" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2"/>` : ""}
-    ${reachedOut ? `<circle cx="${cx(iOut - from)}" cy="${y(+x.exit)}" r="5" style="fill:var(--surface);stroke:var(--accent)" stroke-width="2.5"/>` : ""}
-    <text x="${L}" y="${H - 6}" class="pb-l">${esc(view[0].d + " " + view[0].t)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">${esc(shown[shown.length - 1].d + " " + shown[shown.length - 1].t)}</text></svg>`;
+    ${reachedOut ? `<circle cx="${cx(iOut - from)}" cy="${y(+x.exit)}" r="5" style="fill:var(--surface);stroke:var(--accent)" stroke-width="2.5"/>` : ""}`}
+    <text x="${L}" y="${H - 6}" class="pb-l">${esc(view[0].d + " " + view[0].t)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">${esc(shown[shown.length - 1].d + " " + shown[shown.length - 1].t)}</text></svg>`
+    + (warn ? "" : `<div class="rp-legend"><span><i style="width:10px;height:10px;border-radius:50%;background:var(--accent)"></i>Entry</span><span><i style="width:10px;height:10px;border-radius:50%;border:2.5px solid var(--accent);box-sizing:border-box"></i>Exit</span><span><i style="width:16px;border-top:2px dashed var(--loss)"></i>Stop loss</span><span><i style="width:14px;height:10px;background:var(--accent);opacity:.25"></i>Time in the trade</span></div>`);
   $("#rpPos").textContent = `${shown.length} / ${view.length} candles${reachedOut ? ` · ${money(pnl(x))}` : reachedIn ? " · in the trade" : ""}`;
   replay.max = view.length;
 }
