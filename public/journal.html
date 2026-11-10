@@ -2806,7 +2806,7 @@ ${JSON.stringify(data)}`;
   $("#coachBtns").querySelectorAll("button").forEach(b => b.disabled = true);
   try { const r = await sample(prompt, { onText: ({ text }) => { out.innerHTML = `<div class="coach-text">${esc(text)}</div>`; } });
     out.innerHTML = `<div class="coach-text">${esc(r.text)}</div>`; }
-  catch (e){ out.innerHTML = `<p class="err">${esc(e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
+  catch (e){ out.innerHTML = `<p class="err">${esc(e?.friendly ? e.friendly : e?.code === "not_granted" ? "You declined access, so the coach can't run. Reload the page to be asked again." : e?.code === "rate_limited" ? "Too many requests. Wait a moment and try again." : "The coach couldn't answer just now. Try again.")}</p>`; }
   finally { $("#coachBtns")?.querySelectorAll("button").forEach(b => b.disabled = false); }
 }
 
