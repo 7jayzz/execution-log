@@ -859,6 +859,7 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
       <button class="btn acct-btn" id="acctBtn" aria-label="Switch or manage accounts" data-i18n-aria="accounts"><svg class="acct-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2M6 6l9-3 2 3"/></svg><small><span id="acctName">Account</span> ▾</small><span id="acctBal">—</span></button>
       <div class="side-tools">
         <button type="button" class="side-link" id="setBtn" data-i18n-title="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-i18n="settings">Settings</span></button>
+        <button type="button" class="side-link" id="fbBtn" title="Suggest an improvement or report a problem"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg><span>Feedback</span></button>
         <button type="button" class="side-link" id="tutBtn" data-i18n-title="navTutorial"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg><span data-i18n="navTutorial">Tutorial</span></button>
         <button type="button" class="side-link" id="lockBtn" hidden data-i18n-title="lockNow"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-i18n="lockNow">Lock</span></button>
         <button type="button" class="side-link" id="logoutBtn" data-i18n-title="logout"><svg viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg><span data-i18n="logout">Log out</span></button>
@@ -6114,6 +6115,25 @@ function openNotifs(){
   $("#nfSet").onclick = () => { close(); state.setTab = "notifications"; setView("settings"); };
 }
 
+
+/* ---------- Feedback: ideas and problems, straight to the team ---------- */
+function openFeedback(kind = "idea"){
+  const close = showDrawer(`<form class="drawer" id="fbF" novalidate><div class="panel-head"><h2>💡 Feedback</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Tell us what would make The Execution Log better, or what isn't working. Every message is read, and we reply by email when we can.</p>
+    <div class="f"><label>What is it?</label><div class="dj-opts" id="fbKind">${[["idea", "💡 An idea"], ["bug", "🐞 Something's broken"], ["other", "💬 Something else"]].map(([k, l]) => `<button type="button" class="dj-opt${k === kind ? " on" : ""}" data-k="${k}" aria-pressed="${k === kind}">${l}</button>`).join("")}</div></div>
+    <div class="f"><label for="fbMsg" id="fbLbl"></label><textarea id="fbMsg" rows="6" maxlength="4000" required></textarea><span class="hint" id="fbCount"></span></div>
+    <p class="hint" style="margin:0">We'll include the page you're on (${esc(state.view || "dashboard")}) and your plan, so we can help faster. Never your trades.</p>
+    <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary" id="fbGo">Send</button></div></div></form>`);
+  const lbl = { idea: ["What would you like to see?", "e.g. Let me tag trades by news event, or show my best session on the dashboard"], bug: ["What happened, and what did you expect?", "e.g. When I import my MT5 report on my phone, it says no trades found"], other: ["What's on your mind?", ""] };
+  const setK = k => { kind = k; $("#fbKind").querySelectorAll("[data-k]").forEach(b => { const on = b.dataset.k === k; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); $("#fbLbl").textContent = lbl[k][0]; $("#fbMsg").placeholder = lbl[k][1]; };
+  $("#fbKind").querySelectorAll("[data-k]").forEach(b => b.onclick = () => setK(b.dataset.k)); setK(kind);
+  $("#fbMsg").oninput = e => { $("#fbCount").textContent = `${e.target.value.length} / 4000`; }; $("#fbMsg").focus();
+  $("#fbF").onsubmit = async e => { e.preventDefault(); const message = $("#fbMsg").value.trim(); if (message.length < 3){ $("#fbMsg").focus(); return; }
+    if (!HOST?.feedback){ close(); toast("Feedback works once you're logged in on the website."); return; }
+    const go = $("#fbGo"); go.disabled = true; go.textContent = "Sending…";
+    try { await HOST.feedback({ kind, message, page: state.view || "" }); close(); toast("Thanks! Your feedback has been sent.", 4000); }
+    catch (err){ go.disabled = false; go.textContent = "Send"; toast(err?.message || "Couldn't send that right now", 5000); } };
+}
 /* ---------- Home-screen and reminders prompt (website, phones only) ---------- */
 const topWin = () => { try { return window.top; } catch { return window; } };
 const isStandalone = () => { try { const w = topWin(); return w.matchMedia("(display-mode: standalone)").matches || w.navigator.standalone === true; } catch { return false; } };
@@ -6296,6 +6316,7 @@ $("#tutBtn").onclick = () => hasTier("pro") ? openGuidesHub() : openTutorial(0);
 $("#guideBtn").onclick = () => openGuide(state.view);
 $("#bellBtn").onclick = () => openNotifs();
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => b.id === "navAccts" ? openAccounts() : setView(b.dataset.view));
+$("#fbBtn").onclick = () => openFeedback();
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => setView(b.dataset.go));
 window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS[v] && v !== state.view) setView(v, false); });
 $("#acctChip").onclick = () => $("#acctBtn").click();
