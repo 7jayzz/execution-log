@@ -809,6 +809,10 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .risknote .rule{color:var(--muted)}
 .risknote.high{background:var(--warn-bg);border-color:var(--warn-line)}
 .risknote.high .rule{color:var(--warn);font-weight:600}
+.a2hs{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto;animation:a2hsIn .25s ease}
+.a2hs-ico{font-size:24px;line-height:1}.a2hs-txt{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.45;color:var(--muted)}.a2hs-txt b{color:var(--ink);font-size:14px}
+.a2hs-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.a2hs .linkbtn{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
+@keyframes a2hsIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 </style>
 
 <div class="app">
@@ -1050,6 +1054,17 @@ const LOCALES = { en:"en-GB", es:"es-ES", pt:"pt-BR", fr:"fr-FR", de:"de-DE", it
 let lang = (() => { let saved = null; try { saved = localStorage.getItem("tel-lang"); } catch {}
   if (saved && I18N[saved]) return saved; const nav = ((navigator.language || "en") + "").slice(0,2).toLowerCase(); return I18N[nav] ? nav : "en"; })();
 const LOC = () => LOCALES[lang] || "en-GB";
+Object.assign(I18N.en, {
+  nEmailOnD: "The same reminders, sent to {email} at your chosen time. Every email has a link to turn them off.",
+  nEmailOnToast: "Email reminders are on.", nEmailOffToast: "Email reminders are off.",
+  a2hsH: "Put The Execution Log on your home screen",
+  a2hsIos: "It opens full screen like an app, and you can turn on trade reminders. In Safari, tap Share, then \u201cAdd to Home Screen\u201d.",
+  a2hsIosOther: "It opens full screen like an app, and you can turn on trade reminders. Open this page in Safari, tap Share, then \u201cAdd to Home Screen\u201d.",
+  a2hsAndroid: "It opens full screen like an app, and you can turn on trade reminders.",
+  a2hsAndroidManual: "It opens full screen like an app, and you can turn on trade reminders. Tap \u22ee in your browser, then \u201cInstall app\u201d or \u201cAdd to Home screen\u201d.",
+  a2hsInstall: "Install app", a2hsLater: "Not now", a2hsNever: "Don't show again",
+  remH: "Turn on trade reminders", remD: "Get a nudge when trades need journalling and when your weekly review is ready.", remGo: "Turn on",
+});
 const t = (k, v = {}) => String(I18N[lang]?.[k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
 const typeLabel = x => t("t_" + x);
 const tradeCount = n => n === 1 ? t("tradeCount1") : t("tradeCountN", { n });
@@ -4969,7 +4984,7 @@ function renderSetNotify(body){
     <section class="panel"><div class="panel-head"><h2>${esc(t("nWhereH"))}</h2></div>
       <div class="switch-list">
         <div class="switch-row"><span class="sw-text"><b>${esc(t("nInApp"))}</b><span class="hint">${esc(t("nInAppD"))}</span></span><input type="checkbox" class="switch" checked disabled aria-label="${esc(t("nInApp"))}"></div>
-        ${soonRow(t("nEmail"), t("nEmailD"))}
+        <label class="switch-row${PUSH ? "" : " is-soon"}" for="n-email"><span class="sw-text"><b>${esc(t("nEmail"))}</b><span class="hint">${esc(PUSH ? t("nEmailOnD", { email: HOST.user?.email || "" }) : t("nPushPreview"))}</span></span><input type="checkbox" class="switch" id="n-email" ${nset("email", false) === true ? "checked" : ""} ${PUSH ? "" : "disabled"} aria-label="${esc(t("nEmail"))}"></label>
         <div class="switch-row" id="pushRow"><span class="sw-text"><b>${esc(t("nPush"))}</b><span class="hint" id="pushHint">${esc(t("nPushD"))}</span></span><input type="checkbox" class="switch" id="n-push" disabled aria-label="${esc(t("nPush"))}"></div>
         <div class="push-test" id="pushTestWrap" hidden><button type="button" class="btn small" id="pushTest">${esc(t("nPushTest"))}</button><span class="hint">${esc(t("nPushDevice"))}</span></div>
       </div></section>`;
@@ -4981,6 +4996,7 @@ function renderSetNotify(body){
   $("#n-qfrom").onchange = e => e.target.value && saveN({ quietFrom: e.target.value });
   $("#n-qto").onchange = e => e.target.value && saveN({ quietTo: e.target.value });
   $("#n-tz").onchange = e => saveN({ tz: e.target.value });
+  const em = $("#n-email"); if (em && !em.disabled) em.onchange = async e => { await saveCfg({ notify: { ...(state.settings?.notify || {}), email: e.target.checked, tz: nset("tz", detectedTz()) } }); toast(t(e.target.checked ? "nEmailOnToast" : "nEmailOffToast")); };
 }
 
 function renderSetSecurity(body){
@@ -5617,6 +5633,42 @@ function openNotifs(){
   bind();
   $("#nfSet").onclick = () => { close(); state.setTab = "notifications"; setView("settings"); };
 }
+
+/* ---------- Home-screen and reminders prompt (website, phones only) ---------- */
+const topWin = () => { try { return window.top; } catch { return window; } };
+const isStandalone = () => { try { const w = topWin(); return w.matchMedia("(display-mode: standalone)").matches || w.navigator.standalone === true; } catch { return false; } };
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+const isIosSafari = () => isIOS() && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(navigator.userAgent);
+const a2hsSnoozed = k => { try { return Date.now() < (+localStorage.getItem(k) || 0); } catch { return false; } };
+const a2hsSnooze = (k, days) => { try { localStorage.setItem(k, String(days ? Date.now() + days * 864e5 : 8.64e15)); } catch {} };
+function a2hsPrompt(){
+  if (!PUSH || $(".a2hs")) return;
+  const standalone = isStandalone();
+  let kind = null;
+  if (standalone){ if (pushSupported() && nset("push", false) !== true && !nset("email", false) && Notification.permission !== "denied" && !a2hsSnoozed("tel-rem")) kind = "rem"; }
+  else if ((isIOS() || isAndroid()) && !a2hsSnoozed("tel-a2hs")) kind = isIOS() ? "ios" : "android";
+  if (!kind) return;
+  if (document.querySelector(".drawer, .tour-top, .modal-back")) { setTimeout(a2hsPrompt, 15000); return; }
+  const evt = topWin().__telInstall;
+  const key = kind === "rem" ? "tel-rem" : "tel-a2hs";
+  const title = t(kind === "rem" ? "remH" : "a2hsH");
+  const text = kind === "rem" ? t("remD") : kind === "ios" ? t(isIosSafari() ? "a2hsIos" : "a2hsIosOther") : t(evt ? "a2hsAndroid" : "a2hsAndroidManual");
+  const go = kind === "rem" ? t("remGo") : kind === "android" && evt ? t("a2hsInstall") : "";
+  const el = document.createElement("div"); el.className = "a2hs"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", title);
+  el.innerHTML = `<div class="a2hs-ico" aria-hidden="true">${kind === "rem" ? "🔔" : "📲"}</div><div class="a2hs-txt"><b>${esc(title)}</b><span>${esc(text)}</span>
+    <div class="a2hs-btns">${go ? `<button type="button" class="btn small primary" data-a="go">${esc(go)}</button>` : ""}<button type="button" class="btn small" data-a="later">${esc(t("a2hsLater"))}</button><button type="button" class="linkbtn" data-a="never">${esc(t("a2hsNever"))}</button></div></div>`;
+  document.body.appendChild(el);
+  const close = () => el.remove();
+  el.querySelector('[data-a="later"]').onclick = () => { a2hsSnooze(key, 7); close(); };
+  el.querySelector('[data-a="never"]').onclick = () => { a2hsSnooze(key, 0); close(); };
+  const g = el.querySelector('[data-a="go"]');
+  if (g) g.onclick = async () => {
+    if (kind === "rem"){ close(); state.setTab = "notifications"; setView("settings"); return; }
+    try { await evt.prompt(); const r = await evt.userChoice; topWin().__telInstall = null; if (r?.outcome === "accepted") a2hsSnooze(key, 0); } catch {}
+    close();
+  };
+}
+if (HOSTED) setTimeout(a2hsPrompt, 6000);
 
 /* ---------- Screenshots ---------- */
 let assetsNs;

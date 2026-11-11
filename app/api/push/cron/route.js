@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { pushSecrets, sendToUser } from "@/lib/push";
+import { pushSecrets, sendToUser, unsubToken } from "@/lib/push";
+import { sendReminderEmail } from "@/lib/email";
+import { SITE_URL } from "@/lib/site";
+import { ACTIVE_STATUSES } from "@/lib/subscription";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,11 +27,11 @@ function inQuiet(mins, from, to) {
 }
 const journalled = (x) => !!(String(x.notes || "").trim() || x.grade || x.mood || String(x.setup || "").trim());
 
-async function remindersFor(admin, userId) {
+async function remindersFor(admin, userId, channel) {
   const { data: sDoc } = await admin.from("journal_docs").select("data").eq("user_id", userId).eq("id", "settings").maybeSingle();
   const settings = sDoc?.data || {};
   const n = settings.notify || {};
-  if (n.push !== true) return [];
+  if (n[channel] !== true) return [];
   let tz = typeof n.tz === "string" && n.tz ? n.tz : "Europe/London";
   let now; try { now = nowIn(tz); } catch { tz = "Europe/London"; now = nowIn(tz); }
   if (inQuiet(now.mins, toMins(n.quietFrom, 22 * 60), toMins(n.quietTo, 7 * 60))) return [];
@@ -81,10 +84,10 @@ export async function POST(request) {
 
   const { data: subs } = await admin.from("push_subscriptions").select("user_id").limit(10000);
   const users = [...new Set((subs || []).map((s) => s.user_id))];
-  let sent = 0;
+  let sent = 0, emailed = 0;
   for (const uid of users) {
     try {
-      const due = await remindersFor(admin, uid);
+      const due = await remindersFor(admin, uid, "push");
       for (const r of due) {
         // Claim the reminder first so a retry or overlapping run can't send it twice.
         const { error } = await admin.from("push_log").insert({ user_id: uid, key: r.key });
@@ -93,7 +96,33 @@ export async function POST(request) {
       }
     } catch (e) { console.error("Push reminders failed for a user", e?.message || e); }
   }
+  // Email reminders: the same reminders, for people who turned email on. One email per run, only while they're subscribed.
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+    const { data: eRows } = await admin.from("journal_docs").select("user_id").eq("id", "settings").eq("data->notify->>email", "true").limit(10000);
+    const eUsers = [...new Set((eRows || []).map((r) => r.user_id))];
+    if (eUsers.length) {
+      const { data: subRows } = await admin.from("subscriptions").select("user_id,status").in("user_id", eUsers);
+      const paying = new Set((subRows || []).filter((r) => ACTIVE_STATUSES.includes(r.status)).map((r) => r.user_id));
+      for (const uid of eUsers) {
+        if (!paying.has(uid)) continue;
+        try {
+          const due = await remindersFor(admin, uid, "email");
+          const items = [];
+          for (const r of due) {
+            const { error } = await admin.from("push_log").insert({ user_id: uid, key: "email:" + r.key });
+            if (!error) items.push(r);
+          }
+          if (!items.length) continue;
+          const { data: u } = await admin.auth.admin.getUserById(uid);
+          const to = u?.user?.email; if (!to) continue;
+          const unsubscribeUrl = `${SITE_URL}/api/notify/unsubscribe?u=${uid}&s=${await unsubToken(admin, uid)}`;
+          await sendReminderEmail({ to, items, unsubscribeUrl });
+          emailed++;
+        } catch (e) { console.error("Email reminders failed for a user", e?.message || e); }
+      }
+    }
+  }
   // Keep the log small.
   await admin.from("push_log").delete().lt("sent_at", new Date(Date.now() - 60 * 864e5).toISOString());
-  return NextResponse.json({ users: users.length, sent });
+  return NextResponse.json({ users: users.length, sent, emailed });
 }

@@ -3,6 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { makeHost } from "@/lib/host";
 
+// Keep the browser's "install app" offer so the journal can show its own Install button (Android / desktop Chrome).
+if (typeof window !== "undefined" && !window.__telInstallHooked) {
+  window.__telInstallHooked = true;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__telInstall = e; });
+  window.addEventListener("appinstalled", () => { window.__telInstall = null; });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+}
+
 const IDLE_MS = 10 * 60 * 1000; // log out after 10 minutes with no activity
 const EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "mousemove", "scroll"];
 
