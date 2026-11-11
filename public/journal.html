@@ -809,6 +809,9 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .risknote .rule{color:var(--muted)}
 .risknote.high{background:var(--warn-bg);border-color:var(--warn-line)}
 .risknote.high .rule{color:var(--warn);font-weight:600}
+.dj{margin-top:14px;padding:14px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2)}.dj-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dj h3{margin:0 0 4px;font-size:15px}
+.dj-opts{display:flex;gap:6px;flex-wrap:wrap}.dj-opt{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}.dj-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface));font-weight:700}.dj-feel{font-size:18px;padding:4px 10px}
+.day.journalled{position:relative}.day.journalled::after{content:"📝";position:absolute;top:3px;right:4px;font-size:10px;line-height:1}
 .a2hs{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto;animation:a2hsIn .25s ease}
 .a2hs-ico{font-size:24px;line-height:1}.a2hs-txt{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.45;color:var(--muted)}.a2hs-txt b{color:var(--ink);font-size:14px}
 .a2hs-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.a2hs .linkbtn{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
@@ -1064,6 +1067,15 @@ Object.assign(I18N.en, {
   a2hsAndroid: "It opens full screen like an app, and you can turn on trade reminders.",
   a2hsAndroidManual: "It opens full screen like an app, and you can turn on trade reminders. Tap \u22ee in your browser, then \u201cInstall app\u201d or \u201cAdd to Home screen\u201d.",
   a2hsInstall: "Install app", a2hsLater: "Not now", a2hsNever: "Don't show again",
+  djH: "Daily journal", djHint: "How the day went, in your own words. Only you see this.",
+  djFollowed: "Did you follow your plan?", djYes: "Yes", djPartly: "Partly", djNo: "No",
+  djFeel: "How did you feel today?", djWell: "What went well?", djWellPh: "e.g. waited for my setup, cut the loser fast",
+  djBetter: "What would you do differently?", djBetterPh: "e.g. stopped after two losses, sized down after the news",
+  djLesson: "One lesson or rule for next time", djLessonPh: "e.g. No trades in the first 15 minutes of New York",
+  djSave: "Save day", djSaved: "Day saved", djNext: "Save & next day", djPrev: "Previous day", djFinish: "Save & finish", djOf: "Day {a} of {b}",
+  djDone: "Every day journalled. Nice work.", djMark: "Journalled",
+  impDaysH: "Journal these days?", impDaysP: "{n} trades across {d} trading days are in. Write a quick note on each day while you still remember it: what you planned, how you felt, and one lesson.",
+  impDaysGo: "Journal {d} days", impDaysLater: "Later",
   remH: "Turn on trade reminders", remD: "Get a nudge when trades need journalling and when your weekly review is ready.", remGo: "Turn on",
 });
 const t = (k, v = {}) => String(I18N[lang]?.[k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
@@ -2416,8 +2428,39 @@ function renderRecent(){
   bindRows(host);
 }
 
-function openDay(date){
+state.days = state.days || [];
+const dayId = (date, a = activeAcct()) => `d_${(a?.id || "x").replace(/[^A-Za-z0-9_-]/g, "")}_${date}`;
+const dayLog = (date, a = activeAcct()) => state.days.find(d => d.id === dayId(date, a));
+async function saveDay(date, rec){
+  const id = dayId(date), full = { kind: "day", accountId: activeAcct()?.id || "", date, ...rec, updated: Date.now() };
+  const i = state.days.findIndex(d => d.id === id); if (i >= 0) state.days[i] = { id, ...full }; else state.days.push({ id, ...full });
+  if (state.mode !== "live") return true;
+  if (state.readOnly){ toast(t("readOnlyView")); return false; }
+  try { await col.doc(id).set(full); return true; } catch (e){ handleWriteError(e); return false; }
+}
+const FEELS = ["😣", "😕", "😐", "🙂", "😄"];
+function dayJournalHtml(date){
+  const d = dayLog(date) || {}, seg = (v, k) => `<button type="button" class="dj-opt${d.followed === v ? " on" : ""}" data-fol="${v}" aria-pressed="${d.followed === v}">${esc(t(k))}</button>`;
+  return `<section class="dj" id="dj"><div class="dj-head"><h3>📝 ${esc(t("djH"))}</h3>${d.updated ? `<span class="pill">${esc(t("djMark"))}</span>` : ""}</div>
+    <p class="hint" style="margin:0 0 10px">${esc(t("djHint"))}</p>
+    <div class="f"><label>${esc(t("djFollowed"))}</label><div class="dj-opts">${seg("yes", "djYes")}${seg("partly", "djPartly")}${seg("no", "djNo")}</div></div>
+    <div class="f"><label>${esc(t("djFeel"))}</label><div class="dj-opts">${FEELS.map((e, i) => `<button type="button" class="dj-opt dj-feel${d.feel === i + 1 ? " on" : ""}" data-feel="${i + 1}" aria-pressed="${d.feel === i + 1}">${e}</button>`).join("")}</div></div>
+    <div class="f"><label for="djWell">${esc(t("djWell"))}</label><textarea id="djWell" rows="2" placeholder="${esc(t("djWellPh"))}">${esc(d.well || "")}</textarea></div>
+    <div class="f"><label for="djBetter">${esc(t("djBetter"))}</label><textarea id="djBetter" rows="2" placeholder="${esc(t("djBetterPh"))}">${esc(d.better || "")}</textarea></div>
+    <div class="f"><label for="djLesson">${esc(t("djLesson"))}</label><input id="djLesson" maxlength="200" placeholder="${esc(t("djLessonPh"))}" value="${esc(d.lesson || "")}"></div></section>`;
+}
+function bindDayJournal(host){
+  host.querySelectorAll("[data-fol]").forEach(b => b.onclick = () => { const on = !b.classList.contains("on"); host.querySelectorAll("[data-fol]").forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); }); if (on){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); } });
+  host.querySelectorAll("[data-feel]").forEach(b => b.onclick = () => { const on = !b.classList.contains("on"); host.querySelectorAll("[data-feel]").forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); }); if (on){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); } });
+}
+function readDayJournal(host){
+  const v = sel => (host.querySelector(sel)?.value || "").trim();
+  return { followed: host.querySelector("[data-fol].on")?.dataset.fol || "", feel: +(host.querySelector("[data-feel].on")?.dataset.feel || 0) || null, well: v("#djWell"), better: v("#djBetter"), lesson: v("#djLesson") };
+}
+const djEmpty = r => !r.followed && !r.feel && !r.well && !r.better && !r.lesson;
+function openDay(date, queue){
   const ts = sorted().filter(x => x.date === date), s = stats(ts);
+  const qi = queue ? queue.indexOf(date) : -1, inQ = qi >= 0;
   const box = (label, val, c = "") => `<div class="ms"><span class="label">${esc(label)}</span><span class="v ${c}">${val}</span></div>`;
   const close = showDrawer(`<div class="drawer">
     <div class="panel-head"><div><h2>${esc(fmtDate(date))}</h2><div class="hint">${esc(S().name || "")}</div></div><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
@@ -2428,13 +2471,29 @@ function openDay(date){
       ${box(t("winRate"), ts.length ? (s.winRate * 100).toFixed(0) + "%" : "—")}
     </div>
     <div class="day-list" id="dayList">${ts.length ? ts.map(x => `<div class="trow-wrap">${tradeRow(x)}${moveCtl(x)}</div>`).join("") : `<div class="empty-state" style="padding:18px 8px"><p>${esc(t("dayEmpty"))}</p></div>`}</div>
-    <div class="drawer-foot"><div></div><button type="button" class="btn primary" id="dayAdd">${esc(t(ts.length ? "logAnother" : "logOnDay"))}</button></div>
+    ${ts.length || dayLog(date) ? dayJournalHtml(date) : ""}
+    <div class="drawer-foot">${inQ
+      ? `<div><span class="hint">${esc(t("djOf", { a: qi + 1, b: queue.length }))}</span></div><div class="actions">${qi > 0 ? `<button type="button" class="btn" id="djPrev">${esc(t("djPrev"))}</button>` : ""}<button type="button" class="btn primary" id="djNext">${esc(t(qi === queue.length - 1 ? "djFinish" : "djNext"))}</button></div>`
+      : `<div>${ts.length || dayLog(date) ? `<button type="button" class="btn" id="djSave">${esc(t("djSave"))}</button>` : ""}</div><button type="button" class="btn primary" id="dayAdd">${esc(t(ts.length ? "logAnother" : "logOnDay"))}</button>`}</div>
   </div>`);
+  const dj = $("#dj"); if (dj) bindDayJournal(dj);
+  const persist = async () => { if (!dj) return true; const r = readDayJournal(dj); if (djEmpty(r) && !dayLog(date)) return true; const ok = await saveDay(date, r); if (ok) renderCal(); return ok; };
+  const sv = $("#djSave"); if (sv) sv.onclick = async () => { if (await persist()){ toast(t("djSaved")); close(); } };
+  const nx = $("#djNext"); if (nx) nx.onclick = async () => { if (!(await persist())) return; close(); if (qi < queue.length - 1) setTimeout(() => openDay(queue[qi + 1], queue), 120); else toast(t("djDone")); };
+  const pv = $("#djPrev"); if (pv) pv.onclick = async () => { if (!(await persist())) return; close(); setTimeout(() => openDay(queue[qi - 1], queue), 120); };
   bindRows($("#dayList"), close);
   $("#dayList").querySelectorAll("[data-move]").forEach(inp => inp.onchange = async () => {
     const x = state.trades.find(z => z.id === inp.dataset.move), nd = inp.value;
     if (await moveTrade(x, nd)){ close(); state.month = nd.slice(0, 7); renderCal(); setTimeout(() => openDay(nd), 120); } });
-  $("#dayAdd").onclick = () => { close(); openTrade(null, date); };
+  const ad = $("#dayAdd"); if (ad) ad.onclick = () => { close(); openTrade(null, date); };
+}
+function promptJournalDays(recs){
+  const dates = [...new Set(recs.map(r => r.date))].sort();
+  if (!dates.length) return;
+  const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>📝 ${esc(t("impDaysH"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p style="margin:0">${esc(t("impDaysP", { n: recs.length, d: dates.length }))}</p>
+    <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("impDaysLater"))}</button><button type="button" class="btn primary" id="djStart">${esc(t("impDaysGo", { d: dates.length }))}</button></div></div></div>`);
+  $("#djStart").onclick = () => { close(); setTimeout(() => openDay(dates[0], dates), 120); };
 }
 
 const monthNames = () => Array.from({length:12}, (_, i) => new Intl.DateTimeFormat(LOC(), { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2024, i, 1))));
@@ -2458,7 +2517,8 @@ function renderCal(){
   for (let d=1; d<=days; d++){ const key = `${state.month}-${String(d).padStart(2,"0")}`, v = byDay[key];
     const c = v == null ? "" : v > 0 ? "win" : v < 0 ? "loss" : "";
     const heat = v == null || v === 0 ? "" : `background:color-mix(in srgb, var(--${v>0?"win":"loss"}) ${Math.round(10 + 42*Math.abs(v)/maxAbs)}%, var(--surface-2))`;
-    h += `<button type="button" class="day ${c}${key===today?" today":""}" style="${heat}" data-date="${key}" aria-label="${esc(fmtDate(key))}${v==null?"":", "+esc(money(v))}"><span class="d">${d}</span>${v==null?`<span class="add">+</span>`:`<span class="p">${compact(v)}</span>`}</button>`; }
+    const jd = dayLog(key)?.updated;
+    h += `<button type="button" class="day ${c}${key===today?" today":""}${jd?" journalled":""}" style="${heat}" data-date="${key}" aria-label="${esc(fmtDate(key))}${v==null?"":", "+esc(money(v))}"><span class="d">${d}</span>${v==null?`<span class="add">+</span>`:`<span class="p">${compact(v)}</span>`}</button>`; }
   ["#cal", "#dashCal"].forEach(id => { const el = $(id); if (!el) return; el.innerHTML = h;
     el.querySelectorAll("button.day").forEach(b => b.onclick = () => openDay(b.dataset.date)); });
   const vals = Object.entries(byDay), net = vals.reduce((a, [, v]) => a + v, 0);
@@ -3099,7 +3159,9 @@ function coachData(limit = 60){
     trader: { experience: profile()?.exp, style: profile()?.style, focus: profile()?.focus },
     allTime: { trades: s_.n, winRate: +(s_.winRate * 100).toFixed(1), profitFactor: s_.losses ? +s_.pf.toFixed(2) : null, expectancy: +s_.exp.toFixed(2), avgR: s_.avgR != null ? +s_.avgR.toFixed(2) : null },
     recentTrades: ts.map(x => ({ date: x.date, time: x.timeIn || "", symbol: x.symbol, side: x.side === "long" ? "buy" : "sell", lots: spec(x).lots, entry: +x.entry, exit: +x.exit, stop: num(x.stop), pnl: +pnl(x).toFixed(2), r: rMult(x) != null ? +rMult(x).toFixed(2) : null,
-      setup: x.setup || "", grade: x.grade || "", followedPlan: x.plan, fomo: !!x.fomo, revenge: !!x.revenge, emotion: x.mood || "", session: sessionOf(x) || "", notes: (x.notes || "").slice(0, 300) })) };
+      setup: x.setup || "", grade: x.grade || "", followedPlan: x.plan, fomo: !!x.fomo, revenge: !!x.revenge, emotion: x.mood || "", session: sessionOf(x) || "", notes: (x.notes || "").slice(0, 300) })),
+    dailyJournal: (state.days || []).filter(d => d.accountId === (activeAcct()?.id || "")).sort((x, y) => x.date.localeCompare(y.date)).slice(-20)
+      .map(d => ({ date: d.date, followedPlan: d.followed || "", feeling1to5: d.feel || null, wentWell: (d.well || "").slice(0, 300), doDifferently: (d.better || "").slice(0, 300), lesson: (d.lesson || "").slice(0, 200) })) };
 }
 const COACH_PROMPTS = {
   last: "Review my most recent trade like a strict but supportive trading coach. Say what I did well, what I did wrong, and one specific thing to do differently next time. Use my plan, risk and discipline data.",
@@ -5353,6 +5415,7 @@ function openImport(){
       }
     }
     close(); if (a.id !== activeAcct()?.id) setActive(a.id); state.month = null; render(); toast(t("impDone", { n: docs.length }));
+    setTimeout(() => promptJournalDays(docs.map(([, r]) => r)), 400);
   };
 }
 
@@ -5502,6 +5565,7 @@ function exportAll(){
   return { app: "The Execution Log", exportedAt: new Date().toISOString(), profile: s.profile || null,
     notes: (state.notes || []).map(n => ({ title: n.title || "", body: n.body || "", template: n.tpl || "", pinned: !!n.pinned, created: n.created ? new Date(n.created).toISOString() : null, updated: n.updated ? new Date(n.updated).toISOString() : null })),
     coachChats: (state.coachChats || []).map(c => ({ type: c.ask, question: c.question || "", answer: c.text || "", account: c.accountName || "", created: c.created ? new Date(c.created).toISOString() : null })),
+    dailyJournal: (state.days || []).map(d => ({ account: accountsList().find(a => a.id === d.accountId)?.name || "", date: d.date, followedPlan: d.followed || "", feeling: d.feel || null, wentWell: d.well || "", doDifferently: d.better || "", lesson: d.lesson || "" })),
     savedReplays: (state.replays || []).map(r => ({ trade: r.label || "", note: r.note || "", timeframeMinutes: r.tf || null, saved: r.saved ? new Date(r.saved).toISOString() : null })),
     preferences: { language: s.lang || lang, theme: s.theme || currentTheme(), accent: s.accent || currentAccent(), notifications: s.notify || {}, privacy: s.privacy || {} },
     accounts: accountsList().map(a => ({ ...acctExport(a), trades: acctTrades(a).map(tradeExport),
@@ -5531,7 +5595,7 @@ async function deleteEverything(){
   if (state.mode !== "live"){ ["tel-range","tel-chart","tel-acct","tel-dismiss"].forEach(k => { try { localStorage.removeItem(k); } catch {} }); enterDemo(); setView("dashboard"); toast(t("dDeleted")); return; }
   try {
     const allShots = state.trades.flatMap(shotsOf);
-    for (const x of [...state.trades, ...(state.notes || []), ...(state.coachChats || []), ...(state.replays || [])]) await col.doc(x.id).delete();
+    for (const x of [...state.trades, ...(state.notes || []), ...(state.coachChats || []), ...(state.replays || []), ...(state.days || [])]) await col.doc(x.id).delete();
     if (state.usage && Object.keys(state.usage).length) await col.doc("usage").delete().catch(() => {});
     deleteShots(allShots);
     await col.doc("settings").delete();
@@ -5868,7 +5932,8 @@ render();
       if (THEMES.includes(state.settings?.theme) && state.settings.theme !== state.theme){ applyTheme(state.settings.theme); ls.set("tel-theme", state.settings.theme); }
       if (validHex(state.settings?.accent) && state.settings.accent !== state.accent){ applyAccent(state.settings.accent); ls.set("tel-accent", state.settings.accent); }
       const all = snap.docs.filter(d => d.id !== "settings").map(d => ({ id: d.id, ...d.data() }));
-      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.date && t.symbol);
+      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.kind !== "day" && t.date && t.symbol);
+      state.days = all.filter(t => t.kind === "day");
       state.replays = all.filter(t => t.kind === "replay");
       state.notes = all.filter(t => t.kind === "note");
       state.coachChats = all.filter(t => t.kind === "coach");
