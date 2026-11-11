@@ -2787,7 +2787,60 @@ const PROP_TPL = [
   { id: "fn2p1", firm: "FundedNext", name: "Stellar 2-Step (phase 1)", targetPct: 8, minDays: 5, dailyPct: 5, dailyBase: "start", maxPct: 10, ddType: "static" },
   { id: "fn2p2", firm: "FundedNext", name: "Stellar 2-Step (phase 2)", targetPct: 5, minDays: 5, dailyPct: 5, dailyBase: "start", maxPct: 10, ddType: "static" },
   { id: "fn1", firm: "FundedNext", name: "Stellar 1-Step", targetPct: 10, minDays: 2, dailyPct: 3, dailyBase: "start", maxPct: 6, ddType: "static" },
+  // --- Added 11 Nov 2026 from dated rule summaries (see each "src"). Futures sizes are converted from dollars to % of the account size.
+  { id: "fp2s1", firm: "FundingPips", name: "2-Step Standard (phase 1)", targetPct: 8, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "With the 3% daily-loss add-on the daily limit is 3% and there's no minimum days. Daily limit is from the higher of opening balance or equity." },
+  { id: "fp2s2", firm: "FundingPips", name: "2-Step Standard (phase 2)", targetPct: 5, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "With the 3% daily-loss add-on the daily limit is 3% and there's no minimum days." },
+  { id: "fp2p1", firm: "FundingPips", name: "2-Step Pro (phase 1)", targetPct: 6, minDays: null, dailyPct: 3, dailyBase: "day", maxPct: 6, ddType: "static" },
+  { id: "fp2p2", firm: "FundingPips", name: "2-Step Pro (phase 2)", targetPct: 6, minDays: null, dailyPct: 3, dailyBase: "day", maxPct: 6, ddType: "static" },
+  { id: "fp2f1", firm: "FundingPips", name: "2-Step Flex (phase 1)", targetPct: 10, minDays: 1, dailyPct: 4, dailyBase: "day", maxPct: 12, ddType: "static" },
+  { id: "fp2f2", firm: "FundingPips", name: "2-Step Flex (phase 2)", targetPct: 8, minDays: 1, dailyPct: 4, dailyBase: "day", maxPct: 12, ddType: "static" },
+  { id: "fp1f", firm: "FundingPips", name: "1-Step Flex", targetPct: 12, minDays: null, dailyPct: 3, dailyBase: "day", maxPct: 12, ddType: "static", warn: "The daily limit is 2% or 3% depending on what you picked at checkout." },
+  { id: "fx1", firm: "FXIFY", name: "One Phase", targetPct: 10, minDays: 5, dailyPct: 3, dailyBase: "day", maxPct: 6, ddType: "trailing", warn: "Trailing drawdown locks at your starting balance once you're up 6%. Daily limit is from the 5pm New York closing balance." },
+  { id: "fx2s1", firm: "FXIFY", name: "Two Phase Standard (phase 1)", targetPct: 10, minDays: 5, dailyPct: 4, dailyBase: "day", maxPct: 10, ddType: "trailing", warn: "Sources disagree on whether Two Phase drawdown is static or trailing. Check your dashboard." },
+  { id: "fx2s2", firm: "FXIFY", name: "Two Phase Standard (phase 2)", targetPct: 5, minDays: 5, dailyPct: 4, dailyBase: "day", maxPct: 10, ddType: "trailing", warn: "Sources disagree on whether Two Phase drawdown is static or trailing. Check your dashboard." },
+  { id: "fx2p1", firm: "FXIFY", name: "Two Phase Pro (phase 1)", targetPct: 4, minDays: 3, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "static" },
+  { id: "fx2p2", firm: "FXIFY", name: "Two Phase Pro (phase 2)", targetPct: 8, minDays: 3, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "static" },
+  { id: "fx3", firm: "FXIFY", name: "Three Phase (each phase)", targetPct: 5, minDays: 5, dailyPct: 5, dailyBase: "day", maxPct: 5, ddType: "static" },
+  { id: "fxl", firm: "FXIFY", name: "Lightning", targetPct: 5, minDays: 3, dailyPct: 3, dailyBase: "day", maxPct: 4, ddType: "trailing", consistencyPct: 30 },
+  { id: "e8one", firm: "E8 Markets", name: "E8 One", targetPct: 6, minDays: null, dailyPct: 3, dailyBase: "day", maxPct: 4, ddType: "trailing", warn: "Max drawdown trails your highest closed balance and locks at your starting balance. Place and close at least one trade every 60 days." },
+  { id: "ac1", firm: "Alpha Capital", name: "Alpha One (1-Step)", targetPct: 6, minDays: 1, dailyPct: 3, dailyBase: "day", maxPct: 4, ddType: "static", warn: "Published summaries don't say whether Alpha One's 4% drawdown is static or trailing. Check your dashboard." },
+  { id: "ac2p1", firm: "Alpha Capital", name: "Alpha Pro 6% (phase 1)", targetPct: 6, minDays: 3, dailyPct: 3, dailyBase: "day", maxPct: 6, ddType: "static", warn: "Alpha Capital sells Pro accounts with different targets and drawdowns. Check the numbers on your account." },
+  { id: "ac2p2", firm: "Alpha Capital", name: "Alpha Pro 6% (phase 2)", targetPct: 6, minDays: 3, dailyPct: 3, dailyBase: "day", maxPct: 6, ddType: "static", warn: "Alpha Capital sells Pro accounts with different targets and drawdowns. Check the numbers on your account." },
+  { id: "mv1", firm: "Maven Trading", name: "1-Step", targetPct: 8, minDays: null, dailyPct: 3, dailyBase: "day", maxPct: 5, ddType: "trailing", warn: "Maven trails from your highest equity, including open trades, and the day resets at 00:00 UTC." },
+  { id: "mv2p1", firm: "Maven Trading", name: "2-Step (phase 1)", targetPct: 8, minDays: null, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "static" },
+  { id: "mv2p2", firm: "Maven Trading", name: "2-Step (phase 2)", targetPct: 5, minDays: null, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "static" },
+  { id: "mv3", firm: "Maven Trading", name: "3-Step (each phase)", targetPct: 3, minDays: null, dailyPct: 2, dailyBase: "day", maxPct: 3, ddType: "static" },
+  { id: "cti1", firm: "City Traders Imperium", name: "1-Step", targetPct: 8, minDays: 3, dailyPct: null, dailyBase: "day", maxPct: 5, ddType: "trailing", warn: "No daily drawdown. Minimum days are profitable days." },
+  { id: "cti2p1", firm: "City Traders Imperium", name: "2-Step (phase 1)", targetPct: 10, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static" },
+  { id: "cti2p2", firm: "City Traders Imperium", name: "2-Step (phase 2)", targetPct: 5, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static" },
+  { id: "if1", firm: "Instant Funding", name: "One-Phase", targetPct: 10, minDays: 3, dailyPct: 3, dailyBase: "day", maxPct: 8, ddType: "static" },
+  { id: "if2p1", firm: "Instant Funding", name: "Two-Phase (phase 1)", targetPct: 8, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "Published summaries don't say whether this drawdown is static or trailing. Check your dashboard." },
+  { id: "if2p2", firm: "Instant Funding", name: "Two-Phase (phase 2)", targetPct: 5, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "Published summaries don't say whether this drawdown is static or trailing. Check your dashboard." },
+  { id: "ftp1", firm: "Funded Trading Plus", name: "One-Phase", targetPct: 10, minDays: null, dailyPct: 4, dailyBase: "day", maxPct: 6, ddType: "trailing", warn: "Based on an older published summary. Check every number on your dashboard." },
+  { id: "ftpp1", firm: "Funded Trading Plus", name: "Two-Phase Prestige (phase 1)", targetPct: 10, minDays: 3, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "Based on an older published summary. Check every number on your dashboard." },
+  { id: "ftpp2", firm: "Funded Trading Plus", name: "Two-Phase Prestige (phase 2)", targetPct: 5, minDays: null, dailyPct: 5, dailyBase: "day", maxPct: 10, ddType: "static", warn: "Based on an older published summary. Check every number on your dashboard." },
+  { id: "ftpm1", firm: "Funded Trading Plus", name: "Two-Phase Premium (phase 1)", targetPct: 8, minDays: null, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "trailing", warn: "Based on an older published summary. Check every number on your dashboard." },
+  { id: "ftpm2", firm: "Funded Trading Plus", name: "Two-Phase Premium (phase 2)", targetPct: 5, minDays: null, dailyPct: 4, dailyBase: "day", maxPct: 8, ddType: "trailing", warn: "Based on an older published summary. Check every number on your dashboard." },
+  ...futTpl("Topstep", "tops", "Trading Combine", [[50, 3000, 2000], [100, 6000, 3000], [150, 9000, 4500]], { consistencyPct: 50, warn: "The daily loss limit is optional at purchase (about 2% of the account). Sources give the best-day rule as 50% or 55%." }),
+  ...futTpl("Apex Trader Funding", "apxe", "EOD evaluation", [[25, 1500, 1000, 500], [50, 3000, 2000, 1000], [100, 6000, 3000, 1500], [150, 9000, 4000, 2000]], { warn: "30 calendar days to pass. No minimum days or consistency rule in the evaluation." }),
+  ...futTpl("Apex Trader Funding", "apxi", "Intraday evaluation", [[25, 1500, 1000], [50, 3000, 2000], [100, 6000, 3000], [150, 9000, 4000]], { warn: "Intraday trailing follows open profit in real time, so it can move against you faster than RuleGuard shows. 30 calendar days to pass." }),
+  ...futTpl("Take Profit Trader", "tpt", "Test", [[25, 1500, 1500], [50, 3000, 2000], [75, 4500, 2500], [100, 6000, 3000], [150, 9000, 4500]], { minDays: 3, consistencyPct: 50, warn: "Tests bought before 17 Aug 2026 need 5 days. Best day must be under 50% of total profit." }),
+  ...futTpl("Tradeify", "tdg", "Growth", [[50, 3000, 2000, 1250], [100, 6000, 3500, 2500], [150, 9000, 5000, 3750]], { minDays: 1, warn: "The daily loss limit pauses trading for the day instead of failing the account." }),
+  ...futTpl("Tradeify", "tds", "Select", [[50, 3000, 2000], [100, 6000, 3000], [150, 9000, 4500]], { minDays: 3, consistencyPct: 40 }),
+  ...futTpl("MyFundedFutures", "mffr", "Rapid", [[50, 3000, 2000], [100, 6000, 3000], [150, 9000, 4500]], { minDays: 2, consistencyPct: 50 }),
+  ...futTpl("MyFundedFutures", "mffp", "Pro", [[50, 3000, 2000], [100, 6000, 3000], [150, 9000, 4500]], { minDays: 2, consistencyPct: 50 }),
+  ...futTpl("MyFundedFutures", "mffb", "Builder", [[50, 3000, 2000, 1000], [100, 6000, 3000, 1750], [150, 9000, 4500, 2500]], { minDays: 1, warn: "The daily loss limit pauses trading for the day. Sources give the 50K drawdown as $2,000 or $1,500." }),
+  ...futTpl("Alpha Futures", "afz", "Zero", [[50, 3000, 2000, 1000], [100, 6000, 3000, 2000]], { minDays: 1, warn: "The Daily Loss Guard pauses trading for the day." }),
+  ...futTpl("Alpha Futures", "afa", "Advanced", [[50, 4000, 1750], [100, 8000, 3500], [150, 12000, 5250]], { minDays: 3, consistencyPct: 50, warn: "Sources give the evaluation consistency rule as 40% or 50%." }),
 ];
+function futTpl(firm, key, plan, sizes, extra = {}){
+  const r2 = n => Math.round(n * 100) / 100;
+  return sizes.map(([k, target, dd, dll]) => ({ id: `${key}${k}`, firm, futures: true, size: k * 1000, name: `${plan} ${k}K`, targetPct: r2(target / (k * 10)), minDays: extra.minDays ?? null,
+    dailyPct: dll ? r2(dll / (k * 10)) : null, dailyBase: "day", maxPct: r2(dd / (k * 10)), ddType: "trailing", consistencyPct: extra.consistencyPct ?? null,
+    warn: [`Set for a $${k}K account: $${target.toLocaleString("en-US")} target, $${dd.toLocaleString("en-US")} max loss${dll ? `, $${dll.toLocaleString("en-US")} daily loss` : ""}.`, extra.warn, "Futures firms trail drawdown from the end-of-day high and stop trailing once it reaches your starting balance, so treat RuleGuard's trailing number as an early warning."].filter(Boolean).join(" ") }));
+}
+const TPL_FIRMS = () => [...new Set(PROP_TPL.map(x => x.firm))];
+PROP_TPL.forEach(x => { if (!["FTMO", "The5ers", "FundedNext"].includes(x.firm)) x.checked = "11 Nov 2026"; });
 function openRules(){
   const a = activeAcct(); if (!a) return; const r = a.rules || {}, prop = isPropAcct(a), v_ = k => esc(r[k] ?? "");
   const days = Array.isArray(r.days) && r.days.length ? r.days : [1, 2, 3, 4, 5];
@@ -2818,7 +2871,10 @@ function openRules(){
     </div>
     <details class="rg-prop" ${prop ? "open" : ""}><summary><b>Prop firm challenge</b> <span class="hint">${prop ? "" : "· only if this is a prop account"}</span></summary>
       <p class="hint" style="margin:0 0 10px">Copy these from your prop firm's rules. RuleGuard warns you at 50%, 80% and 100% of each limit, counting open trades too.</p>
-      <div class="f"><label for="rg-tpl">${esc(t("rgTpl"))}</label><select id="rg-tpl"><option value="">${esc(t("rgTplNone"))}</option>${["FTMO","The5ers","FundedNext"].map(f => `<optgroup label="${f}">${PROP_TPL.filter(x => x.firm === f).map(x => `<option value="${x.id}" ${r.template?.id === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}</select></div>
+      <div class="fgrid"><div class="f"><label for="rg-firm">Prop firm</label><select id="rg-firm"><option value="">${esc(t("rgTplNone"))}</option>
+        <optgroup label="Forex & CFD">${TPL_FIRMS().filter(f => !PROP_TPL.find(x => x.firm === f).futures).map(f => `<option ${r.template?.firm === f ? "selected" : ""}>${esc(f)}</option>`).join("")}</optgroup>
+        <optgroup label="Futures">${TPL_FIRMS().filter(f => PROP_TPL.find(x => x.firm === f).futures).map(f => `<option ${r.template?.firm === f ? "selected" : ""}>${esc(f)}</option>`).join("")}</optgroup></select></div>
+      <div class="f"><label for="rg-tpl">${esc(t("rgTpl"))}</label><select id="rg-tpl" ${r.template ? "" : "disabled"}><option value="">Pick a challenge</option>${r.template ? PROP_TPL.filter(x => x.firm === r.template.firm).map(x => `<option value="${x.id}" ${r.template?.id === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("") : ""}</select></div></div>
       <div class="set-note" id="rg-tplNote" ${r.template ? "" : "hidden"}>${r.template ? esc(t("rgTplUsed", { firm: r.template.firm, name: r.template.name, d: r.template.checked, c: r.template.confirmed ? fmtDate(r.template.confirmed) : "—" })) : ""}</div>
       <label class="check" id="rg-confirmWrap" hidden><input type="checkbox" id="rg-confirm"><span>${esc(t("rgConfirm"))}</span></label>
       <div class="fgrid">
@@ -2830,14 +2886,18 @@ function openRules(){
     <div class="err" id="rg-err" hidden></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">${esc(t("saveChanges"))}</button></div></div></form>`);
   let tpl = r.template ? { ...r.template } : null, tplFresh = false;
+  $("#rg-firm").onchange = e => { const f = e.target.value, sel = $("#rg-tpl");
+    sel.innerHTML = `<option value="">Pick a challenge</option>` + PROP_TPL.filter(x => x.firm === f).map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join("");
+    sel.disabled = !f; sel.value = ""; sel.dispatchEvent(new Event("change")); if (f) sel.focus(); };
   $("#rg-tpl").onchange = e => {
     const x = PROP_TPL.find(z => z.id === e.target.value), note = $("#rg-tplNote");
     if (!x){ tpl = null; tplFresh = false; note.hidden = true; $("#rg-confirmWrap").hidden = true; return; }
     const set = (id, val) => { $("#" + id).value = val == null ? "" : val; };
     set("rg-target", x.targetPct); set("rg-days2", x.minDays); set("rg-daily", x.dailyPct); set("rg-max", x.maxPct); set("rg-cons", x.consistencyPct);
     $("#rg-dbase").value = x.dailyBase; $("#rg-ddt").value = x.ddType;
-    tpl = { id: x.id, firm: x.firm, name: x.name, checked: TPL_CHECKED }; tplFresh = true;
-    note.hidden = false; note.textContent = t("rgTplNote", { firm: x.firm, name: x.name, d: TPL_CHECKED }) + (x.warn ? " " + x.warn : "");
+    tpl = { id: x.id, firm: x.firm, name: x.name, checked: x.checked || TPL_CHECKED }; tplFresh = true;
+    const bal = +(a.balance || 0), sizeWarn = x.size && bal && Math.abs(bal - x.size) > 1 ? ` Your account starts at ${money(bal, false, a.ccy)}, but this is the ${money(x.size, false, a.ccy)} plan, so the dollar limits won't match. Pick the plan for your size.` : "";
+    note.hidden = false; note.textContent = t("rgTplNote", { firm: x.firm, name: x.name, d: x.checked || TPL_CHECKED }) + (x.warn ? " " + x.warn : "") + sizeWarn;
     $("#rg-confirmWrap").hidden = false; $("#rg-confirm").checked = false;
   };
   $("#rgF").onsubmit = async e => { e.preventDefault(); const v = id => $("#" + id).value, er = $("#rg-err"), pos = id => { const n_ = num(v(id)); return n_ != null && n_ > 0 ? n_ : null; };
