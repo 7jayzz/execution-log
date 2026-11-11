@@ -546,7 +546,7 @@ details.adv[open] summary{margin-bottom:10px}
 .bt-and{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:42px}
 .bt-sum{border-top:1px dashed var(--line-2);padding-top:10px;display:flex;flex-direction:column;gap:4px}.bt-sum p{margin:0;font-size:13.5px}
 .daychips{display:flex;flex-wrap:wrap;gap:6px}.daychips .chip{padding:6px 11px;font-size:12.5px;display:inline-flex;align-items:center}.daychips input{position:absolute;opacity:0;pointer-events:none}
-.daychips .chip:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}.daychips .chip:has(input:focus-visible){outline:2px solid var(--accent)}
+.daychips .chip{background:transparent;color:var(--muted);border-color:var(--line-2);opacity:.7}.daychips .chip:has(input:checked){border-color:var(--accent);background:var(--accent);color:#121726;opacity:1;font-weight:800}.daychips .chip:has(input:checked) span::before{content:"✓ "}.daychips .chip:has(input:focus-visible){outline:2px solid var(--accent)}
 @media (max-width:560px){.bt-cond{padding:7px}.bt-cond .ctl{flex:1 1 40%}.bt-cond input.ctl{flex:0 0 64px;width:64px}.bt-and{min-width:100%}}
 .bt-grid .bt-sig{display:contents}.bt-grid .bt-sig[hidden]{display:none}.bt-check{grid-column:1/-1}.bt-report{display:flex;flex-direction:column;gap:14px;margin-top:6px}.bt-curve{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}.bt-curve svg{width:100%;height:160px;display:block}.bt-curve .ln{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}.bt-tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.bt-tbl{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:13px}.bt-tbl table{width:100%;border-collapse:collapse;margin-top:6px}.bt-tbl td,.bt-tbl th{padding:4px 2px;border-bottom:1px solid var(--line)}.bt-tbl th{font-size:11px;color:var(--muted);text-align:left}.bt-tbl .r{text-align:right}.bt-trades summary{cursor:pointer;font-weight:600}.bt-file{cursor:pointer}
 .rp-ready{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:260px;padding:24px;border:1px dashed var(--line-2);border-radius:8px;background:var(--surface)}.rp-ready>b{font-size:20px}.rp-ready .btn{margin:6px 0;padding:10px 26px;font-size:15px}.rp-lock .v{font-size:18px;opacity:.7}
@@ -2790,7 +2790,7 @@ const PROP_TPL = [
 ];
 function openRules(){
   const a = activeAcct(); if (!a) return; const r = a.rules || {}, prop = isPropAcct(a), v_ = k => esc(r[k] ?? "");
-  const days = Array.isArray(r.days) && r.days.length ? r.days : [0, 1, 2, 3, 4, 5, 6];
+  const days = Array.isArray(r.days) && r.days.length ? r.days : [1, 2, 3, 4, 5];
   const close = showDrawer(`<form class="drawer" id="rgF" novalidate>
     <div class="panel-head"><h2>RuleGuard · ${esc(a.name)}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <p class="hint" style="margin:0">Write your rules down once. RuleGuard checks every trade against them, warns you on the dashboard before you break one, and keeps an honest record when you do. Works for live and prop accounts. Leave a box empty to skip that rule.</p>
@@ -2806,7 +2806,7 @@ function openRules(){
       <div class="f"><label for="rg-da">Max daily loss (${esc(a.ccy || S().ccy || "")})</label><input id="rg-da" type="number" step="any" value="${v_("dailyAmt")}" placeholder="e.g. 200"></div>
       <div class="f"><label for="rg-wk">Max weekly loss (%)</label><input id="rg-wk" type="number" step="any" value="${v_("weekPct")}" placeholder="4"></div>
     </div>
-    <div class="f"><label>Days I trade</label><div class="daychips" id="rg-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${days.includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
+    <div class="f"><label>Days I trade</label><div class="daychips" id="rg-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${days.includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div><span class="hint">Forex, gold and indices are closed on Saturday and Sunday. Only tick the weekend if you trade crypto.</span></div>
     <div class="f"><label for="rg-sym">Only these instruments <span class="opt">(${esc(t("optional"))})</span></label><input id="rg-sym" value="${esc((r.symbols || []).join(", "))}" placeholder="e.g. XAUUSD, NAS100, GBPUSD"></div>
     <label class="check"><input type="checkbox" id="rg-stop" ${r.needStop ? "checked" : ""}><span>Every trade must have a stop loss</span></label>
     <h3 class="rg-h">Account limits</h3>
