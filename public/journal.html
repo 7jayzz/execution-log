@@ -203,6 +203,7 @@ tbody tr.row:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   padding:calc(22px + env(safe-area-inset-top,0px)) max(22px, env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) 22px;
   display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--line-2);box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
 .drawer h2{font-size:30px}
+.rep-grp{margin-top:12px}.rep-grp .cf-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}@media(max-width:560px){.rep-grp .cf-list{grid-template-columns:1fr}}.rep-grp-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}.rep-grp-h .linkbtn{font-size:12px;text-transform:none;letter-spacing:0}
 .drawer.wide{width:min(760px,100%)}
 .fgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .fgrid>*,.f{min-width:0}
@@ -1298,13 +1299,20 @@ const grossOf = t => num(t.brokerPnl) ?? grossCalc(t);
 const calcPnl = t => grossCalc(t) - commOf(t) + swapOf(t);
 const pnl = t => grossOf(t) - commOf(t) + swapOf(t);
 const durationOf = x => { if (!x.timeIn || !x.timeOut) return null; const m = s_ => { const [h, mi] = s_.split(":").map(Number); return h * 60 + mi; };
-  let d = m(x.timeOut) - m(x.timeIn); if (d < 0) d += 1440; return d; };
+  let d = m(x.timeOut) - m(x.timeIn); if (x.dateIn && x.dateIn < x.date) return d + dayDiff(x.dateIn, x.date) * 1440; if (d < 0) d += 1440; return d; };
 const fmtDur = d => d == null ? "—" : d < 60 ? `${d}m` : `${Math.floor(d / 60)}h${d % 60 ? " " + (d % 60) + "m" : ""}`;
 const timeSpan = x => x.timeIn && x.timeOut ? `${x.timeIn}–${x.timeOut}` : (x.timeIn || x.timeOut || "");
 const COMM_KEYS = [["fx","g_Forex"],["metals","g_Metals"],["indices","g_Indices (CFD)"],["crypto","g_Crypto"],["futures","g_Futures"],["other","g_other"]];
 const groupKey = sym => ({ "Forex": "fx", "Metals": "metals", "Indices (CFD)": "indices", "Crypto": "crypto", "Futures": "futures" })[INSTR[sym]?.group] || "other";
 const commRate = (a, sym) => num((a || S()).comm?.[groupKey(sym)]) ?? 0;
-const riskAmt = t => { const st = num(t.stop); if (st == null) return null; const s = spec(t); const r = Math.abs(+t.entry - st) * s.lots * s.contract * s.rate; return r > 0 ? r : null; };
+// R needs the stop where the trade STARTED. MT4/MT5 reports only give the stop at close (often moved to breakeven
+// or trailed), so imported stops are kept as slFinal and never used for R. A stop on the profit side of entry
+// can't be an initial stop either, so it gives no R rather than a made-up one.
+const STOP_FINAL_SRC = { mt5: 1, mt4: 1 };
+const initStop = t => { const st = num(t.stop), e = +t.entry; if (st == null || !(e > 0)) return null; return (t.side === "short" ? st > e : st < e) ? st : null; };
+const hasAnyStop = t => num(t.stop) != null || num(t.slFinal) != null;
+const normTrade = t => t && STOP_FINAL_SRC[t.imported] && t.slFinal === undefined && num(t.stop) != null ? { ...t, slFinal: num(t.stop), stop: "" } : t;
+const riskAmt = t => { const st = initStop(t); if (st == null) return null; const s = spec(t); const r = Math.abs(+t.entry - st) * s.lots * s.contract * s.rate; return r > 0 ? r : null; };
 const rMult = t => { const r = riskAmt(t); return r ? pnl(t) / r : null; };
 
 const fmtAmt = (a, dp) => a.toLocaleString(LOC(), { minimumFractionDigits: dp, maximumFractionDigits: dp });
@@ -1316,7 +1324,8 @@ const compact = (v, sign = true) => { if (state.hideMoney) return sym() + "•�
 const pct = (v, dp = 2) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(dp) + "%";
 const price = v => { const n = +v; if (isNaN(n)) return ""; const d = Math.abs(n) < 10 ? 4 : Math.abs(n) < 1000 ? 3 : 2; return n.toFixed(d).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1"); };
 const cls = v => v > 0 ? "pos" : v < 0 ? "neg" : "";
-const sorted = (a) => [...acctTrades(a)].sort((a,b)=> a.date === b.date ? (a.created||0)-(b.created||0) : a.date < b.date ? -1 : 1);
+// Same-day trades go in the order they closed (when times are known), so drawdown and the balance curve follow the real sequence.
+const sorted = (a) => [...acctTrades(a)].sort((a,b)=> a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.timeOut && b.timeOut && a.timeOut !== b.timeOut ? (a.timeOut < b.timeOut ? -1 : 1) : (a.created||0)-(b.created||0));
 function ledger(a = activeAcct()){ let bal = +((a || S()).balance) || 0; const before = {}; events(a).forEach(e => { if (e.kind === "trade") before[e.t.id] = bal; bal += e.amount; }); return { before, end: bal }; }
 
 function stats(ts){
@@ -1422,7 +1431,8 @@ function openDetails(x){
       ${row(t("lotSize"), `<span class="num">${s_.lots}</span>`)}
       ${row(t("entryPrice"), `<span class="num">${price(x.entry)}</span>`)}
       ${row(t("exitPrice"), `<span class="num">${price(x.exit)}</span>`)}
-      ${row(t("stopLoss"), num(x.stop) == null ? "—" : `<span class="num">${price(x.stop)}</span>`)}
+      ${row(t("stopLoss"), num(x.stop) == null ? "—" : `<span class="num">${price(x.stop)}</span>${initStop(x) == null ? ` <span class="hint">(in profit, so not used for R)</span>` : ""}`)}
+      ${num(x.slFinal) != null ? row("Stop at close (broker)", `<span class="num">${price(x.slFinal)}</span> <span class="hint">MT5 only reports the final stop. Edit the trade and add where your stop started to get R.</span>`) : ""}
       ${row(t("risk"), ra == null ? "—" : `<span class="num">${money(ra, false)}${b ? ` (${(ra / b * 100).toFixed(2)}%)` : ""}</span>`)}
       ${row(t("grossPnl"), `<span class="num ${cls(grossOf(x))}">${money(grossOf(x))}</span>`)}
       ${row(t("commission"), `<span class="num">${commOf(x) ? money(-commOf(x)) : money(0, false)}</span>`)}
@@ -2629,7 +2639,7 @@ const dayDiff = (a, b) => Math.round((new Date(b + "T00:00:00Z") - new Date(a + 
 function mfeStats(ts){
   const rows = ts.filter(x => num(x.mae) != null && num(x.mfe) != null).map(x => { const dir = x.side === "short" ? -1 : 1, e = +x.entry, ex = +x.exit, lo = +x.mae, hi = +x.mfe;
     const range = (hi - lo) * dir; if (!(range > 0)) return null;
-    const risk = num(x.stop) != null ? Math.abs(e - x.stop) : null;
+    const risk = initStop(x) != null ? Math.abs(e - initStop(x)) : null;
     return { entryEff: (hi - e) * dir / range, exitEff: (ex - lo) * dir / range, maeR: risk ? (e - lo) * dir / risk : null, mfeR: risk ? (hi - e) * dir / risk : null, leftR: risk ? (hi - ex) * dir / risk : null }; }).filter(Boolean);
   const avg = k => { const v = rows.map(r => r[k]).filter(v => v != null && isFinite(v)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   return { n: rows.length, entryEff: avg("entryEff"), exitEff: avg("exitEff"), maeR: avg("maeR"), mfeR: avg("mfeR"), leftR: avg("leftR") };
@@ -2714,7 +2724,7 @@ function tradeBreaks(x, a = activeAcct(), ctx = guardCtx(a)){
   const day = (ctx.byDay[x.date] || []).filter(z => z.id !== x.id).concat([x]).sort(rgOrd), i = day.indexOf(x), before = day.slice(0, i);
   if (num(r.maxTrades) && i >= r.maxTrades) add("trades", `trade ${i + 1} of the day (your max is ${r.maxTrades})`);
   const lost = before.filter(z => pnl(z) < 0).length; if (num(r.maxLosses) && lost >= r.maxLosses) add("losses", `taken after ${lost} losing trade${lost === 1 ? "" : "s"} (you stop after ${r.maxLosses})`);
-  if (r.needStop && num(x.stop) == null) add("stop", "no stop loss");
+  if (r.needStop && !hasAnyStop(x)) add("stop", "no stop loss");
   if (num(r.maxRiskPct)){ const ra = riskAmt(x), bal = ctx.L.before[x.id] ?? ctx.L.end; if (ra && bal > 0 && ra / bal * 100 > r.maxRiskPct * 1.02) add("risk", `risked ${(ra / bal * 100).toFixed(2)}% (your max is ${r.maxRiskPct}%)`); }
   if (r.hFrom && r.hTo && x.timeIn){ const m = tmin(x.timeIn), f = tmin(r.hFrom), t_ = tmin(r.hTo), inside = f <= t_ ? m >= f && m < t_ : m >= f || m < t_; if (!inside) add("hours", `opened at ${x.timeIn}, outside ${r.hFrom}–${r.hTo}`); }
   if (Array.isArray(r.days) && r.days.length && r.days.length < 7){ const wd = new Date(x.date + "T12:00:00Z").getUTCDay(); if (!r.days.includes(wd)) add("days", `traded on a ${RG_DAYN[wd]}`); }
@@ -3191,7 +3201,7 @@ function openAnnotate(id, onSaved){
 function execScore(x, a = S()){
   let s_ = 0; const parts = [];
   const add = (pts, ok, label) => { if (ok) s_ += pts; parts.push([label, ok, pts]); };
-  add(30, x.plan === true, "Followed plan"); add(20, !x.fomo && !x.revenge, "No FOMO or revenge"); add(15, num(x.stop) != null, "Stop loss set");
+  add(30, x.plan === true, "Followed plan"); add(20, !x.fomo && !x.revenge, "No FOMO or revenge"); add(15, hasAnyStop(x), "Stop loss set");
   const ra = riskAmt(x), bal = ledger().before?.[x.id] || +a.balance || 0, rp = ra && bal ? ra / bal * 100 : null;
   add(15, rp != null && rp <= (+a.risk || 1) * 1.25, "Risk within plan");
   add(10, !!(x.notes || shotsOf(x).length || x.mood), "Journaled properly");
@@ -3363,7 +3373,7 @@ function setTfButtons(){ const box = $("#rpTfs"); if (!box) return; const base =
 // Trade details under the replay chart: everything about the trade at a glance.
 function rpInfo(x, range, locked = false){
   const host = $("#rpInfo"); if (!host) return; if (!x){ host.innerHTML = ""; return; }
-  const isLong = x.side !== "short", d = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp), s_ = spec(x);
+  const isLong = x.side !== "short", d = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = initStop(x), tp = num(x.tp), s_ = spec(x);
   const cash = v => Math.abs(v) * s_.lots * s_.contract * s_.rate, riskPts = stop != null ? Math.abs(entry - stop) : null, pl = pnl(x), r = rMult(x);
   // Worst and best price while in the trade: from the candles if loaded, otherwise from what was logged.
   const worst = range ? (isLong ? range.lo : range.hi) : num(x.mae), best = range ? (isLong ? range.hi : range.lo) : num(x.mfe);
@@ -3431,7 +3441,7 @@ function drawReplay(){
     $("#rpPos").textContent = "Ready";
     return;
   }
-  const isLong = x.side !== "short", d0 = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop), tp = num(x.tp);
+  const isLong = x.side !== "short", d0 = isLong ? 1 : -1, entry = +x.entry, exit = +x.exit, stop = num(x.stop) ?? num(x.slFinal), tp = num(x.tp);
   // Geometry in real pixels, so text stays readable on phones.
   const W = Math.max(320, Math.round((host.clientWidth || 680) - 16)), H = W < 600 ? 340 : 420, L = 0, R = W < 600 ? 62 : 76, T = 8, B = 24;
   const defN = Math.round((W - R) / (W < 600 ? 6 : 10));
@@ -4507,17 +4517,29 @@ function crossStrategyTable(){
 }
 function openReportBuilder(){
   if (!hasTier("pro")){ downloadReport(); return; }
-  const S_ = [["summary", "Summary stats", true], ["curve", "Balance curve", true], ["breakdown", "By setup and instrument", true], ["months", "By month", true], ["discipline", "Discipline and emotions", true], ["challenge", "Challenge status (RuleGuard)", !!S().rules?.on], ["trades", "Every trade", true], ...(hasTier("elite") ? [["ai", "✦ AI coach summary, written for this report (uses one coach reply)", false]] : [])];
+  const G = [["Overview", [["summary", "Summary stats"], ["curve", "Balance curve"], ["account", "Account and challenge info"]]],
+    ["Performance", [["months", "Monthly"], ["daily", "Daily and day of week"], ["sessions", "Trading sessions"], ["instruments", "By instrument"], ["setups", "Setup performance"], ["conditions", "Best vs worst conditions"]]],
+    ["Risk", [["drawdown", "Drawdown and recovery"], ["riskc", "Risk consistency"], ["dist", "Trade distribution (R)"]]],
+    ["Behaviour", [["discipline", "Discipline and emotions"], ...(hasTier("elite") ? [["ai", "✦ AI performance summary (uses one coach reply)", false]] : [])]],
+    ["Trades", [["trades", "Every trade"]]]];
   const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Report builder</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-    <p class="hint" style="margin:0">Pick what goes in your PDF. It covers the dates picked on the dashboard.</p>
-    <div class="cf-list">${S_.map(([k, l, on]) => `<label class="check"><input type="checkbox" data-sec="${k}" ${on ? "checked" : ""}><span>${esc(l)}</span></label>`).join("")}</div>
+    <p class="hint" style="margin:0">Pick what goes in your PDF. It covers the dates picked on the dashboard. Report details and a reconciliation check are always included.</p>
+    ${G.map(([g, items]) => `<div class="rep-grp"><div class="rep-grp-h"><b>${esc(g)}</b><button type="button" class="linkbtn" data-all="${esc(g)}">All</button></div><div class="cf-list">${items.map(([k, l, on = true]) => `<label class="check"><input type="checkbox" data-sec="${k}" data-g="${esc(g)}" ${on ? "checked" : ""}><span>${esc(l)}</span></label>`).join("")}</div></div>`).join("")}
     <div class="f"><label for="repTitle">Report title</label><input id="repTitle" value="Performance report" maxlength="60"></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="repGo">${esc(t("dDownload"))}</button></div></div></div>`);
+  $("#drawerHost").querySelectorAll("[data-all]").forEach(btn => btn.onclick = () => { const bs = [...$("#drawerHost").querySelectorAll(`[data-g="${btn.dataset.all}"]`)], on = !bs.every(x => x.checked); bs.forEach(x => x.checked = on); });
   $("#repGo").onclick = async () => { const opt = { title: $("#repTitle").value.trim() || "Performance report" }; $("#drawerHost").querySelectorAll("[data-sec]").forEach(x => opt[x.dataset.sec] = x.checked);
     if (opt.ai){ const sample = await getSample(), go = $("#repGo");
       if (!sample){ opt.ai = false; toast("The AI coach isn't available here, so the report was made without the summary."); }
+      else if (!reportMetrics().ts.length){ opt.ai = false; toast("There are no trades in this period, so the report was made without the AI summary."); }
       else { go.disabled = true; go.textContent = "Writing your summary…";
-        try { const prompt = `Write the summary section of a trader's PDF performance report from this journal data. Plain text only, no markdown, no headings, no bullet symbols. Three short paragraphs, 170 words maximum in total: 1) results in this period, 2) what is working and should be repeated, 3) the one or two things costing the most and exactly what to do about them. Use their numbers. Talk to the trader as "you". Data: ${JSON.stringify(coachData(80))}`;
+        try { const prompt = `You are writing one section of a trader's PDF performance report. Use ONLY the numbers in the data below. Never invent trades, setups, emotions or figures that aren't there. Plain text, no markdown, no bullet symbols. Write exactly these five lines, each starting with the label and a colon, one or two sentences each, talking to the trader as "you":
+Biggest strength:
+Biggest weakness:
+Most consistent behaviour:
+Strongest condition:
+One improvement:
+Rules: quote their actual numbers. Only call something a pattern if it has at least ${REP_MIN} trades; if the data is too thin for a line, write "Not enough data yet" and say what to log. Describe what the results show, never claim one thing caused another. "Strongest condition" is the instrument, setup, direction, session or weekday with the best average result per trade. "One improvement" must be a specific, practical action. If behaviour fields were not logged, say so instead of guessing. Data: ${JSON.stringify(reportAiData(reportMetrics()))}`;
           const r = await sample(prompt, { onText: () => {} }); opt.ai = String(r.text || "").replace(/[*#_`]/g, "").trim() || false; }
         catch (e){ opt.ai = false; toast(e?.code === "upgrade" ? "You've used your coach replies for now, so the report was made without the summary." : "Couldn't write the summary right now, so the report was made without it.", 5000); } } }
     close(); downloadReport(opt); };
@@ -4903,7 +4925,7 @@ function openTrade(t, presetDate){
       <div class="f full"><label>${esc(tr("direction"))}</label><div class="seg" role="group" aria-label="${esc(tr("direction"))}" id="f-side">
         <button type="button" data-v="long" aria-pressed="${t.side==="long"}">${esc(tr("buyLong"))}</button><button type="button" data-v="short" aria-pressed="${t.side==="short"}">${esc(tr("sellShort"))}</button></div></div>
       <div class="f"><label for="f-entry">${esc(tr("entryPrice"))}</label><input id="f-entry" type="number" step="any" inputmode="decimal" value="${esc(t.entry)}"></div>
-      <div class="f"><label for="f-stop">${esc(tr("stopLoss"))}</label><input id="f-stop" type="number" step="any" inputmode="decimal" value="${esc(t.stop)}"></div>
+      <div class="f"><label for="f-stop">${esc(tr("stopLoss"))}</label><input id="f-stop" type="number" step="any" inputmode="decimal" value="${esc(t.stop)}">${num(t.slFinal) != null ? `<p class="hint" style="margin:4px 0 0">Your broker's stop at close was ${esc(price(t.slFinal))}. Enter where it started to get R.</p>` : ""}</div>
       <div class="f full"><div class="sizer">
         <div class="f"><label for="f-riskpct">${esc(tr("riskPct"))}</label><input id="f-riskpct" type="number" step="any" inputmode="decimal" value="${esc(st.risk ?? 1)}"></div>
         <button type="button" class="btn" id="sizeBtn">${esc(tr("workLots"))}</button>
@@ -5109,7 +5131,8 @@ function openTrade(t, presetDate){
     if (tfMode === "quick" && typeof t.plan !== "boolean") d.plan = null;
     const firstEver = !edit && !state.trades.length;
     if (status === "open") Object.assign(d, { exit: "", brokerPnl: "", status: "open", mark: num(t.mark) ?? d.entry }); else Object.assign(d, { status: "", mark: "" });
-    const rec = { ...d, shots, example: false, accountId: edit ? acctOf(t) : (activeAcct()?.id || "main"), created: edit ? (t.created || Date.now()) : Date.now() };
+    const keep = edit ? Object.fromEntries(["imported", "importKey", "slFinal", "dateIn", "mood", "cond"].filter(k => t[k] !== undefined && d[k] === undefined).map(k => [k, t[k]])) : {};
+    const rec = { ...keep, ...d, shots, example: false, accountId: edit ? acctOf(t) : (activeAcct()?.id || "main"), created: edit ? (t.created || Date.now()) : Date.now() };
     const id = edit ? t.id : "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     tfSaved = true; close(); if (await saveTrade(id, rec)){ const msg = firstEver ? tr("firstTrade") : status === "open" && !isOpen(t) ? tr("openedMsg") : edit ? tr("tradeUpdated") : tr("tradeLogged");
       const rgA = accountsList().find(z => z.id === acctOf({ id, ...rec })) || activeAcct(), rgB = hasTier("pro") && rgA?.rules?.on ? tradeBreaks({ id, ...rec }, rgA) : [];
@@ -5700,7 +5723,7 @@ function impTrade(f, acct){
     if (!ins){ contract = +implied.toPrecision(6); quote = acct.ccy; rate = 1; }
     else { const r = implied / contract; if (r > rate * 3 || r < rate / 3) contract = +(implied / rate).toPrecision(6); else rate = +r.toPrecision(6); } }
   const day = (f.close || f.open).date;
-  const rec = { date: day, symbol: sym, side: f.side, entry: f.entry, exit: f.exit, lots: f.lots, stop: f.sl || "", tp: f.tp || "", contract, quote, rate, fees: 0,
+  const rec = { date: day, symbol: sym, side: f.side, entry: f.entry, exit: f.exit, lots: f.lots, stop: STOP_FINAL_SRC[f.src] ? "" : (f.sl || ""), ...(STOP_FINAL_SRC[f.src] && f.sl ? { slFinal: f.sl } : {}), ...(f.open?.date && f.open.date !== day ? { dateIn: f.open.date } : {}), tp: f.tp || "", contract, quote, rate, fees: 0,
     commission: f.commission != null ? Math.abs(f.commission) : "", swap: f.swap != null ? f.swap : "", brokerPnl: f.profit != null ? f.profit : "",
     setup: f.setup || "", grade: f.grade || "", notes: f.notes || "", timeIn: f.open?.time || "", timeOut: f.close?.time || "", shots: [], example: false, imported: f.src };
   ["plan", "revenge", "fomo"].forEach(k => { if (typeof f[k] === "boolean") rec[k] = f[k]; });
@@ -5871,6 +5894,9 @@ function makePdf(){
     text(x, y, s, o = {}){ const size = o.size || 9, str = String(s ?? ""), w = pdfW(str, size);
       const xx = o.align === "right" ? x - w : o.align === "center" ? x - w / 2 : x;
       cur.push(`BT /${o.bold ? "F2" : "F1"} ${size} Tf ${hexRgbP(o.color || "#0B1020")} rg ${xx.toFixed(2)} ${(H - y).toFixed(2)} Td (${pdfStr(str)}) Tj ET`); return w; },
+    rrect(x, y, w, h, r, fill, stroke, sw = 0.6){ const k = .5523 * r, X = x, Y = H - y - h, X2 = x + w, Y2 = H - y;
+      const d = `${(X + r).toFixed(2)} ${Y.toFixed(2)} m ${(X2 - r).toFixed(2)} ${Y.toFixed(2)} l ${(X2 - r + k).toFixed(2)} ${Y.toFixed(2)} ${X2.toFixed(2)} ${(Y + r - k).toFixed(2)} ${X2.toFixed(2)} ${(Y + r).toFixed(2)} c ${X2.toFixed(2)} ${(Y2 - r).toFixed(2)} l ${X2.toFixed(2)} ${(Y2 - r + k).toFixed(2)} ${(X2 - r + k).toFixed(2)} ${Y2.toFixed(2)} ${(X2 - r).toFixed(2)} ${Y2.toFixed(2)} c ${(X + r).toFixed(2)} ${Y2.toFixed(2)} l ${(X + r - k).toFixed(2)} ${Y2.toFixed(2)} ${X.toFixed(2)} ${(Y2 - r + k).toFixed(2)} ${X.toFixed(2)} ${(Y2 - r).toFixed(2)} c ${X.toFixed(2)} ${(Y + r).toFixed(2)} l ${X.toFixed(2)} ${(Y + r - k).toFixed(2)} ${(X + r - k).toFixed(2)} ${Y.toFixed(2)} ${(X + r).toFixed(2)} ${Y.toFixed(2)} c h`;
+      cur.push(`${fill ? hexRgbP(fill) + " rg " : ""}${stroke ? hexRgbP(stroke) + " RG " + sw + " w [] 0 d " : ""}${d} ${fill && stroke ? "B" : fill ? "f" : "S"}`); },
     rect(x, y, w, h, fill, stroke){ cur.push(`${fill ? hexRgbP(fill) + " rg " : ""}${stroke ? hexRgbP(stroke) + " RG 0.6 w " : ""}${x.toFixed(2)} ${(H - y - h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re ${fill && stroke ? "B" : fill ? "f" : "S"}`); },
     line(x1, y1, x2, y2, color = "#C7CEDD", width = 0.6, dash){ cur.push(`${hexRgbP(color)} RG ${width} w ${dash ? "[2 2] 0 d " : "[] 0 d "}${x1.toFixed(2)} ${(H - y1).toFixed(2)} m ${x2.toFixed(2)} ${(H - y2).toFixed(2)} l S`); },
     poly(pts, color, width = 1.4, fill){ if (pts.length < 2) return; const d = pts.map(([x, y], i) => `${x.toFixed(2)} ${(H - y).toFixed(2)} ${i ? "l" : "m"}`).join(" ");
@@ -5898,97 +5924,261 @@ const EN_MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const enDate = d => { if (!d) return ""; const [y, m, dd] = d.split("-").map(Number); return `${dd} ${EN_MON[m - 1]} ${y}`; };
 const enMoney = (v, sign = true, c = S().ccy) => { const sy = SYM[c] || ""; const a = Math.abs(v); const s_ = a.toLocaleString("en-GB", { minimumFractionDigits: c === "JPY" ? 0 : 2, maximumFractionDigits: c === "JPY" ? 0 : 2 });
   return (v < 0 ? "-" : sign && v > 0 ? "+" : "") + sy + s_; };
-async function downloadReport(opt = {}){
-  const O = { summary: true, curve: true, breakdown: true, months: true, discipline: true, challenge: !!S().rules?.on, trades: true, title: "Performance report", ...opt };
-  const a = activeAcct() || S(), R = rangeData(a), ts = R.trades, s_ = stats(ts), ccy = a.ccy, M = v => enMoney(v, true, ccy), M0 = v => enMoney(v, false, ccy);
-  toast(t("pdfMaking"));
-  const doc = makePdf(), L = 40, Rt = doc.W - 40, CW = Rt - L, GOLD = "#B97A00", WIN = "#0E8A57", LOSS = "#D23B2E", MUTED = "#5A6480", LINE = "#DADFEA", INK = "#0B1020";
-  const b = R.b, period = b.from && b.to ? (b.from === b.to ? enDate(b.from) : `${enDate(b.from)} - ${enDate(b.to)}`) : "All time";
-  const colr = v => v > 0 ? WIN : v < 0 ? LOSS : INK;
-  const header = () => {
-    doc.rect(0, 0, doc.W, 78, "#0A0E18");
-    doc.rect(L, 22, 30, 30, "#F4B53F"); doc.rect(L + 7, 30, 6, 13, "#1A1204"); doc.rect(L + 17, 33, 6, 11, "#F4B53F", "#1A1204");
-    doc.text(L + 42, 38, "THE EXECUTION LOG", { size: 15, bold: true, color: "#FFFFFF" });
-    doc.text(L + 42, 52, O.title, { size: 9.5, color: "#AEB6CC" });
-    doc.text(Rt, 32, doc.fit(a.name || "Account", 10.5, 260), { size: 10.5, bold: true, color: "#FFFFFF", align: "right" });
-    doc.text(Rt, 46, `${period} · ${ccy}`, { size: 9, color: "#AEB6CC", align: "right" });
-    doc.text(Rt, 59, `Generated ${enDate(localToday())}`, { size: 8, color: "#8B94AE", align: "right" });
-  };
-  const sectionTitle = (y, s, x = L) => { doc.rect(x, y - 8, 4, 10, "#F4B53F"); doc.text(x + 10, y, s.toUpperCase(), { size: 10, bold: true }); };
-  doc.page(); header();
-  // Summary cards
-  const rsN = ts.filter(x => rMult(x) != null).length, costs = ts.reduce((q, x) => q + commOf(x) - swapOf(x), 0);
-  const cards = [["Starting balance", M0(R.balStart)], ["Ending balance", M0(R.balEnd)], ["Net P&L", M(R.pnl), colr(R.pnl)], ["Return", R.balStart > 0 ? ((R.pnl / R.balStart) * 100).toFixed(2) + "%" : "-", colr(R.pnl)],
-    ["Trades", String(s_.n)], ["Win rate", s_.n ? (s_.winRate * 100).toFixed(0) + "%" : "-"], ["Profit factor", s_.losses ? s_.pf.toFixed(2) : "-"], ["Max drawdown", (R.dd * 100).toFixed(2) + "%"],
-    ["Average win", s_.wins ? M(s_.avgWin) : "-", WIN], ["Average loss", s_.losses ? M(s_.avgLoss) : "-", LOSS], ["Expectancy", s_.n ? M(s_.net / s_.n) : "-", colr(s_.net)], ["Average R", rsN ? (s_.avgR > 0 ? "+" : "") + s_.avgR.toFixed(2) + "R" : "-", colr(s_.avgR || 0)]];
-  const cw = (CW - 3 * 8) / 4; let y = 98;
-  if (O.summary){
-  cards.forEach(([lbl, v, c], i) => { const x = L + (i % 4) * (cw + 8), yy = y + Math.floor(i / 4) * 52;
-    doc.rect(x, yy, cw, 44, "#F5F7FA", LINE); doc.text(x + 10, yy + 15, lbl.toUpperCase(), { size: 7, bold: true, color: MUTED }); doc.text(x + 10, yy + 34, v, { size: 13, bold: true, color: c || INK }); });
-  y += 3 * 52 + 8;
-  doc.text(L, y, `Commission and swap in this period: ${M(-costs)}`, { size: 8, color: MUTED }); y += 22; }
-  if (O.ai){ sectionTitle(y, "AI coach summary"); y += 16; const per = Math.floor(CW / (9 * .5));
-    String(O.ai).split(/\n+/).filter(Boolean).slice(0, 6).forEach(par => { let line = ""; par.split(/\s+/).forEach(w => { if ((line + " " + w).trim().length > per){ doc.text(L, y, line.trim(), { size: 9 }); y += 12.5; line = w; } else line += " " + w; }); if (line.trim()){ doc.text(L, y, line.trim(), { size: 9 }); y += 12.5; } y += 5; });
-    doc.text(L, y, "Written by the AI coach from your journal. It can be wrong, so check it against your numbers.", { size: 7, color: MUTED }); y += 20; }
-  if (O.challenge && hasTier("pro")){ const st = ruleStatus(a); if (st){ sectionTitle(y, "Challenge status"); y += 16;
-    [["Profit", st.target ? `${M(st.profit)} of ${M0(st.target)} target` : M(st.profit)], ["Max drawdown used", st.ddLimit ? `${M0(st.ddUsed)} of ${M0(st.ddLimit)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "-"], ["Trading days", st.minDays ? `${st.days} of ${st.minDays}` : String(st.days)]]
-      .forEach(([l_, v_]) => { doc.text(L + 10, y, l_, { size: 9, color: MUTED }); doc.text(L + 160, y, v_, { size: 9, bold: true }); y += 14; }); y += 12; } }
-  if (O.curve){
-  // Balance curve
-  sectionTitle(y, "Balance curve"); y += 10;
-  const ch = { x: L, y, w: CW, h: 150 }; doc.rect(ch.x, ch.y, ch.w, ch.h, "#FFFFFF", LINE);
-  const P = R.pts.map(p => p.bal);
-  if (P.length >= 2){ let lo = Math.min(...P), hi = Math.max(...P); if (hi === lo){ hi += 1; lo -= 1; } const pad = (hi - lo) * .08; lo -= pad; hi += pad;
-    const ix = i => ch.x + 46 + (i / (P.length - 1)) * (ch.w - 58), iy = v => ch.y + 10 + (1 - (v - lo) / (hi - lo)) * (ch.h - 26);
-    for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo) * k / 4; doc.line(ch.x + 46, iy(v), ch.x + ch.w - 12, iy(v), "#E6E9F0", .5, true); doc.text(ch.x + 42, iy(v) + 3, enMoney(v, false, ccy).replace(/\.\d+$/, ""), { size: 6.5, color: MUTED, align: "right" }); }
-    const pts = P.map((v, i) => [ix(i), iy(v)]);
-    doc.poly([...pts, [ix(P.length - 1), ch.y + ch.h - 16], [ix(0), ch.y + ch.h - 16]], null, 0, "#FBF0D6");
-    doc.poly(pts, GOLD, 1.6);
-    const d0 = R.pts.find(p => p.e)?.e?.date, d1 = [...R.pts].reverse().find(p => p.e)?.e?.date;
-    doc.text(ch.x + 46, ch.y + ch.h - 5, enDate(d0), { size: 6.5, color: MUTED }); doc.text(ch.x + ch.w - 12, ch.y + ch.h - 5, enDate(d1), { size: 6.5, color: MUTED, align: "right" });
-  } else doc.text(ch.x + ch.w / 2, ch.y + ch.h / 2, "Not enough trades in this period to draw a curve.", { size: 9, color: MUTED, align: "center" });
-  y += ch.h + 26; }
-  // Breakdown tables
-  const group = f => { const g = {}; ts.forEach(x => { const k = f(x); (g[k] ||= []).push(x); }); return Object.entries(g).map(([k, v]) => ({ k, s: stats(v) })).sort((p, q) => q.s.net - p.s.net); };
-  const miniTable = (x, yy, w, title, rows) => {
-    sectionTitle(yy, title, x); yy += 14;
-    const cols = [x + 6, x + w * .56, x + w * .74, x + w - 6];
-    doc.rect(x, yy - 10, w, 16, "#F5F7FA"); ["Name", "Trades", "Win %", "Net"].forEach((h, i) => doc.text(cols[i], yy + 1, h.toUpperCase(), { size: 6.5, bold: true, color: MUTED, align: i ? "right" : "left" }));
-    yy += 16;
-    rows.slice(0, 8).forEach(r => { doc.text(cols[0], yy, doc.fit(r.k, 8.5, w * .5), { size: 8.5 }); doc.text(cols[1], yy, String(r.s.n), { size: 8.5, align: "right" });
-      doc.text(cols[2], yy, (r.s.winRate * 100).toFixed(0) + "%", { size: 8.5, align: "right" }); doc.text(cols[3], yy, M(r.s.net), { size: 8.5, bold: true, color: colr(r.s.net), align: "right" });
-      doc.line(x, yy + 5, x + w, yy + 5, "#EEF0F5", .5); yy += 15; });
-    if (!rows.length) doc.text(x + 6, yy, "No trades", { size: 8.5, color: MUTED });
-  };
-  const half = (CW - 16) / 2;
-  if (O.breakdown && y < doc.H - 200){ miniTable(L, y, half, "By setup", group(x => x.setup || "Untagged"));
-  miniTable(L + half + 16, y, half, "By instrument", group(x => x.symbol)); }
-  // Page 2: months, discipline, trades
-  doc.page(); header(); y = 104;
-  const months = group(x => x.date.slice(0, 7)).sort((p, q) => q.k.localeCompare(p.k)).map(r => ({ ...r, k: `${EN_MON[+r.k.slice(5, 7) - 1]} ${r.k.slice(0, 4)}` }));
-  if (O.months) miniTable(L, y, half, "By month", months);
+/* ---------- Report metrics: the one source for the PDF and its AI summary ---------- */
+// Everything here is built from rangeData() and the same pnl()/rMult()/stats() the dashboard uses, so the PDF reconciles with it.
+const REP_SESS = [["Asian", h => h >= 21 || h < 7], ["London", h => h >= 7 && h < 12], ["London/NY overlap", h => h >= 12 && h < 16], ["New York", h => h >= 16 && h < 21]];
+const REP_MIN = 5;
+const REP_SRC = { mt5: "MetaTrader 5 import", mt4: "MetaTrader 4 import", csv: "CSV import", journal: "Journal file import" };
+const REP_WD = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const sumOf = v => v.reduce((p, q) => p + q, 0), avgOf = v => { const w = v.filter(x => x != null && isFinite(x)); return w.length ? sumOf(w) / w.length : null; };
+const repSess = x => { if (!x.timeIn) return "No time logged"; const h = +x.timeIn.slice(0, 2); return (REP_SESS.find(([, f]) => f(h)) || ["No time logged"])[0]; };
+const repWd = x => REP_WD[new Date(x.date + "T00:00:00Z").getUTCDay()];
+function repGroup(ts, f, sortBy = "net"){
+  const g = {}; ts.forEach(x => { const k = f(x); if (k == null || k === "") return; (g[k] ||= []).push(x); });
+  return Object.entries(g).map(([k, v]) => { const s = stats(v), rs = v.map(rMult).filter(r => r != null); return { k, n: v.length, s, rN: rs.length, avgR: rs.length ? sumOf(rs) / rs.length : null, per: s.net / v.length }; })
+    .sort((p, q) => sortBy === "k" ? p.k.localeCompare(q.k) : q.s.net - p.s.net);
+}
+function reportMetrics(a = activeAcct() || S()){
+  const R = rangeData(a), ts = R.trades, s = stats(ts), led = ledger(a);
+  const wins = ts.filter(x => pnl(x) > 0), losses = ts.filter(x => pnl(x) < 0), flat = ts.filter(x => pnl(x) === 0);
+  const best = ts.length ? ts.reduce((m, x) => pnl(x) > pnl(m) ? x : m) : null, worst = ts.length ? ts.reduce((m, x) => pnl(x) < pnl(m) ? x : m) : null;
+  const gross = sumOf(ts.map(grossOf)), comm = sumOf(ts.map(commOf)), swap = sumOf(ts.map(swapOf));
+  const hold = { all: avgOf(ts.map(durationOf)), win: avgOf(wins.map(durationOf)), loss: avgOf(losses.map(durationOf)), n: ts.filter(x => durationOf(x) != null).length };
+  // R: only trades with a valid starting stop
+  const rT = ts.filter(x => rMult(x) != null), rs = rT.map(rMult);
+  const r = { n: rs.length, na: ts.length - rs.length, avg: avgOf(rs), avgWin: avgOf(rs.filter(v => v > 0)), avgLoss: avgOf(rs.filter(v => v < 0)), best: rs.length ? Math.max(...rs) : null, worst: rs.length ? Math.min(...rs) : null };
+  // Risk per trade, as % of the balance just before the trade
+  const plan = num(a.risk) || null;
+  const rk = rT.map(x => { const amt = riskAmt(x), bal = led.before[x.id]; return { x, amt, pct: bal > 0 ? amt / bal * 100 : null }; });
+  const pcts = rk.map(q => q.pct).filter(v => v != null), mean = avgOf(pcts);
+  const risk = { n: rk.length, plan, list: rk, avgAmt: avgOf(rk.map(q => q.amt)), avgPct: mean, hi: pcts.length ? Math.max(...pcts) : null, lo: pcts.length ? Math.min(...pcts) : null,
+    sd: pcts.length > 1 ? Math.sqrt(sumOf(pcts.map(v => (v - mean) ** 2)) / (pcts.length - 1)) : null, over: plan ? rk.filter(q => q.pct != null && q.pct > plan * 1.1) : [] };
+  // Drawdown and recovery (deposits and withdrawals move the peak, the same way the dashboard does)
+  const dateOf = p => p.e ? p.e.date : (R.b.from || ts[0]?.date || localToday());
+  let peak = null, peakDate = null, dd = { amt: 0, pct: 0, from: null, to: null, rec: null, peakVal: null };
+  R.pts.forEach(p => { const d = dateOf(p);
+    if (peak == null){ peak = p.bal; peakDate = d; return; }
+    if (p.e && p.e.kind === "cash") peak += p.e.amount;
+    if (p.bal >= peak){ if (dd.amt > 0 && !dd.rec && dd.peakVal != null && p.bal >= dd.peakVal) dd.rec = d; if (p.bal > peak || !peakDate) peakDate = d; peak = p.bal; return; }
+    const amt = peak - p.bal; if (amt > dd.amt){ dd = { amt, pct: peak > 0 ? amt / peak : 0, from: peakDate, to: d, rec: null, peakVal: peak }; } });
+  dd.pctMax = R.dd; dd.days = dd.from && dd.to ? dayDiff(dd.from, dd.to) : null; dd.recDays = dd.rec && dd.to ? dayDiff(dd.to, dd.rec) : null;
+  dd.factor = dd.amt > 0 ? R.pnl / dd.amt : null;
+  // Days
+  const byDay = {}; ts.forEach(x => byDay[x.date] = (byDay[x.date] || 0) + pnl(x));
+  const dv = Object.entries(byDay);
+  const days = { n: dv.length, up: dv.filter(([, v]) => v > 0).length, down: dv.filter(([, v]) => v < 0).length, flat: dv.filter(([, v]) => v === 0).length, avg: dv.length ? sumOf(dv.map(([, v]) => v)) / dv.length : null,
+    best: dv.length ? dv.reduce((m, d) => d[1] > m[1] ? d : m) : null, worst: dv.length ? dv.reduce((m, d) => d[1] < m[1] ? d : m) : null };
+  // Groups
+  const months = repGroup(ts, x => x.date.slice(0, 7), "k").reverse();
+  const sessions = repGroup(ts, repSess), weekdays = repGroup(ts, repWd).sort((p, q) => REP_WD.indexOf(p.k) - REP_WD.indexOf(q.k));
+  const setups = repGroup(ts, x => x.setup || "Untagged"), instruments = repGroup(ts, x => x.symbol), sides = repGroup(ts, x => x.side === "short" ? "Sells" : "Buys");
+  const conds = [["Instrument", instruments], ["Setup", repGroup(ts, x => x.setup || null)], ["Direction", sides], ["Session", sessions.filter(g => g.k !== "No time logged")], ["Day of week", weekdays]]
+    .map(([dim, gs]) => { const ok = gs.filter(g => g.n >= REP_MIN).sort((p, q) => q.per - p.per); return { dim, best: ok.length >= 2 ? ok[0] : null, worst: ok.length >= 2 ? ok[ok.length - 1] : null, groups: gs.length, ok: ok.length }; });
+  // Behaviour: only what was actually logged
+  const logged = { plan: ts.filter(x => typeof x.plan === "boolean").length, fomo: ts.filter(x => typeof x.fomo === "boolean").length, revenge: ts.filter(x => typeof x.revenge === "boolean").length, mood: ts.filter(x => x.mood).length };
   const disc = [["Followed plan", ts.filter(x => x.plan === true)], ["Broke plan", ts.filter(x => x.plan === false)], ["FOMO trades", ts.filter(x => x.fomo === true)], ["Revenge trades", ts.filter(x => x.revenge === true)]]
-    .filter(([, v]) => v.length).map(([k, v]) => ({ k, s: stats(v) }));
-  const moods = group(x => x.mood ? x.mood[0].toUpperCase() + x.mood.slice(1) : "Not logged");
-  if (O.discipline) miniTable(L + half + 16, y, half, "Discipline", disc);
-  const tblH = rows => 30 + Math.max(Math.min(rows, 8), 1) * 15;
-  const yMood = y + tblH(disc.length) + 20;
-  if (O.discipline) miniTable(L + half + 16, yMood, half, "By emotion", moods);
-  y = (O.months || O.discipline) ? Math.max(O.months ? y + tblH(months.length) : y, O.discipline ? yMood + tblH(moods.length) : y) + 24 : y;
-  // Trade list
-  const tcols = [[L + 4, "Date", "left"], [L + 62, "Time", "left"], [L + 122, "Symbol", "left"], [L + 184, "Side", "left"], [L + 240, "Lots", "right"], [L + 304, "Entry", "right"], [L + 368, "Exit", "right"], [L + 452, "Net", "right"], [Rt - 4, "R", "right"]];
-  const thead = yy => { doc.rect(L, yy - 10, CW, 16, "#F5F7FA"); tcols.forEach(([x, h, al]) => doc.text(x, yy + 1, h.toUpperCase(), { size: 6.5, bold: true, color: MUTED, align: al })); return yy + 16; };
-  if (O.trades){ sectionTitle(y, `Trades (${ts.length})`); y = thead(y + 14);
-  [...ts].reverse().forEach(x => {
-    if (y > doc.H - 50){ doc.page(); header(); y = thead(110); }
-    const p = pnl(x), r = rMult(x);
-    const cells = [enDate(x.date), [x.timeIn, x.timeOut].filter(Boolean).join("-"), x.symbol, x.side === "long" ? "Buy" : "Sell", String(spec(x).lots), price(x.entry), price(x.exit), M(p), r == null ? "-" : (r > 0 ? "+" : "") + r.toFixed(2)];
-    cells.forEach((c, i) => doc.text(tcols[i][0], y, doc.fit(c, 8, i === 2 ? 58 : i === 1 ? 56 : 90), { size: 8, align: tcols[i][2], bold: i === 7, color: i === 7 ? colr(p) : i === 3 ? (x.side === "long" ? WIN : LOSS) : INK }));
-    doc.line(L, y + 5, Rt, y + 5, "#EEF0F5", .5); y += 14;
-  });
-  if (!ts.length) doc.text(L + 4, y, "No trades in this period.", { size: 8.5, color: MUTED }); }
+    .filter(([, v]) => v.length).map(([k, v]) => { const st = stats(v), rr = v.map(rMult).filter(q => q != null); return { k, n: v.length, s: st, rN: rr.length, avgR: rr.length ? sumOf(rr) / rr.length : null, per: st.net / v.length }; });
+  const moods = repGroup(ts.filter(x => x.mood), x => x.mood[0].toUpperCase() + x.mood.slice(1));
+  // Data source, open positions, reconciliation
+  const src = {}; ts.forEach(x => { const k = x.imported ? (REP_SRC[x.imported] || `${x.imported} import`) : "Logged in the journal"; src[k] = (src[k] || 0) + 1; });
+  const open = openTrades(a);
+  const brokerN = ts.filter(x => num(x.brokerPnl) != null).length;
+  const rec = { endCalc: R.balStart + R.pnl + R.deposits, end: R.balEnd, netCalc: gross - comm + swap, net: R.pnl, tradeSum: sumOf(ts.map(pnl)), statsNet: s.net, brokerN };
+  rec.ok = Math.abs(rec.endCalc - rec.end) < .01 && Math.abs(rec.netCalc - rec.net) < .01 && Math.abs(rec.tradeSum - rec.net) < .01 && Math.abs(rec.statsNet - rec.net) < .01;
+  return { a, R, ts, s, wins, losses, flat, best, worst, gross, comm, swap, hold, r, rs, risk, dd, days, months, sessions, weekdays, setups, instruments, sides, conds, logged, disc, moods, src, open, rec,
+    noOpenDate: ts.some(x => !x.dateIn && x.timeIn && x.timeOut && x.timeOut < x.timeIn), mt: ts.some(x => STOP_FINAL_SRC[x.imported]) };
+}
+// A compact version for the AI summary: the same numbers the PDF prints.
+function reportAiData(m){
+  const g = list => list.slice(0, 8).map(q => ({ name: q.k, trades: q.n, winRate: Math.round(q.s.winRate * 100), net: +q.s.net.toFixed(2), profitFactor: isFinite(q.s.pf) ? +q.s.pf.toFixed(2) : "no losses", avgR: q.avgR == null ? null : +q.avgR.toFixed(2) }));
+  return { currency: m.a.ccy, period: m.R.b.from && m.R.b.to ? `${m.R.b.from} to ${m.R.b.to}` : "all time", trades: m.ts.length, wins: m.wins.length, losses: m.losses.length, breakeven: m.flat.length,
+    netPnl: +m.R.pnl.toFixed(2), returnPct: m.R.balStart > 0 ? +(m.R.pnl / m.R.balStart * 100).toFixed(2) : null, profitFactor: isFinite(m.s.pf) ? +m.s.pf.toFixed(2) : "no losses",
+    avgWin: +m.s.avgWin.toFixed(2), avgLoss: +m.s.avgLoss.toFixed(2), tradesWithValidR: m.r.n, avgR: m.r.avg == null ? null : +m.r.avg.toFixed(2),
+    maxDrawdownPct: +(m.dd.pctMax * 100).toFixed(2), maxDrawdownAmount: +m.dd.amt.toFixed(2), avgHoldMinutes: m.hold.all == null ? null : Math.round(m.hold.all),
+    avgRiskPct: m.risk.avgPct == null ? null : +m.risk.avgPct.toFixed(2), plannedRiskPct: m.risk.plan, tradesOverPlannedRisk: m.risk.over.length,
+    days: { traded: m.days.n, profitable: m.days.up, losing: m.days.down },
+    sessions: g(m.sessions), setups: g(m.setups), instruments: g(m.instruments), directions: g(m.sides), weekdays: g(m.weekdays),
+    behaviourLogged: m.logged, discipline: m.disc.map(q => ({ name: q.k, trades: q.n, net: +q.s.net.toFixed(2) })), minTradesForAPattern: REP_MIN };
+}
+
+async function downloadReport(opt = {}){
+  const basic = { summary: true, curve: true, account: true, months: true, setups: true, instruments: true, discipline: true, trades: true };
+  const O = { ...basic, title: "Performance report", ...opt };
+  if (opt.breakdown != null){ O.setups = O.instruments = opt.breakdown; } if (opt.challenge != null && opt.account == null) O.account = opt.challenge;
+  const m = reportMetrics(), a = m.a, R = m.R, ts = m.ts, s_ = m.s, ccy = a.ccy, M = v => enMoney(v, true, ccy), M0 = v => enMoney(v, false, ccy);
+  toast(t("pdfMaking"));
+  const doc = makePdf(), L = 40, Rt = doc.W - 40, CW = Rt - L, GOLD = "#B97A00", BRAND = "#F4B53F", NAVY = "#0A0E18", WIN = "#0E8A57", LOSS = "#D23B2E", MUTED = "#5A6480", LINE = "#DADFEA", INK = "#0B1020", SOFT = "#F5F7FA";
+  const b = R.b, period = b.from && b.to ? (b.from === b.to ? enDate(b.from) : `${enDate(b.from)} - ${enDate(b.to)}`) : "All time";
+  const now = new Date(), stamp = `${enDate(localToday())}, ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const colr = v => v > 0 ? WIN : v < 0 ? LOSS : INK;
+  const Rf = v => v == null ? "N/A" : (v > 0 ? "+" : "") + v.toFixed(2) + "R";
+  const PF = st => !st.n ? "-" : !st.losses ? (st.wins ? "No losses" : "-") : st.pf.toFixed(2);
+  const pc = v => v == null ? "-" : v.toFixed(2) + "%";
+  const small = n => n < 20 ? ` Small sample (${n} trade${n === 1 ? "" : "s"}), so treat these numbers with caution.` : "";
+  const logo = (x, y0, sz) => { const k = sz / 40; doc.rrect(x + k, y0 + k, 38 * k, 38 * k, 9 * k, BRAND);
+    doc.line(x + 13 * k, y0 + 8 * k, x + 13 * k, y0 + 31 * k, "#1A1204", 2 * k); doc.rrect(x + 9 * k, y0 + 14 * k, 8 * k, 11 * k, 1.5 * k, "#1A1204");
+    doc.line(x + 27 * k, y0 + 10 * k, x + 27 * k, y0 + 33 * k, "#1A1204", 2 * k); doc.rrect(x + 23 * k, y0 + 17 * k, 8 * k, 10 * k, 1.5 * k, BRAND, "#1A1204", 2 * k); };
+  const header = full => {
+    if (full){ doc.rect(0, 0, doc.W, 84, NAVY); doc.rect(0, 84, doc.W, 2.5, BRAND); logo(L, 22, 36);
+      doc.text(L + 46, 39, "THE EXECUTION LOG", { size: 15, bold: true, color: "#FFFFFF" }); doc.text(L + 46, 54, O.title, { size: 9.5, color: "#AEB6CC" });
+      doc.text(Rt, 33, doc.fit(a.name || "Account", 10.5, 260), { size: 10.5, bold: true, color: "#FFFFFF", align: "right" });
+      doc.text(Rt, 47, `${period} · ${ccy}`, { size: 9, color: "#AEB6CC", align: "right" }); doc.text(Rt, 60, `Generated ${stamp}`, { size: 8, color: "#8B94AE", align: "right" }); }
+    else { doc.rect(0, 0, doc.W, 46, NAVY); doc.rect(0, 46, doc.W, 2, BRAND); logo(L, 12, 22);
+      doc.text(L + 30, 27, "THE EXECUTION LOG", { size: 10.5, bold: true, color: "#FFFFFF" });
+      doc.text(Rt, 27, doc.fit(`${a.name || "Account"} · ${period} · ${ccy}`, 8.5, 300), { size: 8.5, color: "#AEB6CC", align: "right" }); } };
+  let y = 0; const BOTTOM = doc.H - 46;
+  const newPage = () => { doc.page(); header(false); y = 76; };
+  const need = h => { if (y + h > BOTTOM) newPage(); };
+  const wrap = (str, size, w, bold) => { const out = []; String(str).split(/\n/).forEach(par => { let line = ""; par.split(/\s+/).filter(Boolean).forEach(wd => { const t2 = line ? line + " " + wd : wd; if (pdfW(t2, size) > w && line){ out.push(line); line = wd; } else line = t2; }); out.push(line); }); return out; };
+  const para = (str, o = {}) => { const size = o.size || 8.5, lh = size * 1.45, x = o.x ?? L, w = o.w ?? CW; wrap(str, size, w).forEach(ln => { need(lh); doc.text(x, y, ln, { size, color: o.color || INK, bold: o.bold }); y += lh; }); };
+  const note = str => { para(str, { size: 7.5, color: MUTED }); y += 4; };
+  const sectionTitle = (s, follow = 60, x = L) => { need(34 + follow); y += 4; doc.rect(x, y - 8, 4, 10, BRAND); doc.text(x + 10, y, s.toUpperCase(), { size: 10, bold: true }); y += 16; };
+  let groupsShown = 0;
+  const group = name => { need(70); if (groupsShown++) y += 8; doc.text(L, y, name.toUpperCase(), { size: 8, bold: true, color: GOLD }); doc.line(L + pdfW(name.toUpperCase(), 8) + 8, y - 3, Rt, y - 3, "#E9D9B0", .7); y += 18; };
+  const cards = (list, cols = 4) => { const gap = 8, cw = (CW - (cols - 1) * gap) / cols, rows = Math.ceil(list.length / cols);
+    for (let r = 0; r < rows; r++){ need(52); list.slice(r * cols, r * cols + cols).forEach(([lbl, v, c, sub], i) => { const x = L + i * (cw + gap);
+        doc.rect(x, y, cw, 44, SOFT, LINE); doc.text(x + 10, y + 14, doc.fit(lbl.toUpperCase(), 6.8, cw - 16), { size: 6.8, bold: true, color: MUTED });
+        doc.text(x + 10, y + 31, doc.fit(v, 12.5, cw - 16), { size: 12.5, bold: true, color: c || INK });
+        if (sub) doc.text(x + 10, y + 40, doc.fit(sub, 6.3, cw - 16), { size: 6.3, color: MUTED }); }); y += 52; } y += 4; };
+  // Generic table. cols: [label, width share, align]. Rows are single lines, so a row is never split across pages.
+  const table = (cols, rows, o = {}) => { const tot = sumOf(cols.map(c => c[1])), xs = []; let acc = L; cols.forEach(c => { const w = CW * c[1] / tot; xs.push([acc, w]); acc += w; });
+    const head = () => { doc.rect(L, y - 10, CW, 16, SOFT); cols.forEach((c, i) => { const [x, w] = xs[i]; doc.text(c[2] === "right" ? x + w - 6 : x + 6, y + 1, c[0].toUpperCase(), { size: 6.5, bold: true, color: MUTED, align: c[2] === "right" ? "right" : "left" }); }); y += 17; };
+    need(34); head();
+    if (!rows.length){ doc.text(L + 6, y, o.empty || "Nothing to show for this period.", { size: 8.5, color: MUTED }); y += 16; return; }
+    rows.forEach(row => { if (y + 14 > BOTTOM){ newPage(); head(); }
+      row.forEach((cell, i) => { const c = typeof cell === "object" && cell ? cell : { t: String(cell ?? "") }, [x, w] = xs[i], al = cols[i][2] === "right";
+        doc.text(al ? x + w - 6 : x + 6, y, doc.fit(c.t, 8, w - 10), { size: 8, align: al ? "right" : "left", bold: c.b, color: c.c || INK }); });
+      doc.line(L, y + 5, Rt, y + 5, "#EEF0F5", .5); y += 15; }); y += 8; };
+  const kv = (pairs, lw = 150) => pairs.forEach(([l_, v_, c]) => { const lines = wrap(v_, 8.5, CW - lw - 10); need(lines.length * 12.5 + 2); doc.text(L + 6, y, l_, { size: 8.5, color: MUTED });
+    lines.forEach((ln, i) => doc.text(L + lw, y + i * 12.5, ln, { size: 8.5, bold: i === 0 && !!c, color: c && c !== true ? c : INK })); y += lines.length * 12.5 + 2; });
+  const grpRows = list => list.map(g => [g.k, String(g.n), (g.s.winRate * 100).toFixed(0) + "%", { t: M(g.s.net), c: colr(g.s.net), b: true }, PF(g.s), g.rN ? `${Rf(g.avgR)} (${g.rN})` : "N/A"]);
+  const grpCols = name => [[name, 3], ["Trades", 1, "right"], ["Win %", 1, "right"], ["Net P&L", 1.6, "right"], ["Profit factor", 1.3, "right"], ["Avg R (trades)", 1.6, "right"]];
+  const bars = (list, h, o = {}) => { need(h + 30); const x0 = L + 34, w = CW - 40, top = y, base = top + h; doc.rect(L, top - 6, CW, h + 26, "#FFFFFF", LINE);
+    const vals = list.map(q => q.v), hi = Math.max(0, ...vals, o.line || 0), lo = Math.min(0, ...vals), span = hi - lo || 1, iy = v => top + 4 + (1 - (v - lo) / span) * (h - 8);
+    [hi, lo, 0].filter((v, i, arr) => arr.indexOf(v) === i).forEach(v => { doc.line(x0, iy(v), x0 + w, iy(v), v === 0 ? "#C7CEDD" : "#EEF0F5", .5); doc.text(x0 - 4, iy(v) + 2.5, o.fmt ? o.fmt(v) : String(+v.toFixed(2)), { size: 6, color: MUTED, align: "right" }); });
+    const bw = w / Math.max(list.length, 1); list.forEach((q, i) => { const xa = x0 + i * bw + bw * .18, ww = bw * .64, y1 = iy(Math.max(q.v, 0)), y2 = iy(Math.min(q.v, 0)); if (y2 - y1 > .2) doc.rect(xa, y1, ww, y2 - y1, q.color || GOLD);
+      if (q.label && (list.length <= 14 || i % Math.ceil(list.length / 14) === 0)) doc.text(xa + ww / 2, base + 12, doc.fit(q.label, 6, bw + 8), { size: 6, color: MUTED, align: "center" });
+      if (q.top) doc.text(xa + ww / 2, y1 - 3, q.top, { size: 6.3, color: INK, align: "center" }); });
+    if (o.line) { doc.line(x0, iy(o.line), x0 + w, iy(o.line), LOSS, .8, true); doc.text(x0 + w, iy(o.line) - 3, o.lineLabel || "", { size: 6.3, color: LOSS, align: "right" }); }
+    y = base + 28; };
+
+  doc.page(); header(true); y = 112;
+  /* Report details: always included */
+  sectionTitle("Report details");
+  kv([["Reporting period", period + (b.from ? "" : " (every trade in this account)")],
+    ["Account", `${a.name || "Account"}${a.type ? " · " + a.type : ""} · ${ccy}`],
+    ["Times", `As recorded in the journal${m.mt ? ". Imported MetaTrader trades use your broker's server time, which is often 1-2 hours ahead of UK time" : ""}. This device's time zone: ${detectedTz()}.`],
+    ["Data source", Object.entries(m.src).map(([k, v]) => `${k}: ${v}`).join(" · ") || "No trades"],
+    ["Balance vs equity", `Balances below are closed trades plus deposits and withdrawals. ${m.open.length ? `${m.open.length} open position${m.open.length === 1 ? " is" : "s are"} not included, so equity can differ.` : "There are no open positions, so balance and equity are the same."}`],
+    ["Costs", `Commission and swap are taken off each trade once. Net P&L = gross P&L - commission + swap.`]]);
+  y += 6;
+
+  /* ===== OVERVIEW ===== */
+  if (O.summary || O.curve || O.account) group("Overview");
+  if (O.summary){ sectionTitle("Summary");
+    cards([["Starting balance", M0(R.balStart)], ["Ending balance", M0(R.balEnd), null, R.deposits ? `Includes ${M(R.deposits)} deposits/withdrawals` : ""], ["Net P&L", M(R.pnl), colr(R.pnl)], ["Return", R.balStart > 0 ? ((R.pnl / R.balStart) * 100).toFixed(2) + "%" : "-", colr(R.pnl)],
+      ["Trades", String(s_.n), null, `${m.wins.length} won · ${m.losses.length} lost · ${m.flat.length} breakeven`], ["Win rate", s_.n ? (s_.winRate * 100).toFixed(0) + "%" : "-"], ["Profit factor", PF(s_)], ["Max drawdown", (R.dd * 100).toFixed(2) + "%", m.dd.amt ? LOSS : null, m.dd.amt ? `Largest drop ${M0(m.dd.amt)}` : ""],
+      ["Average win", s_.wins ? M(s_.avgWin) : "-", WIN], ["Average loss", s_.losses ? M(s_.avgLoss) : "-", LOSS], ["Largest win", m.best && pnl(m.best) > 0 ? M(pnl(m.best)) : "-", WIN, m.best && pnl(m.best) > 0 ? `${enDate(m.best.date)} · ${m.best.symbol}` : ""], ["Largest loss", m.worst && pnl(m.worst) < 0 ? M(pnl(m.worst)) : "-", LOSS, m.worst && pnl(m.worst) < 0 ? `${enDate(m.worst.date)} · ${m.worst.symbol}` : ""],
+      ["Expectancy", s_.n ? M(s_.net / s_.n) : "-", colr(s_.net), "Average net P&L per trade"], ["Average R", Rf(m.r.avg), colr(m.r.avg || 0), `${m.r.n} of ${s_.n} trades have a valid R`], ["Average hold", fmtDur(m.hold.all == null ? null : Math.round(m.hold.all)), null, m.hold.win != null && m.hold.loss != null ? `Wins ${fmtDur(Math.round(m.hold.win))} · losses ${fmtDur(Math.round(m.hold.loss))}` : ""], ["Average risk", m.risk.n ? M0(m.risk.avgAmt) : "N/A", null, m.risk.n ? `${pc(m.risk.avgPct)} of balance · ${m.risk.n} trades` : "No trades with a starting stop"]]);
+    kv([["Gross P&L", M(m.gross)], ["Commission", M(-m.comm)], ["Swap", M(m.swap)], ["Net P&L", M(R.pnl), colr(R.pnl)]]);
+    if (m.r.na) note(`R is shown only for trades with a stop loss that was set when the trade opened (${m.r.na} of ${s_.n} trades have no valid R and show N/A).${m.mt ? " MetaTrader reports only include the stop where it was at close, often moved to breakeven or trailed, so imported trades need their starting stop added to get R." : ""} Average R and expectancy in R use valid trades only.`);
+    if (m.noOpenDate) note("Some trades have no open date, so trades that crossed midnight are counted as held for under 24 hours.");
+    note("Wins and losses are by net P&L after costs. Breakeven means a net P&L of exactly 0." + small(s_.n)); }
+  if (O.curve){ sectionTitle("Balance curve", 176);
+    const ch = { x: L, y, w: CW, h: 150 }; doc.rect(ch.x, ch.y, ch.w, ch.h, "#FFFFFF", LINE);
+    const P = R.pts.map(p => p.bal);
+    if (P.length >= 2){ let lo = Math.min(...P), hi = Math.max(...P); if (hi === lo){ hi += 1; lo -= 1; } const pad = (hi - lo) * .08; lo -= pad; hi += pad;
+      const ix = i => ch.x + 46 + (i / (P.length - 1)) * (ch.w - 58), iy = v => ch.y + 10 + (1 - (v - lo) / (hi - lo)) * (ch.h - 26);
+      for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo) * k / 4; doc.line(ch.x + 46, iy(v), ch.x + ch.w - 12, iy(v), "#E6E9F0", .5, true); doc.text(ch.x + 42, iy(v) + 3, enMoney(v, false, ccy).replace(/\.\d+$/, ""), { size: 6.5, color: MUTED, align: "right" }); }
+      const pts = P.map((v, i) => [ix(i), iy(v)]);
+      doc.poly([...pts, [ix(P.length - 1), ch.y + ch.h - 16], [ix(0), ch.y + ch.h - 16]], null, 0, "#FBF0D6"); doc.poly(pts, GOLD, 1.6);
+      const d0 = R.pts.find(p => p.e)?.e?.date, d1 = [...R.pts].reverse().find(p => p.e)?.e?.date;
+      doc.text(ch.x + 46, ch.y + ch.h - 5, enDate(d0), { size: 6.5, color: MUTED }); doc.text(ch.x + ch.w - 12, ch.y + ch.h - 5, enDate(d1), { size: 6.5, color: MUTED, align: "right" });
+    } else doc.text(ch.x + ch.w / 2, ch.y + ch.h / 2, "Not enough trades in this period to draw a curve.", { size: 9, color: MUTED, align: "center" });
+    y += ch.h + 10; note("Balance after each closed trade, deposit or withdrawal, in the order trades closed."); }
+  if (O.account){ sectionTitle("Account and challenge");
+    const st = hasTier("pro") && a.rules?.on ? ruleStatus(a) : null, low = R.pts.filter(p => p.e).reduce((mn, p) => !mn || p.bal < mn.bal ? { bal: p.bal, d: p.e.date } : mn, null);
+    kv([["Account type", a.type || "-"], ["Starting balance (account)", M0(+a.balance || 0)], ["Planned risk per trade", m.risk.plan ? m.risk.plan + "%" : "Not set"],
+      ["RuleGuard", a.rules?.on ? "On" : "Off"],
+      ...(st ? [["Profit", st.target ? `${M(st.profit)} of ${M0(st.target)} target` : M(st.profit)], ["Drawdown used now", st.ddLimit ? `${M0(st.ddUsed)} of ${M0(st.ddLimit)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "-"],
+        ...(low && st.ddLimit && st.r.ddType !== "trailing" ? [["Lowest balance", `${M0(low.bal)} on ${enDate(low.d)}${low.bal < (+a.balance || 0) ? ` (${M0((+a.balance || 0) - low.bal)} below the starting balance, limit ${M0(st.ddLimit)})` : " (never below the starting balance)"}`]] : []), ["Trading days", st.minDays ? `${st.days} of ${st.minDays}` : String(st.days)]] : [])]);
+    if (st) note("Challenge status uses your RuleGuard rules for this account. Check it against your prop firm's own dashboard."); y += 4; }
+
+  /* ===== PERFORMANCE ===== */
+  if (O.months || O.daily || O.sessions || O.instruments || O.setups || O.conditions) group("Performance");
+  if (O.months){ sectionTitle("By month"); table(grpCols("Month"), grpRows(m.months.map(g => ({ ...g, k: `${EN_MON[+g.k.slice(5, 7) - 1]} ${g.k.slice(0, 4)}` })))); }
+  if (O.daily){ sectionTitle("Daily performance");
+    cards([["Days traded", String(m.days.n)], ["Profitable days", String(m.days.up), WIN, m.days.n ? Math.round(m.days.up / m.days.n * 100) + "% of days" : ""], ["Losing days", String(m.days.down), LOSS, m.days.flat ? `${m.days.flat} flat` : ""], ["Average day", m.days.avg == null ? "-" : M(m.days.avg), colr(m.days.avg || 0)],
+      ["Best day", m.days.best && m.days.best[1] > 0 ? M(m.days.best[1]) : "-", WIN, m.days.best && m.days.best[1] > 0 ? enDate(m.days.best[0]) : ""], ["Worst day", m.days.worst && m.days.worst[1] < 0 ? M(m.days.worst[1]) : "-", LOSS, m.days.worst && m.days.worst[1] < 0 ? enDate(m.days.worst[0]) : ""]], 3);
+    table(grpCols("Day of week"), grpRows(m.weekdays)); if (m.days.n < 10) note(`Only ${m.days.n} trading day${m.days.n === 1 ? "" : "s"} in this period, so daily figures can swing a lot.`); }
+  if (O.sessions){ sectionTitle("Trading sessions"); table(grpCols("Session"), grpRows(m.sessions));
+    note(`Sessions use the time the trade opened: Asian 21:00-07:00, London 07:00-12:00, London/NY overlap 12:00-16:00, New York 16:00-21:00 (UK time). ${m.mt ? "Imported MetaTrader times are broker server time, so some trades may fall in the next session along. " : ""}Profit factor is gross wins divided by gross losses.`); }
+  if (O.instruments){ sectionTitle("By instrument"); table(grpCols("Instrument"), grpRows(m.instruments)); }
+  if (O.setups){ sectionTitle("Setup performance"); table(grpCols("Setup"), grpRows(m.setups));
+    if (m.setups.length === 1 && m.setups[0].k === "Untagged") note("No trades in this period have a setup tagged. Tag setups when you log or edit trades to see which ones work."); }
+  if (O.conditions){ sectionTitle("Best vs worst conditions");
+    table([["Compared by", 1.4], ["Best", 2.2], ["Avg per trade", 1.4, "right"], ["Worst", 2.2], ["Avg per trade", 1.4, "right"]],
+      m.conds.map(c => c.best ? [c.dim, `${c.best.k} (${c.best.n})`, { t: M(c.best.per), c: colr(c.best.per), b: true }, `${c.worst.k} (${c.worst.n})`, { t: M(c.worst.per), c: colr(c.worst.per), b: true }]
+        : [c.dim, { t: c.groups < 2 ? "Only one group so far" : "Too few trades per group yet", c: MUTED }, "", "", ""]));
+    note(`Only groups with ${REP_MIN} or more trades are compared, and at least two groups are needed; trade counts are in brackets. These are patterns in your results, not proof that one thing causes another.`); }
+
+  /* ===== RISK ===== */
+  if (O.drawdown || O.riskc || O.dist) group("Risk");
+  if (O.drawdown){ sectionTitle("Drawdown and recovery");
+    kv([["Largest drawdown", m.dd.amt ? `${M0(m.dd.amt)} (${(m.dd.pct * 100).toFixed(2)}% from the peak)` : "No drawdown in this period", m.dd.amt ? LOSS : true],
+      ["Largest drawdown in %", (m.dd.pctMax * 100).toFixed(2) + "% (same as the dashboard)"],
+      ...(m.dd.amt ? [["Peak to lowest point", `${enDate(m.dd.from)} to ${enDate(m.dd.to)} (${m.dd.days} day${m.dd.days === 1 ? "" : "s"})`],
+        ["Recovery", m.dd.rec ? `Back to the previous peak on ${enDate(m.dd.rec)}, ${m.dd.recDays} day${m.dd.recDays === 1 ? "" : "s"} after the lowest point` : "Not yet back to the previous peak in this period"],
+        ["Recovery factor", m.dd.factor == null ? "-" : `${m.dd.factor.toFixed(2)} (net P&L / largest drawdown)`]] : [])]);
+    note("Drawdown is measured on balance after each closed trade, so moves inside open trades aren't counted." + (m.dd.amt && s_.n < 30 ? " Recovery factor needs more trades to mean much." : "")); }
+  if (O.riskc){ sectionTitle("Risk consistency");
+    if (!m.risk.n) note(`No trades in this period have a starting stop loss, so risk per trade can't be worked out.${m.mt ? " Edit imported trades and add where your stop started." : ""}`);
+    else { need(190); cards([["Average risk", pc(m.risk.avgPct), null, M0(m.risk.avgAmt) + " per trade"], ["Highest risk", pc(m.risk.hi)], ["Lowest risk", pc(m.risk.lo)], ["Over planned risk", m.risk.plan ? String(m.risk.over.length) : "-", m.risk.over.length ? LOSS : null, m.risk.plan ? `More than ${(m.risk.plan * 1.1).toFixed(2)}% (plan ${m.risk.plan}% + 10%)` : "Set a planned risk on the account"]]);
+      bars(m.risk.list.map(q => ({ v: q.pct || 0, label: enDate(q.x.date).replace(/ \d{4}$/, ""), color: m.risk.plan && q.pct > m.risk.plan * 1.1 ? LOSS : GOLD })), 90, { fmt: v => v.toFixed(1) + "%", line: m.risk.plan, lineLabel: m.risk.plan ? `Plan ${m.risk.plan}%` : "" });
+      if (m.risk.over.length) table([["Date", 1.2], ["Symbol", 1], ["Risk", 1.2, "right"], ["Risk %", 1, "right"], ["Net P&L", 1.3, "right"]], m.risk.over.slice(0, 12).map(q => [enDate(q.x.date), q.x.symbol, M0(q.amt), pc(q.pct), { t: M(pnl(q.x)), c: colr(pnl(q.x)), b: true }]));
+      note(`Risk = distance from entry to the starting stop x position size, as a % of the balance before the trade.${m.risk.sd != null ? ` Spread (standard deviation): ${m.risk.sd.toFixed(2)} percentage points.` : ""} Based on ${m.risk.n} of ${s_.n} trades.${small(m.risk.n)}`); } }
+  if (O.dist){ sectionTitle("Trade distribution");
+    if (m.r.n >= 3){ const B = [[-Infinity, -2, "< -2R"], [-2, -1, "-2 to -1"], [-1, -.5, "-1 to -0.5"], [-.5, 0, "-0.5 to 0"], [0, .5, "0 to 0.5"], [.5, 1, "0.5 to 1"], [1, 2, "1 to 2"], [2, 3, "2 to 3"], [3, Infinity, "> 3R"]];
+      bars(B.map(([lo, hi, l]) => { const c = m.rs.filter(v => v >= lo && v < hi).length; return { v: c, label: l, color: hi <= 0 ? LOSS : WIN, top: c ? String(c) : "" }; }), 90, { fmt: v => String(Math.round(v)) });
+      kv([["Average winning trade", Rf(m.r.avgWin)], ["Average losing trade", Rf(m.r.avgLoss)], ["Win/loss ratio (R)", m.r.avgWin != null && m.r.avgLoss ? (m.r.avgWin / Math.abs(m.r.avgLoss)).toFixed(2) : "-"]]);
+      note(`Based on ${m.r.n} trades with a valid R.${small(m.r.n)}`); }
+    else { const pv = m.ts.map(pnl); if (pv.length){ const lo = Math.min(...pv), hi = Math.max(...pv), n = 8, step = (hi - lo) / n || 1;
+        bars(Array.from({ length: n }, (_, i) => { const a0 = lo + i * step, a1 = i === n - 1 ? Infinity : a0 + step, c = pv.filter(v => v >= a0 && v < a1).length; return { v: c, label: enMoney(a0 + step / 2, true, ccy).replace(/\.\d+$/, ""), color: a0 + step / 2 >= 0 ? WIN : LOSS, top: c ? String(c) : "" }; }), 90, { fmt: v => String(Math.round(v)) }); }
+      kv([["Win/loss ratio (money)", s_.wins && s_.losses ? (s_.avgWin / Math.abs(s_.avgLoss)).toFixed(2) : "-"]]);
+      note(`Shown in ${ccy} because fewer than 3 trades have a valid R. Labels are the middle of each range.`); } }
+
+  /* ===== BEHAVIOUR ===== */
+  if (O.discipline || O.ai) group("Behaviour");
+  if (O.discipline){ sectionTitle("Discipline and emotions");
+    const lg = m.logged;
+    if (!lg.plan && !lg.fomo && !lg.revenge && !lg.mood) note(`Not logged on any trade in this period, so there's nothing to report. Add whether you followed your plan, FOMO, revenge and how you felt when you log or edit a trade.`);
+    else { table(grpCols("Discipline"), grpRows(m.disc), { empty: "None of the logged trades were flagged." });
+      if (lg.mood) table(grpCols("Emotion"), grpRows(m.moods));
+      note(`Logged on: plan ${lg.plan}, FOMO ${lg.fomo}, revenge ${lg.revenge}, emotion ${lg.mood} of ${s_.n} trades. Trades without an answer are left out, not counted as yes or no.`); } }
+  if (O.ai){ sectionTitle("AI performance summary");
+    const items = String(O.ai).split(/\n+/).map(l => l.trim()).filter(Boolean);
+    items.forEach(l => { const mm = l.match(/^([A-Za-z ]{3,40}):\s*(.+)$/); if (mm){ need(28); doc.text(L, y, mm[1].toUpperCase(), { size: 7, bold: true, color: GOLD }); y += 11; para(mm[2], { size: 9 }); y += 5; } else { para(l, { size: 9 }); y += 4; } });
+    note("Written by the AI coach from the numbers in this report only. It can be wrong, so check it against your figures. Patterns aren't proof of cause."); }
+
+  /* ===== TRADES ===== */
+  if (O.trades){ group("Trades"); sectionTitle(`Every trade (${ts.length})`);
+    table([["Date", 1.25], ["Time", 1.3], ["Symbol", 1.1], ["Side", .7], ["Lots", .7, "right"], ["Entry", 1.1, "right"], ["Exit", 1.1, "right"], ["Costs", 1, "right"], ["Net P&L", 1.35, "right"], ["R", .9, "right"]],
+      [...ts].reverse().map(x => { const p = pnl(x), r = rMult(x), c = -commOf(x) + swapOf(x);
+        return [enDate(x.date), [x.timeIn, x.timeOut].filter(Boolean).join("-"), x.symbol, { t: x.side === "long" ? "Buy" : "Sell", c: x.side === "long" ? WIN : LOSS }, String(spec(x).lots), price(x.entry), price(x.exit), c ? M(c) : "0", { t: M(p), c: colr(p), b: true }, r == null ? { t: "N/A", c: MUTED } : Rf(r).replace("R", "")]; }),
+      { empty: "No trades in this period." });
+    note("Costs = commission and swap for that trade (already included in Net P&L). R shows N/A when the trade has no valid starting stop."); }
+
+  /* Reconciliation: always included */
+  sectionTitle("Reconciliation");
+  const okc = v => v ? WIN : LOSS, chk = (x1, x2) => Math.abs(x1 - x2) < .01;
+  kv([["Balance", `${M0(R.balStart)} start ${M(R.pnl)} trades ${R.deposits ? M(R.deposits) + " deposits/withdrawals " : ""}= ${M0(m.rec.endCalc)} · report shows ${M0(m.rec.end)} · ${chk(m.rec.endCalc, m.rec.end) ? "matches" : "DOES NOT MATCH"}`, okc(chk(m.rec.endCalc, m.rec.end))],
+    ["Costs", `${M(m.gross)} gross - ${M0(m.comm)} commission ${m.swap >= 0 ? "+" : "-"} ${M0(Math.abs(m.swap))} swap = ${M(m.rec.netCalc)} · ${chk(m.rec.netCalc, m.rec.net) ? "matches net P&L" : "DOES NOT MATCH"}`, okc(chk(m.rec.netCalc, m.rec.net))],
+    ["Trade list", `${ts.length} trades adding up to ${M(m.rec.tradeSum)} · ${chk(m.rec.tradeSum, m.rec.net) ? "matches net P&L" : "DOES NOT MATCH"}`, okc(chk(m.rec.tradeSum, m.rec.net))],
+    ["Dashboard", `Uses the same trades and date range as your dashboard (${period}).`],
+    ...(m.rec.brokerN ? [["Broker figures", `${m.rec.brokerN} trade${m.rec.brokerN === 1 ? " uses" : "s use"} the profit from your broker's statement as gross P&L.`]] : [])]);
+
   doc.eachPage((i, n) => { doc.line(L, doc.H - 30, Rt, doc.H - 30, LINE, .5);
-    doc.text(L, doc.H - 18, "The Execution Log · Not financial advice. Check figures against your broker statements.", { size: 7, color: MUTED });
+    doc.text(L, doc.H - 18, `The Execution Log · Generated ${stamp} · Not financial advice. Check figures against your broker statements.`, { size: 7, color: MUTED });
     doc.text(Rt, doc.H - 18, `Page ${i + 1} of ${n}`, { size: 7, color: MUTED, align: "right" }); });
   const blob = doc.build();
   const name = `the-execution-log-report-${(a.name || "account").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${localToday()}.pdf`;
@@ -6011,7 +6201,7 @@ function exportAll(){
 function tradeExport(x){
   const p = pnl(x), r = rMult(x), s_ = spec(x);
   return { date: x.date, symbol: x.symbol, direction: x.side === "long" ? "buy" : "sell", lots: s_.lots, entry: +x.entry, exit: +x.exit,
-    stopLoss: num(x.stop), takeProfit: num(x.tp), grossPnl: +grossOf(x).toFixed(2), commission: +commOf(x).toFixed(2), swap: +swapOf(x).toFixed(2), pnl: +p.toFixed(2), rMultiple: r == null ? null : +r.toFixed(2), setup: x.setup || "", grade: x.grade || "",
+    stopLoss: num(x.stop), ...(num(x.slFinal) != null ? { stopAtClose: num(x.slFinal) } : {}), takeProfit: num(x.tp), grossPnl: +grossOf(x).toFixed(2), commission: +commOf(x).toFixed(2), swap: +swapOf(x).toFixed(2), pnl: +p.toFixed(2), rMultiple: r == null ? null : +r.toFixed(2), setup: x.setup || "", grade: x.grade || "",
     followedPlan: x.plan === true, revengeTrade: x.revenge === true, fomoTrade: x.fomo === true, emotion: x.mood || "", entryTime: x.timeIn || "", exitTime: x.timeOut || "", durationMinutes: durationOf(x), notes: x.notes || "", unitsPerLot: s_.contract, pricedIn: x.quote || "", conversionRate: s_.rate, example: !!x.example };
 }
 function tradesCsv(){
@@ -6389,7 +6579,7 @@ render();
       if (THEMES.includes(state.settings?.theme) && state.settings.theme !== state.theme){ applyTheme(state.settings.theme); ls.set("tel-theme", state.settings.theme); }
       if (validHex(state.settings?.accent) && state.settings.accent !== state.accent){ applyAccent(state.settings.accent); ls.set("tel-accent", state.settings.accent); }
       const all = snap.docs.filter(d => d.id !== "settings").map(d => ({ id: d.id, ...d.data() }));
-      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.kind !== "day" && t.date && t.symbol);
+      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.kind !== "day" && t.date && t.symbol).map(normTrade);
       state.days = all.filter(t => t.kind === "day");
       state.replays = all.filter(t => t.kind === "replay");
       state.notes = all.filter(t => t.kind === "note");
