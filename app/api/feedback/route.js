@@ -30,7 +30,7 @@ export async function POST(request) {
   try {
     await sendEmail({
       to: LEGAL.email,
-      subject: `[${KINDS[kind]}] ${message.slice(0, 60)}${message.length > 60 ? "…" : ""}`,
+      subject: `${plan === "elite" ? "[PRIORITY · Elite] " : ""}[${KINDS[kind]}] ${message.slice(0, 60)}${message.length > 60 ? "…" : ""}`,
       text: `${KINDS[kind]} from ${user.email} (${plan || "no plan"}) on ${page || "unknown page"}\n\n${message}`,
       html: `<p><b>${esc(KINDS[kind])}</b> from ${esc(user.email)} (${esc(plan || "no plan")}) on ${esc(page || "unknown page")}</p><p style="white-space:pre-wrap">${esc(message)}</p>`,
       replyTo: user.email,

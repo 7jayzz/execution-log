@@ -2091,7 +2091,9 @@ const GUIDES = {
     { sel: "#btSig", title: "Build your own rules", body: "Pick \"Build my own rules\" to combine indicators, price levels and candle patterns, for example \"close above the 200 EMA and RSI crosses above 40\". Or describe it in plain English and the coach builds it for you." },
     { sel: "#btRun", title: "Run and read the report", body: "You get win rate, profit factor, drawdown, an equity curve and breakdowns by day and hour. Save the strategy to test it again on new data." },
     { sel: "#mcRun", tier: "elite", title: "Monte Carlo", body: "Shuffles your real results 1,000 times to show the range of outcomes over your next trades, and how likely you are to hit a drawdown limit." },
-    { sel: "#eliteRep", tier: "elite", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status." }
+    { sel: "#pxBox", tier: "elite", title: "Practice trading", body: "Load candles, pick any past date and trade it candle by candle with the future hidden. Place buys and sells with a stop and target, manage them, and save the session to carry on later." },
+    { sel: "#btOpt", tier: "elite", title: "Optimiser", body: "Test a range of one or two settings at once. Look for a wide green area in the heatmap, and check the unseen-data result before trusting a setting." },
+    { sel: "#eliteRep", tier: "elite", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status and an AI-written summary." }
   ] },
   settings: { name: "Settings", tier: "pro", steps: [
     { title: "Settings", body: "Accounts, notifications, appearance, your data and your plan all live here." },
@@ -4444,7 +4446,7 @@ function renderElite(){
       ${pva ? `<div class="kgrid">${k("Entry slippage", pva.slip == null ? "—" : (pva.slip > 0 ? "+" : "") + pva.slip.toFixed(2) + "R", pva.slip > .1 ? "neg" : "", "Positive means you entered late")}${k("Stops widened", String(pva.widened), pva.widened ? "neg" : "", "Stop moved further than planned")}${k("Exited before target", pva.tgtN ? `${pva.early} / ${pva.tgtN}` : "—", "", "Winning trades closed early")}${k("Trades planned", String(pva.n))}</div>`
         : `<p class="hint" style="margin:0">Add your planned entry, stop and target under Pro details when you log a trade, then compare them with what you actually did.</p>`}</section>
     <section class="panel"><div class="panel-head"><h2>All accounts</h2><span class="label">Consolidated</span></div>
-      <div class="kgrid">${Object.entries(byCcy).map(([c, v]) => k(`${c} accounts`, money(v.end, false, c), cls(v.end - v.start), `${pct(v.start ? (v.end - v.start) / v.start : 0)} · ${v.n} trades`)).join("")}${Object.entries(byCcy).map(([c, v]) => k(`Open risk (${c})`, money(v.open, false, c), v.open ? "neg" : "", v.end ? `${(v.open / v.end * 100).toFixed(2)}% of balances` : "")).join("")}</div></section>
+      <div class="kgrid">${Object.entries(byCcy).map(([c, v]) => k(`${c} accounts`, money(v.end, false, c), cls(v.end - v.start), `${pct(v.start ? (v.end - v.start) / v.start : 0)} · ${v.n} trades`)).join("")}${Object.entries(byCcy).map(([c, v]) => k(`Open risk (${c})`, money(v.open, false, c), v.open ? "neg" : "", v.end ? `${(v.open / v.end * 100).toFixed(2)}% of balances` : "")).join("")}</div>${crossStrategyTable()}</section>
     <section class="panel"><div class="panel-head"><h2>Advanced RuleGuard</h2><button type="button" class="btn small" id="rgEdit2">Edit rules</button></div>
       ${breach ? `<div class="kgrid">${k("Best day share of profit", breach.share == null ? "—" : Math.round(breach.share * 100) + "%", breach.cons && breach.share > breach.cons / 100 ? "neg" : "", breach.cons ? `Consistency limit ${breach.cons}%` : "Set a consistency rule to track it")}${k("Days at 80%+ of loss limit", String(breach.list.length), breach.list.length ? "neg" : "")}${k("Daily limit breaches", String(breach.list.filter(b => b.hit).length), breach.list.some(b => b.hit) ? "neg" : "pos")}</div>
         ${breach.list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Day</th><th class="r">Net</th><th class="r">Limit</th><th>Status</th></tr></thead><tbody>${breach.list.slice(0, 12).map(b => `<tr><td>${esc(fmtDate(b.d))}</td><td class="r num neg">${money(b.net)}</td><td class="r num">${money(-b.lim)}</td><td class="${b.hit ? "neg" : ""}"><b>${b.hit ? "Breached" : "Near miss"}</b></td></tr>`).join("")}</tbody></table></div>` : ""}`
@@ -4492,15 +4494,33 @@ function simOut(m){
     ["Chance of hitting target", Math.round(m.pTarget * 100) + "%", "pos"], ["Chance of breaching", Math.round(m.pBreach * 100) + "%", m.pBreach > .2 ? "neg" : ""], ["Typical max drawdown", (m.ddMed * 100).toFixed(1) + "%", ""], ["Bad-case drawdown (95%)", (m.dd95 * 100).toFixed(1) + "%", "neg"]]
     .map(([l, v, cl]) => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span></div>`).join("")}</div>${fanSvg(m, c)}<p class="hint" style="margin:0">Shaded bands show the middle 50% and 90% of outcomes. The gold line is the median. Simulations show a range of possibilities, not a prediction.</p>`;
 }
+// Each strategy (setup) across every account, in R so different currencies and sizes compare fairly.
+function crossStrategyTable(){
+  const accts = accountsList().filter(a => !a.demo), rows = {};
+  accts.forEach(a => acctTrades(a).forEach(x => { const k = x.setup || "Untagged", r = rMult(x); const g = rows[k] ||= { n: 0, R: 0, rn: 0, w: 0, by: {} };
+    g.n++; if (pnl(x) > 0) g.w++; if (r != null){ g.R += r; g.rn++; } const b = g.by[a.id] ||= { n: 0, R: 0, rn: 0 }; b.n++; if (r != null){ b.R += r; b.rn++; } }));
+  const list = Object.entries(rows).sort((p, q) => q[1].R - p[1].R);
+  if (!list.length || accts.length < 1) return "";
+  const cell = b => { if (b && Math.abs(b.R) < .05) b.R = 0; return !b ? `<td class="r hint">—</td>` : `<td class="r num ${b.R > 0 ? "pos" : b.R < 0 ? "neg" : ""}">${b.rn ? (b.R > 0 ? "+" : "") + b.R.toFixed(1) + "R" : "—"}<span class="hint"> · ${b.n}</span></td>`; };
+  return `<h3 class="rg-h" style="margin-top:16px">Strategies across accounts</h3><p class="hint" style="margin:0 0 6px">Net R by setup in each account (R needs a stop loss on the trade). A setup that works on one account but not another usually means it's being traded differently.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Setup</th>${accts.map(a => `<th class="r">${esc(a.name)}</th>`).join("")}<th class="r">All</th><th class="r">Win rate</th></tr></thead><tbody>${list.slice(0, 20).map(([k, g]) => `<tr><td><b>${esc(k)}</b></td>${accts.map(a => cell(g.by[a.id])).join("")}${cell(g)}<td class="r">${Math.round(g.w / g.n * 100)}%</td></tr>`).join("")}</tbody></table></div>`;
+}
 function openReportBuilder(){
   if (!hasTier("pro")){ downloadReport(); return; }
-  const S_ = [["summary", "Summary stats", true], ["curve", "Balance curve", true], ["breakdown", "By setup and instrument", true], ["months", "By month", true], ["discipline", "Discipline and emotions", true], ["challenge", "Challenge status (RuleGuard)", !!S().rules?.on], ["trades", "Every trade", true]];
+  const S_ = [["summary", "Summary stats", true], ["curve", "Balance curve", true], ["breakdown", "By setup and instrument", true], ["months", "By month", true], ["discipline", "Discipline and emotions", true], ["challenge", "Challenge status (RuleGuard)", !!S().rules?.on], ["trades", "Every trade", true], ...(hasTier("elite") ? [["ai", "✦ AI coach summary, written for this report (uses one coach reply)", false]] : [])];
   const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Report builder</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <p class="hint" style="margin:0">Pick what goes in your PDF. It covers the dates picked on the dashboard.</p>
     <div class="cf-list">${S_.map(([k, l, on]) => `<label class="check"><input type="checkbox" data-sec="${k}" ${on ? "checked" : ""}><span>${esc(l)}</span></label>`).join("")}</div>
     <div class="f"><label for="repTitle">Report title</label><input id="repTitle" value="Performance report" maxlength="60"></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="repGo">${esc(t("dDownload"))}</button></div></div></div>`);
-  $("#repGo").onclick = () => { const opt = { title: $("#repTitle").value.trim() || "Performance report" }; $("#drawerHost").querySelectorAll("[data-sec]").forEach(x => opt[x.dataset.sec] = x.checked); close(); downloadReport(opt); };
+  $("#repGo").onclick = async () => { const opt = { title: $("#repTitle").value.trim() || "Performance report" }; $("#drawerHost").querySelectorAll("[data-sec]").forEach(x => opt[x.dataset.sec] = x.checked);
+    if (opt.ai){ const sample = await getSample(), go = $("#repGo");
+      if (!sample){ opt.ai = false; toast("The AI coach isn't available here, so the report was made without the summary."); }
+      else { go.disabled = true; go.textContent = "Writing your summary…";
+        try { const prompt = `Write the summary section of a trader's PDF performance report from this journal data. Plain text only, no markdown, no headings, no bullet symbols. Three short paragraphs, 170 words maximum in total: 1) results in this period, 2) what is working and should be repeated, 3) the one or two things costing the most and exactly what to do about them. Use their numbers. Talk to the trader as "you". Data: ${JSON.stringify(coachData(80))}`;
+          const r = await sample(prompt, { onText: () => {} }); opt.ai = String(r.text || "").replace(/[*#_`]/g, "").trim() || false; }
+        catch (e){ opt.ai = false; toast(e?.code === "upgrade" ? "You've used your coach replies for now, so the report was made without the summary." : "Couldn't write the summary right now, so the report was made without it.", 5000); } } }
+    close(); downloadReport(opt); };
 }
 
 /* ---------- Notes & free templates ---------- */
@@ -5907,6 +5927,9 @@ async function downloadReport(opt = {}){
     doc.rect(x, yy, cw, 44, "#F5F7FA", LINE); doc.text(x + 10, yy + 15, lbl.toUpperCase(), { size: 7, bold: true, color: MUTED }); doc.text(x + 10, yy + 34, v, { size: 13, bold: true, color: c || INK }); });
   y += 3 * 52 + 8;
   doc.text(L, y, `Commission and swap in this period: ${M(-costs)}`, { size: 8, color: MUTED }); y += 22; }
+  if (O.ai){ sectionTitle(y, "AI coach summary"); y += 16; const per = Math.floor(CW / (9 * .5));
+    String(O.ai).split(/\n+/).filter(Boolean).slice(0, 6).forEach(par => { let line = ""; par.split(/\s+/).forEach(w => { if ((line + " " + w).trim().length > per){ doc.text(L, y, line.trim(), { size: 9 }); y += 12.5; line = w; } else line += " " + w; }); if (line.trim()){ doc.text(L, y, line.trim(), { size: 9 }); y += 12.5; } y += 5; });
+    doc.text(L, y, "Written by the AI coach from your journal. It can be wrong, so check it against your numbers.", { size: 7, color: MUTED }); y += 20; }
   if (O.challenge && hasTier("pro")){ const st = ruleStatus(a); if (st){ sectionTitle(y, "Challenge status"); y += 16;
     [["Profit", st.target ? `${M(st.profit)} of ${M0(st.target)} target` : M(st.profit)], ["Max drawdown used", st.ddLimit ? `${M0(st.ddUsed)} of ${M0(st.ddLimit)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "-"], ["Trading days", st.minDays ? `${st.days} of ${st.minDays}` : String(st.days)]]
       .forEach(([l_, v_]) => { doc.text(L + 10, y, l_, { size: 9, color: MUTED }); doc.text(L + 160, y, v_, { size: 9, bold: true }); y += 14; }); y += 12; } }
