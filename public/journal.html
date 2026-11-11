@@ -5135,8 +5135,10 @@ async function readXlsxRows(file){
   for (let k = 0; k < n; k++){ const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
     const name = dec.decode(buf.subarray(p + 46, p + 46 + nl)); files[name] = { method, csize, off }; p += 46 + nl + el + cl; }
   const get = async name => { const f = files[name]; if (!f) return null; const lnl = dv.getUint16(f.off + 26, true), lel = dv.getUint16(f.off + 28, true), start = f.off + 30 + lnl + lel, data = buf.subarray(start, start + f.csize);
-    if (f.method === 0) return dec.decode(data);
-    const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw")); return await new Response(ds).text(); };
+    const raw = f.method === 0 ? data : new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+    // MetaTrader writes these XML parts as UTF-16, so check the byte-order mark before decoding.
+    const enc = raw[0] === 0xFF && raw[1] === 0xFE ? "utf-16le" : raw[0] === 0xFE && raw[1] === 0xFF ? "utf-16be" : "utf-8";
+    return new TextDecoder(enc).decode(raw).replace(/^\uFEFF/, ""); };
   const ssx = await get("xl/sharedStrings.xml"), sheetName = Object.keys(files).find(f => /^xl\/worksheets\/sheet1\.xml$/.test(f)) || Object.keys(files).find(f => /^xl\/worksheets\/.*\.xml$/.test(f));
   const sx = await get(sheetName); if (!sx) throw { code: "xlsx" };
   const xp = new DOMParser(), ss = ssx ? [...xp.parseFromString(ssx, "application/xml").getElementsByTagName("si")].map(si => [...si.getElementsByTagName("t")].map(t_ => t_.textContent).join("")) : [];
