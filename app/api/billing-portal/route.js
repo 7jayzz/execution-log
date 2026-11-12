@@ -11,7 +11,13 @@ async function openPortal() {
   if (!user) return NextResponse.redirect(`${SITE_URL}/login?next=/dashboard`, { status: 303 });
   const { data: sub } = await supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).maybeSingle();
   if (!sub?.stripe_customer_id) return NextResponse.redirect(`${SITE_URL}/pricing`, { status: 303 });
-  const session = await getStripe().billingPortal.sessions.create({ customer: sub.stripe_customer_id, return_url: `${SITE_URL}/dashboard` });
+  let session;
+  try { session = await getStripe().billingPortal.sessions.create({ customer: sub.stripe_customer_id, return_url: `${SITE_URL}/dashboard` }); }
+  catch (e) {
+    // e.g. a customer from test mode after switching to live: send them to pricing rather than an error page.
+    if (e?.code === "resource_missing" || e?.statusCode === 404) return NextResponse.redirect(`${SITE_URL}/pricing`, { status: 303 });
+    throw e;
+  }
   return NextResponse.redirect(session.url, { status: 303 });
 }
 

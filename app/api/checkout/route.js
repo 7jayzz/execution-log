@@ -34,6 +34,11 @@ async function startCheckout(request) {
 
   const stripe = getStripe();
   let customer = existing?.stripe_customer_id;
+  // A customer saved from test mode doesn't exist in live mode (and vice versa): make a fresh one instead of failing.
+  if (customer) {
+    try { const c = await stripe.customers.retrieve(customer); if (c?.deleted) customer = null; }
+    catch (e) { if (e?.code === "resource_missing" || e?.statusCode === 404) customer = null; else throw e; }
+  }
   if (!customer) {
     const c = await stripe.customers.create({ email: user.email, metadata: { user_id: user.id } });
     customer = c.id;
