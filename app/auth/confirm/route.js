@@ -42,6 +42,9 @@ async function confirm(request) {
       dest.searchParams.set("welcome", "1");
       return NextResponse.redirect(dest.toString());
     }
+    // The one-time code only works in the browser the person signed up in. Supabase has already confirmed the
+    // email by this point, so say so rather than showing an "expired link" error.
+    return NextResponse.redirect(`${SITE_URL}/login?error=confirmed`);
   }
   return NextResponse.redirect(`${SITE_URL}/login?error=link`);
 }
