@@ -4256,13 +4256,17 @@ function openCandleGuide(){
   const step = (n, html) => `<li><span class="cg-n">${n}</span><div>${html}</div></li>`;
   const tabs = {
     mt5: ["MT5 (computer)", `<ol class="cg-steps">
-      ${step(1, "Open <b>MetaTrader 5</b> on your computer. (The phone app can't export candles.)")}
-      ${step(2, "Press <b>Ctrl + U</b>, or go to <b>View → Symbols</b>.")}
-      ${step(3, "Click the <b>Bars</b> tab at the top of the window.")}
-      ${step(4, "Pick your <b>symbol</b> (e.g. XAUUSD) and set the timeframe to <b>M1</b>. M1 lets you switch to 5m, 15m, 1h and 4h in the replay.")}
-      ${step(5, "Set the dates to cover <b>the day of your trade</b> (start of that day to the end of it), then click <b>Request</b>.")}
-      ${step(6, "Click <b>Export Bars</b> and save the file. It's named something like <code>XAUUSD_M1_202611100000_202611102359.csv</code>. Keep that name so we can tell which symbol it is.")}
-      ${step(7, "Back here, pick your trade and click <b>Choose file</b> under <b>Candles file</b>. Then press <b>▶ Play</b>.")}</ol>`],
+      ${step(1, "Open <b>MetaTrader 5</b> on your computer and log in to your trading account. The phone app and the web version can't export candles.")}
+      ${step(2, "Press <b>Ctrl + U</b>, or go to <b>View → Symbols</b>. A window opens on the <b>Specification</b> tab.")}
+      ${step(3, "Type your symbol in the search box (e.g. <code>XAUUSD</code>) and click it in the list so it's highlighted. Gold is under <b>Metals</b>, indices under <b>Cash CFD</b>.")}
+      ${step(4, "Click the <b>Bars</b> tab at the top of that same window (next to Specification and Ticks).")}
+      ${step(5, "Set the timeframe to <b>M1</b> (1 minute). M1 lets you switch to 5m, 15m, 1h and 4h in the replay.")}
+      ${step(6, "Set <b>From</b> to the day of your <b>first trade</b> on this account and <b>To</b> to <b>today</b>. One file then covers every trade you've taken on this symbol.")}
+      ${step(7, "Click <b>Request</b> and wait until the list fills with rows (it can take a few seconds for a few months).")}
+      ${step(8, "Click <b>Export Bars</b> and save it. Keep the symbol at the start of the name, e.g. <code>XAUUSD_M1_all.csv</code>.")}
+      ${step(9, "Back here, pick any trade on that symbol, click <b>Choose file</b> under <b>Candles file</b> and press <b>▶ Play</b>. Pick another trade and use the same file.")}
+      <li class="cg-note"><b>How far back can you go?</b> As far as your broker keeps 1-minute history, usually several months to years. A few months of M1 is about 30,000 rows a month and loads fine here. If the list stops short of your first trade, go to <b>Tools → Options → Charts</b>, set <b>Max bars in chart</b> to <b>Unlimited</b>, restart MT5 and click Request again. Still not enough? Export <b>M5</b> instead: it covers 5 times as long.</li>
+      <li class="cg-note"><b>New trades later:</b> export again with the same From date and today's date, and use the new file. One export a week or a month keeps you covered.</li></ol>`],
     mt4: ["MT4 (computer)", `<ol class="cg-steps">
       ${step(1, "Open <b>MetaTrader 4</b> on your computer.")}
       ${step(2, "Go to <b>Tools → History Center</b> (or press <b>F2</b>).")}
@@ -4279,13 +4283,14 @@ function openCandleGuide(){
       <li class="cg-note">Exporting chart data needs a paid TradingView plan. If you don't have one, use MT5 or MT4, which are free.</li></ol>`],
   };
   const close = showDrawer(`<div class="drawer cg"><div class="panel-head"><h2>How to get your candles</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-    <p class="hint" style="margin:0">Trade Replay needs the price candles for the day of your trade. Pick where you trade:</p>
+    <p class="hint" style="margin:0">Trade Replay needs the price candles around your trades. One export per symbol covers all of them. Pick where you trade:</p>
     <div class="cg-tabs" role="tablist">${Object.entries(tabs).map(([k, v], i) => `<button type="button" role="tab" data-cg="${k}" aria-selected="${i === 0}">${v[0]}</button>`).join("")}</div>
     <div id="cgBody">${tabs.mt5[1]}</div>
     <div class="cg-tips"><b>Tips if it doesn't line up</b><ul>
-      <li><b>"These candles don't match this trade"</b> usually means a time-zone difference. MT5 and MT4 use your broker's server time (often 2 or 3 hours ahead of the UK). Trades imported from the same MT5 account already use that time, so they'll match. If you typed a trade in yourself using UK time, the replay may be off by those hours. Use <b>Time shift</b> above the chart to move the candles until your entry lines up.</li>
+      <li><b>Time shift:</b> MT5 and MT4 files use your broker's server time (FTMO is 2 hours ahead of the UK in winter, 3 in summer). If your account has a <b>Broker server time</b> set, Time shift picks <b>Auto (broker time)</b> and converts every candle for you, even across a clock change. Otherwise use Time shift to move the candles until the entry lines up.</li>
+      <li><b>"These candles don't match this trade"</b> usually means the time shift is wrong or the file is a different symbol.</li>
       <li><b>Wrong symbol?</b> We read the symbol from the file name. Keep the name MT5 gives it, or start the name with the symbol.</li>
-      <li><b>One file per day per symbol</b> is plenty. A full day of 1-minute candles is about 1,400 rows.</li>
+      <li><b>One file per symbol</b> is enough for all your trades on it. Saving a replay keeps just the 3 days around that trade.</li>
       <li>Your candle files stay on your device. They're not uploaded or stored.</li></ul></div>
     <div class="drawer-foot"><div></div><button type="button" class="btn primary" data-close>Got it</button></div></div>`);
   const host = document.querySelector(".cg");
