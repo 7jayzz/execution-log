@@ -20,7 +20,8 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
     </div>
     <div className="plans">
       {PLANS.map((p, idx) => {
-        const cta = trial && TRIAL_DAYS ? `Start ${TRIAL_DAYS}-day free trial` : `Choose ${p.name}`;
+        const curIdx = PLANS.findIndex((q) => q.id === current);
+        const cta = current ? (idx > curIdx ? `Upgrade to ${p.name}` : `Switch to ${p.name}`) : trial && TRIAL_DAYS ? `Start ${TRIAL_DAYS}-day free trial` : `Choose ${p.name}`;
         return (
           <div key={p.id} className={`plan${p.best ? " best" : ""}`}>
             {p.best && <span className="badge">Recommended</span>}

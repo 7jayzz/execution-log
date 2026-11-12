@@ -31,12 +31,13 @@ export default async function Pricing({ searchParams }) {
           <h1 className="h1" style={{ fontSize: "clamp(44px,7vw,80px)" }}>{active ? <>Change your <em>plan</em></> : <>Pick your <em>plan</em></>}</h1>
           <p className="sub">
             {active
-              ? "Move up or down a plan any time from Manage billing. Upgrades start straight away; downgrades start at your next renewal."
+              ? "Upgrade any time from this page and it starts straight away. To move down a plan, use Manage billing and it starts at your next renewal."
               : user
               ? trial && TRIAL_DAYS ? `Your journal is ready. Start your ${TRIAL_DAYS}-day free trial to open it. You won't be charged until the trial ends, and you can cancel any time.` : "Choose a plan to open your journal."
               : `${TRIAL_DAYS ? `Try any plan free for ${TRIAL_DAYS} days. ` : ""}Every feature listed works today.`}
           </p>
           {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Pick a plan when you're ready.</div>}
+          {searchParams?.error === "upgrade" && <div className="box bad">Your card was declined, so your plan hasn't changed. Update your card in Manage billing and try again.</div>}
           {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.{typeof searchParams?.ref === "string" && searchParams.ref ? <span style={{ display: "block", marginTop: 6, fontSize: 12, opacity: 0.75 }}>Reference: {searchParams.ref.slice(0, 60)}</span> : null}</div>}
           {searchParams?.error === "phone" && <div className="box bad">Please verify your mobile number to start your free trial.</div>}
           {needPhone && <PhoneVerify />}

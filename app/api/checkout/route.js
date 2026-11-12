@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
-import { priceIdFor, TRIAL_DAYS } from "@/lib/plans";
+import { priceIdFor, planForPrice, TRIAL_DAYS } from "@/lib/plans";
 import { isActive } from "@/lib/subscription";
 import { SITE_URL, PHONE_VERIFY } from "@/lib/site";
 
@@ -32,7 +32,7 @@ async function startCheckout(request) {
 
   const admin = createAdminClient();
   const { data: existing } = await admin.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle();
-  if (isActive(existing)) return NextResponse.redirect(`${SITE_URL}/api/billing-portal`, { status: 303 });
+  if (isActive(existing)) return switchPlan(existing, plan, interval, price);
 
   const stripe = getStripe();
   let customer = existing?.stripe_customer_id;
@@ -77,4 +77,34 @@ async function startCheckout(request) {
     cancel_url: `${SITE_URL}/pricing?checkout=cancelled`,
   });
   return NextResponse.redirect(session.url, { status: 303 });
+}
+
+// Someone already subscribed picks another plan on the pricing page.
+// Upgrades (a higher plan, or monthly -> yearly) happen here and now: the price on their subscription is swapped and
+// any difference is charged straight away (nothing during a free trial). If that payment fails, nothing changes.
+// Downgrades go to the billing portal, so they take effect at renewal.
+const RANK = { basic: 1, pro: 2, elite: 3 };
+async function switchPlan(existing, plan, interval, price) {
+  const stripe = getStripe();
+  if (!existing.stripe_subscription_id) return NextResponse.redirect(`${SITE_URL}/api/billing-portal`, { status: 303 });
+  const sub = await stripe.subscriptions.retrieve(existing.stripe_subscription_id);
+  const item = sub.items?.data?.[0];
+  if (!item) return NextResponse.redirect(`${SITE_URL}/api/billing-portal`, { status: 303 });
+  if (item.price?.id === price) return NextResponse.redirect(`${SITE_URL}/dashboard`, { status: 303 });
+  const curPlan = planForPrice(item.price?.id), curYear = item.price?.recurring?.interval === "year";
+  const up = (RANK[plan] || 0) > (RANK[curPlan] || 0) || (plan === curPlan && interval === "year" && !curYear);
+  if (!up) return NextResponse.redirect(`${SITE_URL}/api/billing-portal`, { status: 303 });
+  const updated = await stripe.subscriptions.update(sub.id, {
+    items: [{ id: item.id, price }],
+    proration_behavior: sub.status === "trialing" ? "none" : "always_invoice",
+    payment_behavior: "pending_if_incomplete",
+    cancel_at_period_end: false,
+  });
+  if (updated.pending_update) {
+    return NextResponse.redirect(`${SITE_URL}/pricing?error=upgrade`, { status: 303 });
+  }
+  // The webhook will sync this too; update now so the new plan shows straight away.
+  const admin = createAdminClient();
+  await admin.from("subscriptions").update({ price_id: price, status: updated.status, cancel_at_period_end: false, updated_at: new Date().toISOString() }).eq("user_id", existing.user_id);
+  return NextResponse.redirect(`${SITE_URL}/dashboard?upgraded=${encodeURIComponent(plan)}`, { status: 303 });
 }
