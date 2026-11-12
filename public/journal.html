@@ -203,6 +203,7 @@ tbody tr.row:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   padding:calc(22px + env(safe-area-inset-top,0px)) max(22px, env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) 22px;
   display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--line-2);box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
 .drawer h2{font-size:30px}
+.rprog{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2,transparent)}.rprog-t{display:flex;flex-direction:column;gap:4px;flex:1;min-width:220px}.rbar{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:4px}.rbar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .2s}.needstop{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;border:1px dashed var(--accent);color:var(--accent);white-space:nowrap}.sf-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}.sf-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px;border:1px solid var(--line);border-radius:10px}.sf-row.ok{border-color:var(--pos,#0E8A57)}.sf-row.bad{border-color:var(--neg,#D23B2E)}.sf-info{display:flex;flex-direction:column;gap:2px;min-width:0}.sf-in{display:flex;flex-direction:column;gap:2px;align-items:flex-end}.sf-in input{width:150px}.sf-row.bad .sf-r{color:var(--neg,#D23B2E)}
 .rep-grp{margin-top:12px}.rep-grp .cf-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}@media(max-width:560px){.rep-grp .cf-list{grid-template-columns:1fr}}.rep-grp-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}.rep-grp-h .linkbtn{font-size:12px;text-transform:none;letter-spacing:0}
 .drawer.wide{width:min(760px,100%)}
 .fgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
@@ -4515,6 +4516,11 @@ function crossStrategyTable(){
   return `<h3 class="rg-h" style="margin-top:16px">Strategies across accounts</h3><p class="hint" style="margin:0 0 6px">Net R by setup in each account (R needs a stop loss on the trade). A setup that works on one account but not another usually means it's being traded differently.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Setup</th>${accts.map(a => `<th class="r">${esc(a.name)}</th>`).join("")}<th class="r">All</th><th class="r">Win rate</th></tr></thead><tbody>${list.slice(0, 20).map(([k, g]) => `<tr><td><b>${esc(k)}</b></td>${accts.map(a => cell(g.by[a.id])).join("")}${cell(g)}<td class="r">${Math.round(g.w / g.n * 100)}%</td></tr>`).join("")}</tbody></table></div>`;
 }
+// Only the five expected lines are used. Anything else (or a reply missing most of them) means "unavailable", never filler text.
+const AI_LABELS = ["Biggest strength", "Biggest weakness", "Most consistent behaviour", "Strongest condition", "One improvement"];
+function parseAiSummary(text){ const clean = String(text || "").replace(/[*#_`]/g, ""), items = [];
+  AI_LABELS.forEach(l => { const mm = clean.match(new RegExp("^\\s*(?:\\d+[.)]\\s*)?" + l.replace(/ /g, "\\s+") + "\\s*:\\s*(.+)$", "im")); if (mm && mm[1].trim().length > 3) items.push([l, mm[1].trim()]); });
+  return items.length >= 4 ? { items } : { error: "The AI reply didn't come back in the expected format, so it was left out." }; }
 function openReportBuilder(){
   if (!hasTier("pro")){ downloadReport(); return; }
   const G = [["Overview", [["summary", "Summary stats"], ["curve", "Balance curve"], ["account", "Account and challenge info"]]],
@@ -4530,8 +4536,8 @@ function openReportBuilder(){
   $("#drawerHost").querySelectorAll("[data-all]").forEach(btn => btn.onclick = () => { const bs = [...$("#drawerHost").querySelectorAll(`[data-g="${btn.dataset.all}"]`)], on = !bs.every(x => x.checked); bs.forEach(x => x.checked = on); });
   $("#repGo").onclick = async () => { const opt = { title: $("#repTitle").value.trim() || "Performance report" }; $("#drawerHost").querySelectorAll("[data-sec]").forEach(x => opt[x.dataset.sec] = x.checked);
     if (opt.ai){ const sample = await getSample(), go = $("#repGo");
-      if (!sample){ opt.ai = false; toast("The AI coach isn't available here, so the report was made without the summary."); }
-      else if (!reportMetrics().ts.length){ opt.ai = false; toast("There are no trades in this period, so the report was made without the AI summary."); }
+      if (!sample) opt.ai = { error: "The AI coach isn't available right now." };
+      else if (!reportMetrics().ts.length) opt.ai = { error: "There are no trades in this period to summarise." };
       else { go.disabled = true; go.textContent = "Writing your summary…";
         try { const prompt = `You are writing one section of a trader's PDF performance report. Use ONLY the numbers in the data below. Never invent trades, setups, emotions or figures that aren't there. Plain text, no markdown, no bullet symbols. Write exactly these five lines, each starting with the label and a colon, one or two sentences each, talking to the trader as "you":
 Biggest strength:
@@ -4540,8 +4546,8 @@ Most consistent behaviour:
 Strongest condition:
 One improvement:
 Rules: quote their actual numbers. Only call something a pattern if it has at least ${REP_MIN} trades; if the data is too thin for a line, write "Not enough data yet" and say what to log. Describe what the results show, never claim one thing caused another. "Strongest condition" is the instrument, setup, direction, session or weekday with the best average result per trade. "One improvement" must be a specific, practical action. If behaviour fields were not logged, say so instead of guessing. Data: ${JSON.stringify(reportAiData(reportMetrics()))}`;
-          const r = await sample(prompt, { onText: () => {} }); opt.ai = String(r.text || "").replace(/[*#_`]/g, "").trim() || false; }
-        catch (e){ opt.ai = false; toast(e?.code === "upgrade" ? "You've used your coach replies for now, so the report was made without the summary." : "Couldn't write the summary right now, so the report was made without it.", 5000); } } }
+          const r = await sample(prompt, { onText: () => {} }); opt.ai = parseAiSummary(r.text); }
+        catch (e){ opt.ai = { error: e?.code === "upgrade" ? "You've used your AI coach replies for now." : "The AI coach couldn't be reached." }; } } }
     close(); downloadReport(opt); };
 }
 
@@ -4841,6 +4847,33 @@ function flushNote(){ if (!noteTimer) return; clearTimeout(noteTimer); noteTimer
 function renderSetups(){ groupTable($("#setupTbl"), groupBy(x => x.setup || t("untagged")).map(r=>({...r, tag:true})), t("setup")); }
 function renderInst(){ groupTable($("#instTbl"), groupBy(x => x.symbol), t("instrument")); }
 
+function openStopFix(){
+  const list = sorted().reverse().filter(x => initStop(x) == null && +x.entry > 0);
+  if (!list.length){ toast("Every trade already has a starting stop."); return; }
+  const rowH = x => { const lng = x.side !== "short", cl = num(x.slFinal) ?? num(x.stop);
+    return `<div class="sf-row" data-id="${esc(x.id)}"><div class="sf-info"><b>${esc(x.symbol)} · <span class="side ${x.side}">${esc(tr(x.side))}</span></b>
+      <span class="hint">${esc(fmtDate(x.date))}${x.timeIn ? " · " + esc(timeSpan(x)) : ""} · entry ${esc(price(x.entry))}${cl != null ? ` · stop at close ${esc(price(cl))}` : ""}</span></div>
+      <div class="sf-in"><input type="number" step="any" inputmode="decimal" placeholder="${lng ? "Below" : "Above"} ${esc(price(x.entry))}" aria-label="Starting stop for ${esc(x.symbol)} ${esc(fmtDate(x.date))}"><span class="sf-r hint"></span></div></div>`; };
+  const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Add starting stops</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Enter where each stop loss was when you opened the trade, before you moved it. Leave a box empty to skip that trade. R and risk are worked out from these.</p>
+    <div class="rbar"><i id="sfBar" style="width:0"></i></div><span class="hint" id="sfCount"></span>
+    <div class="sf-list">${list.map(rowH).join("")}</div>
+    <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="sfSave">Save stops</button></div></div></div>`);
+  const all = acctTrades(), base = all.filter(x => rMult(x) != null).length;
+  const check = () => { let ok = 0, bad = 0;
+    $("#drawerHost").querySelectorAll(".sf-row").forEach(row => { const x = list.find(q => q.id === row.dataset.id), inp = row.querySelector("input"), out = row.querySelector(".sf-r"), v = num(inp.value);
+      row.classList.remove("bad", "ok"); out.textContent = "";
+      if (v == null) return; const tx = { ...x, stop: v };
+      if (initStop(tx) == null){ bad++; row.classList.add("bad"); out.textContent = x.side === "short" ? "Must be above entry" : "Must be below entry"; return; }
+      ok++; row.classList.add("ok"); const r = rMult(tx); out.textContent = r == null ? "" : `${r > 0 ? "+" : ""}${r.toFixed(2)}R · risk ${money(riskAmt(tx), false)}`; });
+    $("#sfBar").style.width = ((base + ok) / all.length * 100).toFixed(1) + "%"; $("#sfCount").textContent = `R on ${base + ok} of ${all.length} trades after saving${bad ? ` · ${bad} to fix` : ""}`;
+    $("#sfSave").disabled = !ok || !!bad; return { ok, bad }; };
+  $("#drawerHost").querySelectorAll(".sf-row input").forEach(i => i.oninput = check); check();
+  $("#sfSave").onclick = async () => { const { ok, bad } = check(); if (!ok || bad) return; const go = $("#sfSave"); go.disabled = true; let n = 0;
+    for (const row of $("#drawerHost").querySelectorAll(".sf-row.ok")){ const x = list.find(q => q.id === row.dataset.id), v = num(row.querySelector("input").value), { id, ...rec } = x;
+      go.textContent = `Saving ${++n} of ${ok}…`; if (!(await saveTrade(id, { ...rec, stop: v }))){ go.disabled = false; go.textContent = "Save stops"; return; } }
+    close(); render(); toast(`Starting stops saved on ${n} trade${n === 1 ? "" : "s"}.`); };
+}
 function renderLog(){
   const host = $("#log");
   if (state.mode === "loading"){ host.innerHTML = `<div class="empty-state"><p>${esc(t("loading"))}</p></div>`; return; }
@@ -4856,12 +4889,16 @@ function renderLog(){
     if (!passFlt(t)) return false;
     return !q || `${t.symbol} ${t.setup} ${tagsOf(t).join(" ")}`.toLowerCase().includes(q); });
   if (!rows.length){ host.innerHTML = emptyMini(t("noMatch")); return; }
-  const cards = `<div class="log-cards">${rows.map(x => { const p = pnl(x), r = rMult(x), out = p > 0 ? "win" : p < 0 ? "loss" : "be";
+  const allT = acctTrades(), noStop = allT.filter(x => initStop(x) == null), withR = allT.filter(x => rMult(x) != null).length;
+  const rBanner = noStop.length ? `<div class="rprog"><div class="rprog-t"><b>R works on ${withR} of ${allT.length} trades</b><span class="hint">${noStop.length} trade${noStop.length === 1 ? " has" : "s have"} no starting stop loss, so ${noStop.length === 1 ? "its" : "their"} R and risk show "Add stop".${allT.some(x => MT_SRC[x.imported] && initStop(x) == null) ? " MetaTrader only reports where the stop was at close, so imported trades need it added." : ""}</span>
+    <div class="rbar" role="progressbar" aria-valuemin="0" aria-valuemax="${allT.length}" aria-valuenow="${withR}"><i style="width:${(withR / allT.length * 100).toFixed(1)}%"></i></div></div><button type="button" class="btn small primary" id="stopFix">Add starting stops (${noStop.length})</button></div>` : "";
+  const needTag = `<span class="needstop">Add stop</span>`;
+  const cards = rBanner + `<div class="log-cards">${rows.map(x => { const p = pnl(x), r = rMult(x), out = p > 0 ? "win" : p < 0 ? "loss" : "be";
     return `<button type="button" class="tcard row-card" data-id="${esc(x.id)}" aria-label="${esc(x.symbol)} ${esc(fmtDate(x.date))} ${esc(money(p))}. ${esc(tr("tapDetails"))}">
       <span class="tc-top"><b>${esc(x.symbol)} · ${esc(x.side === "short" ? tr("sell") : tr("buy"))}</b><span class="tc-out ${out}">${esc(tr(out === "win" ? "outWin" : out === "loss" ? "outLoss" : "outBe"))}</span></span>
       <span class="tc-date">${esc(fmtDate(x.date))}${x.timeIn ? " · " + esc(timeSpan(x)) : ""}${x.setup ? " · " + esc(x.setup) : ""}</span>
       <span class="tc-grid"><span><i>${esc(tr("entry"))}</i><b class="num">${price(x.entry)}</b></span><span><i>${esc(tr("exit"))}</i><b class="num">${price(x.exit)}</b></span>
-        <span><i>${esc(tr("pnl"))}</i><b class="num ${cls(p)}">${money(p)}</b></span><span><i>R</i><b class="num ${cls(r || 0)}">${r == null ? "—" : (r > 0 ? "+" : "") + r.toFixed(2) + "R"}</b></span></span>
+        <span><i>${esc(tr("pnl"))}</i><b class="num ${cls(p)}">${money(p)}</b></span><span><i>R</i><b class="num ${cls(r || 0)}">${r == null ? (initStop(x) == null ? needTag : "—") : (r > 0 ? "+" : "") + r.toFixed(2) + "R"}</b></span></span>
       <span class="tc-hint">${esc(tr("tapDetails"))}</span></button>`; }).join("")}</div>`;
   host.innerHTML = cards + `<div class="tbl-wrap log-table"><table><thead><tr>
     ${["date","symbol","side"].map(k=>`<th>${esc(t(k))}</th>`).join("")}${["lots","entry","exit"].map(k=>`<th class="r">${esc(t(k))}</th>`).join("")}<th>${esc(t("setup"))}</th>${["risk","R","pnl","acctCol"].map(k=>`<th class="r">${esc(k==="R"?"R":t(k))}</th>`).join("")}</tr></thead><tbody>${
@@ -4872,9 +4909,10 @@ function renderLog(){
       <td class="r num">${spec(t).lots}</td><td class="r num">${price(t.entry)}</td><td class="r num">${price(t.exit)}</td>
       <td>${t.setup?`<span class="tag">${esc(t.setup)}</span>`:'<span class="hint">—</span>'}</td>
       <td class="r num">${ra==null?"—":`${money(ra,false)}${b?` <span class="hint">${(ra/b*100).toFixed(1)}%</span>`:""}`}</td>
-      <td class="r num ${cls(r||0)}">${r==null?"—":(r>0?"+":"")+r.toFixed(2)+"R"}</td>
+      <td class="r num ${cls(r||0)}">${r==null?(initStop(t)==null?needTag:"—"):(r>0?"+":"")+r.toFixed(2)+"R"}</td>
       <td class="r num ${cls(p)}"><b>${money(p)}</b></td>
       <td class="r num ${cls(p)}">${b ? pct(p/b) : "—"}</td></tr>`; }).join("")}</tbody></table></div>`;
+  const sf = $("#stopFix"); if (sf) sf.onclick = openStopFix;
   host.querySelectorAll(".tcard").forEach(c => c.onclick = () => openDetails(state.trades.find(t => t.id === c.dataset.id)));
   host.querySelectorAll("tr.row").forEach(tr => { const open = () => openDetails(state.trades.find(t=>t.id===tr.dataset.id));
     tr.onclick = open; tr.onkeydown = e => { if (e.key==="Enter") open(); }; });
@@ -5270,6 +5308,7 @@ function openAccount(acct){
       <div class="f"><label for="a-ccy">${esc(t("acctCcy"))}</label><select id="a-ccy">${CCYS.map(c=>`<option value="${c}" ${c===st.ccy?"selected":""}>${c} ${SYM[c]}</option>`).join("")}</select></div>
       <div class="f"><label for="a-firm">${esc(t("acctFirm"))} <span class="opt">(${esc(t("optional"))})</span></label><input id="a-firm" list="firmList" value="${esc(st.firm || "")}" placeholder="${esc(t("acctFirmPh"))}" autocomplete="off" maxlength="40"><datalist id="firmList">${["FTMO","The5ers","FundedNext","FXIFY","E8 Markets","IC Markets","Pepperstone","FP Markets","Vantage","Exness"].map(f => `<option value="${f}">`).join("")}</datalist></div>
       <div class="f"><label for="a-tz">${esc(t("acctTz"))} <span class="opt">(${esc(t("optional"))})</span></label><select id="a-tz"><option value="">—</option>${(() => { let z = []; try { z = Intl.supportedValuesOf("timeZone"); } catch {} const cur = st.tz || ""; if (cur && !z.includes(cur)) z = [cur, ...z]; return z.map(x => `<option value="${esc(x)}" ${x === cur ? "selected" : ""}>${esc(x.replace(/_/g, " "))}</option>`).join(""); })()}</select><span class="hint">${esc(t("acctTzHint"))}</span></div>
+      <div class="f full"><label for="a-srv">Broker server time (for imports) <span class="opt">(${esc(t("optional"))})</span></label><select id="a-srv">${Object.entries(BROKER_TZ).map(([k, z]) => `<option value="${k}" ${(st.serverTz || "none") === k ? "selected" : ""}>${esc(z.label)}</option>`).join("")}</select><span class="hint">MT4/MT5 reports use the broker's server time. Imported trades are converted to your time (${esc(detectedTz())}) using the right offset for each date.${!isNew && acctTrades(st).some(x => MT_SRC[x.imported]) ? " Changing this re-converts this account's MetaTrader trades." : ""}</span></div>
       <div class="f"><label for="a-bal">${esc(t("startBal"))}</label><input id="a-bal" type="number" step="any" inputmode="decimal" value="${esc(st.balance)}" placeholder="100, 10000, 100000"></div>
       <div class="f"><label for="a-risk">${esc(t("riskPct"))}</label><input id="a-risk" type="number" step="any" inputmode="decimal" value="${esc(st.risk ?? 1)}"></div>
     </div>
@@ -5305,11 +5344,19 @@ function openAccount(acct){
     const ccy = $("#a-ccy").value, rates = {};
     CCYS.filter(c=>c!==ccy).forEach(c => { const r = parseFloat($("#r-"+c).value); rates[c] = r > 0 ? r : defaultRates(ccy)[c]; });
     const comm = {}; COMM_KEYS.forEach(([k]) => { const r = parseFloat($("#cm-" + k).value); comm[k] = r > 0 ? r : ""; });
-    const updated = { ...st, comm, firm: $("#a-firm").value.trim().slice(0, 40), tz: $("#a-tz").value, id: st.id, name: $("#a-name").value.trim() || (isNew ? t("acctN", { n: list.length + 1 }) : st.name), type: $("#a-type").value, balance: bal, ccy, risk: parseFloat($("#a-risk").value) || 1, rates };
+    const srv = $("#a-srv").value, srvChanged = (st.serverTz || "none") !== srv;
+    const updated = { ...st, comm, firm: $("#a-firm").value.trim().slice(0, 40), tz: $("#a-tz").value, serverTz: srv, id: st.id, name: $("#a-name").value.trim() || (isNew ? t("acctN", { n: list.length + 1 }) : st.name), type: $("#a-type").value, balance: bal, ccy, risk: parseFloat($("#a-risk").value) || 1, rates };
     const next = isNew ? [...list, updated] : list.map(a => a.id === st.id ? updated : a);
     close();
-    if (await saveCfg({ accounts: next })){ if (isNew) setActive(updated.id); toast(isNew ? t("created", { name: updated.name }) : t("acctUpdated")); } };
+    if (await saveCfg({ accounts: next })){ if (isNew) setActive(updated.id); toast(isNew ? t("created", { name: updated.name }) : t("acctUpdated"));
+      if (!isNew && srvChanged){ const n = await reconvertTimes(updated, srv); if (n) toast(`Converted the times on ${n} MetaTrader trade${n === 1 ? "" : "s"}.`, 4000); } } };
 }
+async function reconvertTimes(a, key){
+  const todo = acctTrades(a).filter(x => MT_SRC[x.imported]); let n = 0;
+  for (const x of todo){ const { id, ...rec } = x, nx = tzTrade(rec, key);
+    if (JSON.stringify([nx.date, nx.dateIn, nx.timeIn, nx.timeOut, nx.tzFrom]) === JSON.stringify([rec.date, rec.dateIn, rec.timeIn, rec.timeOut, rec.tzFrom])) continue;
+    if (!(await saveTrade(id, nx))) return n; n++; }
+  return n; }
 async function deleteAccount(a){
   const rest = accountsList().filter(x => x.id !== a.id), mine = acctTrades(a);
   if (state.mode !== "live"){ state.trades = state.trades.filter(t => acctOf(t) !== a.id); state.settings = { ...state.settings, accounts: rest }; setActive(rest[0].id); toast(t("acctDeleted")); return; }
@@ -5731,6 +5778,39 @@ function impTrade(f, acct){
   rec.importKey = f.ticket ? `${f.src}:${f.ticket}` : "";
   return rec;
 }
+/* Broker server time -> your time. Uses the browser's time zone database, so each date gets the offset that applied then
+   (GMT vs BST, and the broker's own daylight-saving switch). FTMO and most MT4/MT5 brokers run "New York close" time:
+   GMT+2 in winter, GMT+3 while the US is on daylight saving, which is New York time + 7 hours. */
+const BROKER_TZ = {
+  none: { label: "Already in my time (don't convert)" },
+  nyclose: { label: "GMT+2 / GMT+3, US daylight saving (FTMO and most MT4/MT5 brokers)", short: "GMT+2/+3 on US daylight-saving dates", zone: "America/New_York", shift: 7 },
+  eu: { label: "GMT+2 / GMT+3, European daylight saving", zone: "Europe/Athens", shift: 0 },
+  cet: { label: "Central European time (CET/CEST)", zone: "Europe/Prague", shift: 0 },
+  uk: { label: "UK time (GMT/BST)", zone: "Europe/London", shift: 0 },
+  utc: { label: "UTC / GMT, no daylight saving", zone: "UTC", shift: 0 },
+  ny: { label: "New York time (EST/EDT)", zone: "America/New_York", shift: 0 }
+};
+const MT_SRC = { mt5: 1, mt4: 1 };
+const tzOff = (zone, ms) => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: zone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000; };
+const wallToUtc = (zone, wall) => { let u = wall - tzOff(zone, wall) * 60000; return wall - tzOff(zone, u) * 60000; };
+function convWall(date, time, key, toZone){ const z = BROKER_TZ[key]; if (!z?.zone || !date || !/^\d\d:\d\d/.test(time || "")) return null;
+  const [Y, M, D] = date.split("-").map(Number), [h, mi] = time.split(":").map(Number);
+  const utc = wallToUtc(z.zone, Date.UTC(Y, M - 1, D, h, mi) - z.shift * 3600000), w = new Date(utc + tzOff(toZone, utc) * 60000).toISOString();
+  return { date: w.slice(0, 10), time: w.slice(11, 16) }; }
+const prevDay = d => new Date(Date.parse(d + "T00:00:00Z") - 864e5).toISOString().slice(0, 10);
+// Convert one trade's date and times. The original broker times are kept in tzOrig, so changing the setting later
+// always converts from the originals, never twice.
+function tzTrade(x, key, toZone = detectedTz()){
+  const o = x.tzOrig || { date: x.date, dateIn: x.dateIn || "", timeIn: x.timeIn || "", timeOut: x.timeOut || "" };
+  const out = { ...x, date: o.date, timeIn: o.timeIn, timeOut: o.timeOut }; delete out.tzFrom; delete out.tzTo; delete out.tzOrig; delete out.dateIn; if (o.dateIn) out.dateIn = o.dateIn;
+  if (!BROKER_TZ[key]?.zone || (!o.timeIn && !o.timeOut)) return out;
+  const openDate = o.dateIn || (o.timeIn && o.timeOut && o.timeIn > o.timeOut ? prevDay(o.date) : o.date);
+  const c = o.timeOut ? convWall(o.date, o.timeOut, key, toZone) : null, op = o.timeIn ? convWall(openDate, o.timeIn, key, toZone) : null;
+  if (c){ out.date = c.date; out.timeOut = c.time; }
+  if (op){ out.timeIn = op.time; if (!c) out.date = op.date; else if (op.date !== out.date) out.dateIn = op.date; }
+  return { ...out, tzFrom: key, tzTo: toZone, tzOrig: o };
+}
 const looseKey = x => [x.symbol, x.date, (+x.entry).toFixed(5), (+x.exit).toFixed(5), (+spec(x).lots).toFixed(2)].join("|");
 function parseHtmlReport(text){
   const doc = new DOMParser().parseFromString(text, "text/html"), out = []; let src = "";
@@ -5822,6 +5902,7 @@ function openImport(){
     <ul class="imp-how"><li>${esc(t("impHowMt5"))}</li><li>${esc(t("impHowMt4"))}</li><li>${esc(t("impHowCsv"))}</li></ul>
     <label class="shot-drop" id="impDrop"><input type="file" id="impFile" accept=".html,.htm,.csv,.txt,.json,.xlsx,.xls" class="sr"><b>${esc(t("impChoose"))}</b><span class="hint" id="impName">.html · .htm · .csv · .json</span></label>
     <div class="f"><label for="impAcct">${esc(t("impInto"))}</label><select id="impAcct">${accts.map(a => `<option value="${esc(a.id)}" ${a.id === activeAcct()?.id ? "selected" : ""}>${esc(a.name)} · ${esc(a.ccy)}</option>`).join("")}</select><span class="hint" id="impCcy"></span></div>
+    <div class="f" id="impTzF" hidden><label for="impTz">Times in this file are</label><select id="impTz">${Object.entries(BROKER_TZ).map(([k, z]) => `<option value="${k}">${esc(z.label)}</option>`).join("")}</select><span class="hint" id="impTzH"></span></div>
     <div id="impOut"></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="impGo" disabled>${esc(t("impGo", { n: 0 }))}</button></div></div>
   </div>`);
@@ -5831,10 +5912,14 @@ function openImport(){
     $("#impCcy").textContent = t("impCcy", { c: a.ccy });
     if (!parsed){ go.disabled = true; return null; }
     if (!parsed.rows.length){ out.innerHTML = `<div class="err">${esc(t("impNone"))}</div>`; go.disabled = true; return null; }
-    const rows = parsed.rows.filter(r => !fromAcct || r.fromAcct === fromAcct);
+    const rows = parsed.rows.filter(r => !fromAcct || r.fromAcct === fromAcct), isMt = rows.some(r => MT_SRC[r.src]);
+    const tzF = $("#impTzF"), tzSel = $("#impTz"); tzF.hidden = false;
+    if (!tzSel.dataset.touched) tzSel.value = isMt ? (a.serverTz && a.serverTz !== "none" ? a.serverTz : "nyclose") : "none";
+    const tzKey = tzSel.value;
+    $("#impTzH").textContent = tzKey === "none" ? "Times are kept exactly as they are in the file." : `Converted to your time (${detectedTz()}) with the right offset for each date, so sessions and RuleGuard hours line up.${isMt ? " Also saved as this account's broker time." : ""}`;
     const existing = acctTrades(a), keys = new Set(existing.map(x => x.importKey).filter(Boolean)), loose = new Set(existing.map(looseKey));
     const recs = [], seen = new Set(); let dupes = 0;
-    rows.forEach(r => { const rec = impTrade(r, a), lk = looseKey(rec), k = rec.importKey || lk;
+    rows.forEach(r => { const rec = tzTrade(impTrade(r, a), tzKey), lk = looseKey(rec), k = rec.importKey || lk;
       if ((rec.importKey && keys.has(rec.importKey)) || loose.has(lk) || seen.has(k)){ dupes++; return; } seen.add(k); recs.push(rec); });
     recs.sort((x, y) => (x.date + x.timeOut).localeCompare(y.date + y.timeOut));
     const net = recs.reduce((s_, x) => s_ + pnl(x), 0), cur = c => money(c, true, a.ccy);
@@ -5857,7 +5942,8 @@ function openImport(){
   drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
   drop.ondragleave = () => drop.classList.remove("over");
   drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); load(e.dataTransfer?.files?.[0]); };
-  $("#impAcct").onchange = () => { recs = build(); };
+  $("#impAcct").onchange = () => { delete $("#impTz").dataset.touched; recs = build(); };
+  $("#impTz").onchange = e => { e.target.dataset.touched = "1"; recs = build(); };
   build();
   $("#impGo").onclick = async () => {
     recs = build(); if (!recs || !recs.length) return;
@@ -5871,7 +5957,10 @@ function openImport(){
         try { await col.doc(docs[i][0]).set(docs[i][1]); } catch (e){ handleWriteError(e); go.disabled = false; return; }
       }
     }
+    const tzKey = $("#impTz").value, isMt = docs.some(([, r]) => MT_SRC[r.imported]);
     close(); if (a.id !== activeAcct()?.id) setActive(a.id); state.month = null; render(); toast(t("impDone", { n: docs.length }));
+    if (isMt && (a.serverTz || "none") !== tzKey){ const next = accountsList().map(x => x.id === a.id ? { ...x, serverTz: tzKey } : x);
+      if (await saveCfg({ accounts: next })){ const n = await reconvertTimes({ ...a, serverTz: tzKey }, tzKey); if (n) toast(`Also converted the times on ${n} earlier MetaTrader trade${n === 1 ? "" : "s"}.`, 4000); } }
     setTimeout(() => promptJournalDays(docs.map(([, r]) => r)), 400);
   };
 }
@@ -5986,7 +6075,8 @@ function reportMetrics(a = activeAcct() || S()){
   const rec = { endCalc: R.balStart + R.pnl + R.deposits, end: R.balEnd, netCalc: gross - comm + swap, net: R.pnl, tradeSum: sumOf(ts.map(pnl)), statsNet: s.net, brokerN };
   rec.ok = Math.abs(rec.endCalc - rec.end) < .01 && Math.abs(rec.netCalc - rec.net) < .01 && Math.abs(rec.tradeSum - rec.net) < .01 && Math.abs(rec.statsNet - rec.net) < .01;
   return { a, R, ts, s, wins, losses, flat, best, worst, gross, comm, swap, hold, r, rs, risk, dd, days, months, sessions, weekdays, setups, instruments, sides, conds, logged, disc, moods, src, open, rec,
-    noOpenDate: ts.some(x => !x.dateIn && x.timeIn && x.timeOut && x.timeOut < x.timeIn), mt: ts.some(x => STOP_FINAL_SRC[x.imported]) };
+    noOpenDate: ts.some(x => !x.dateIn && x.timeIn && x.timeOut && x.timeOut < x.timeIn), mt: ts.some(x => STOP_FINAL_SRC[x.imported]),
+    tzConv: (ts.find(x => x.tzFrom) || {}).tzFrom || null, tzRaw: ts.filter(x => MT_SRC[x.imported] && !x.tzFrom).length };
 }
 // A compact version for the AI summary: the same numbers the PDF prints.
 function reportAiData(m){
@@ -6067,9 +6157,10 @@ async function downloadReport(opt = {}){
   sectionTitle("Report details");
   kv([["Reporting period", period + (b.from ? "" : " (every trade in this account)")],
     ["Account", `${a.name || "Account"}${a.type ? " · " + a.type : ""} · ${ccy}`],
-    ["Times", `As recorded in the journal${m.mt ? ". Imported MetaTrader trades use your broker's server time, which is often 1-2 hours ahead of UK time" : ""}. This device's time zone: ${detectedTz()}.`],
+    ["Times", m.tzConv ? `Imported MetaTrader times converted from broker server time (${BROKER_TZ[m.tzConv]?.short || BROKER_TZ[m.tzConv]?.label || m.tzConv}) to ${m.ts.find(x => x.tzTo)?.tzTo || detectedTz()}, using the offset that applied on each date.${m.tzRaw ? ` ${m.tzRaw} imported trade${m.tzRaw === 1 ? " is" : "s are"} still in server time.` : ""}`
+      : `As recorded in the journal${m.mt ? ". Imported MetaTrader trades are still in your broker's server time (often 1-3 hours ahead of UK time). Set the broker server time on the account to convert them" : ""}. This device's time zone: ${detectedTz()}.`],
     ["Data source", Object.entries(m.src).map(([k, v]) => `${k}: ${v}`).join(" · ") || "No trades"],
-    ["Balance vs equity", `Balances below are closed trades plus deposits and withdrawals. ${m.open.length ? `${m.open.length} open position${m.open.length === 1 ? " is" : "s are"} not included, so equity can differ.` : "There are no open positions, so balance and equity are the same."}`],
+    ["Balance vs equity", `Balances are rebuilt from the closed trades, deposits and withdrawals in this journal, not taken from your broker. ${m.open.length ? `${m.open.length} open position${m.open.length === 1 ? " is" : "s are"} not included, so equity can differ.` : "There are no open positions, so balance and equity are the same."}`],
     ["Costs", `Commission and swap are taken off each trade once. Net P&L = gross P&L - commission + swap.`]]);
   y += 6;
 
@@ -6101,8 +6192,8 @@ async function downloadReport(opt = {}){
     kv([["Account type", a.type || "-"], ["Starting balance (account)", M0(+a.balance || 0)], ["Planned risk per trade", m.risk.plan ? m.risk.plan + "%" : "Not set"],
       ["RuleGuard", a.rules?.on ? "On" : "Off"],
       ...(st ? [["Profit", st.target ? `${M(st.profit)} of ${M0(st.target)} target` : M(st.profit)], ["Drawdown used now", st.ddLimit ? `${M0(st.ddUsed)} of ${M0(st.ddLimit)} (${st.r.ddType === "trailing" ? "trailing" : "static"})` : "-"],
-        ...(low && st.ddLimit && st.r.ddType !== "trailing" ? [["Lowest balance", `${M0(low.bal)} on ${enDate(low.d)}${low.bal < (+a.balance || 0) ? ` (${M0((+a.balance || 0) - low.bal)} below the starting balance, limit ${M0(st.ddLimit)})` : " (never below the starting balance)"}`]] : []), ["Trading days", st.minDays ? `${st.days} of ${st.minDays}` : String(st.days)]] : [])]);
-    if (st) note("Challenge status uses your RuleGuard rules for this account. Check it against your prop firm's own dashboard."); y += 4; }
+        ...(low && st.ddLimit && st.r.ddType !== "trailing" ? [["Lowest balance (rebuilt)", `${M0(low.bal)} on ${enDate(low.d)}${low.bal < (+a.balance || 0) ? ` (${M0((+a.balance || 0) - low.bal)} below the starting balance, limit ${M0(st.ddLimit)})` : " (never below the starting balance)"}`]] : []), ["Trading days", st.minDays ? `${st.days} of ${st.minDays}` : String(st.days)]] : [])]);
+    note(`Balances in this report are rebuilt from the closed trades, deposits and withdrawals recorded in this journal, not read from your broker. They don't include floating P&L on open trades, so your broker's lowest equity can be lower.${st ? " Challenge status uses your RuleGuard rules for this account. Check it against your prop firm's own dashboard." : ""}`); y += 4; }
 
   /* ===== PERFORMANCE ===== */
   if (O.months || O.daily || O.sessions || O.instruments || O.setups || O.conditions) group("Performance");
@@ -6112,7 +6203,7 @@ async function downloadReport(opt = {}){
       ["Best day", m.days.best && m.days.best[1] > 0 ? M(m.days.best[1]) : "-", WIN, m.days.best && m.days.best[1] > 0 ? enDate(m.days.best[0]) : ""], ["Worst day", m.days.worst && m.days.worst[1] < 0 ? M(m.days.worst[1]) : "-", LOSS, m.days.worst && m.days.worst[1] < 0 ? enDate(m.days.worst[0]) : ""]], 3);
     table(grpCols("Day of week"), grpRows(m.weekdays)); if (m.days.n < 10) note(`Only ${m.days.n} trading day${m.days.n === 1 ? "" : "s"} in this period, so daily figures can swing a lot.`); }
   if (O.sessions){ sectionTitle("Trading sessions"); table(grpCols("Session"), grpRows(m.sessions));
-    note(`Sessions use the time the trade opened: Asian 21:00-07:00, London 07:00-12:00, London/NY overlap 12:00-16:00, New York 16:00-21:00 (UK time). ${m.mt ? "Imported MetaTrader times are broker server time, so some trades may fall in the next session along. " : ""}Profit factor is gross wins divided by gross losses.`); }
+    note(`Sessions use the time the trade opened: Asian 21:00-07:00, London 07:00-12:00, London/NY overlap 12:00-16:00, New York 16:00-21:00 (UK time). ${m.tzRaw ? `${m.tzRaw} imported trade${m.tzRaw === 1 ? " is" : "s are"} still in broker server time, so ${m.tzRaw === 1 ? "it" : "they"} may sit in the wrong session. ` : ""}Profit factor is gross wins divided by gross losses.`); }
   if (O.instruments){ sectionTitle("By instrument"); table(grpCols("Instrument"), grpRows(m.instruments)); }
   if (O.setups){ sectionTitle("Setup performance"); table(grpCols("Setup"), grpRows(m.setups));
     if (m.setups.length === 1 && m.setups[0].k === "Untagged") note("No trades in this period have a setup tagged. Tag setups when you log or edit trades to see which ones work."); }
@@ -6156,9 +6247,9 @@ async function downloadReport(opt = {}){
       if (lg.mood) table(grpCols("Emotion"), grpRows(m.moods));
       note(`Logged on: plan ${lg.plan}, FOMO ${lg.fomo}, revenge ${lg.revenge}, emotion ${lg.mood} of ${s_.n} trades. Trades without an answer are left out, not counted as yes or no.`); } }
   if (O.ai){ sectionTitle("AI performance summary");
-    const items = String(O.ai).split(/\n+/).map(l => l.trim()).filter(Boolean);
-    items.forEach(l => { const mm = l.match(/^([A-Za-z ]{3,40}):\s*(.+)$/); if (mm){ need(28); doc.text(L, y, mm[1].toUpperCase(), { size: 7, bold: true, color: GOLD }); y += 11; para(mm[2], { size: 9 }); y += 5; } else { para(l, { size: 9 }); y += 4; } });
-    note("Written by the AI coach from the numbers in this report only. It can be wrong, so check it against your figures. Patterns aren't proof of cause."); }
+    if (O.ai.items){ O.ai.items.forEach(([lbl, txt]) => { need(28); doc.text(L, y, lbl.toUpperCase(), { size: 7, bold: true, color: GOLD }); y += 11; para(txt, { size: 9 }); y += 5; });
+      note("Written by the AI coach from the numbers in this report only. It can be wrong, so check it against your figures. Patterns aren't proof of cause."); }
+    else { need(40); doc.rect(L, y - 10, CW, 30, SOFT, LINE); doc.text(L + 10, y + 3, "AI summary unavailable", { size: 9, bold: true, color: MUTED }); y += 24; note(`${O.ai.error || "The summary couldn't be written."} Everything else in this report is unaffected. You can make the report again later to include it.`); } }
 
   /* ===== TRADES ===== */
   if (O.trades){ group("Trades"); sectionTitle(`Every trade (${ts.length})`);
