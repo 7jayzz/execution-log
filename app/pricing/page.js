@@ -37,7 +37,7 @@ export default async function Pricing({ searchParams }) {
               : `${TRIAL_DAYS ? `Try any plan free for ${TRIAL_DAYS} days. ` : ""}Every feature listed works today.`}
           </p>
           {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Pick a plan when you're ready.</div>}
-          {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.</div>}
+          {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.{typeof searchParams?.ref === "string" && searchParams.ref ? <span style={{ display: "block", marginTop: 6, fontSize: 12, opacity: 0.75 }}>Reference: {searchParams.ref.slice(0, 60)}</span> : null}</div>}
           {searchParams?.error === "phone" && <div className="box bad">Please verify your mobile number to start your free trial.</div>}
           {needPhone && <PhoneVerify />}
           {searchParams?.error === "plan" && <div className="box bad">That plan isn't available. Please pick one of the plans below.</div>}

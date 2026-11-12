@@ -13,7 +13,9 @@ export async function POST(request) {
     return await startCheckout(request);
   } catch (e) {
     console.error("Checkout failed", e);
-    return NextResponse.redirect(`${SITE_URL}/pricing?error=checkout`, { status: 303 });
+    // A short, non-secret reference (Stripe's error code and the field it was about) so support can see what went wrong.
+    const ref = [e?.code || e?.type, e?.param].filter(Boolean).join(":").replace(/[^\w:.\[\]-]/g, "").slice(0, 60);
+    return NextResponse.redirect(`${SITE_URL}/pricing?error=checkout${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`, { status: 303 });
   }
 }
 
