@@ -3568,6 +3568,7 @@ function replayStep(d){ if (!replay.started && !replayAllowed()) return; replay.
 function replayStop(){ if (replay.timer){ clearInterval(replay.timer); replay.timer = null; } if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; }
 function replayJump(i){ replayStop(); if (!replay.started && !replayAllowed()) return; replay.started = true; replay.idx = Math.max(1, Math.min(replay.max || 1, i)); replay.pan = 0; drawReplay(); }
 function replayPlay(){ if (replay.timer){ replayStop(); return; }
+  if (!replay.base?.length || !replay.trade){ toast(replay.trade ? "Load the candles for this trade first: choose a candles file, or open one of your saved replays below." : "Pick a trade first, then load its candles.", 5000); return; }
   if (!replay.started){ if (!replayAllowed()) return; replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
   $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
@@ -4475,7 +4476,10 @@ function renderElite(){
     const m = monteCarlo(sample, { n: Math.min(500, Math.max(10, +$("#rrN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value || 1, ddLimit: +(a.rules?.maxPct ?? 10), target: +(a.rules?.targetPct ?? 10) });
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
   const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); };
-  $("#rpTrade").onchange = rpLoad;
+  // Picking a trade that already has a saved replay loads its saved candles, unless the loaded file already covers that day.
+  $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
+    if (saved && !(replay.base || []).some(c => c.d === x.date)){ openSavedReplay(saved.id); toast("Loaded your saved replay for this trade"); return; }
+    rpLoad(); };
   $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
     const days = new Set(replay.base.map(c => c.d)), fit = state.trades.filter(t => days.has(t.date) && (!replay.fileSym || sameSym(t.symbol, replay.fileSym))).sort((p, q) => (q.date + (q.timeIn || "")).localeCompare(p.date + (p.timeIn || "")));
