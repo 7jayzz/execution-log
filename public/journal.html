@@ -5914,19 +5914,64 @@ async function parseImportFile(file){
   if (/<\s*(html|table|tr)\b/i.test(text.slice(0, 5000)) || /\.html?$/i.test(file.name)) return parseHtmlReport(text);
   return parseCsvTrades(text);
 }
+function openImportGuide(back){
+  const step = (n, html) => `<li><span class="cg-n">${n}</span><div>${html}</div></li>`;
+  const tabs = {
+    mt5: ["MT5 (computer)", `<ol class="cg-steps">
+      ${step(1, "Open <b>MetaTrader 5</b> on your computer and log in to the account you want to import (e.g. your FTMO challenge).")}
+      ${step(2, "Open the <b>Toolbox</b> at the bottom with <b>Ctrl + T</b> (or <b>View → Toolbox</b>), then click the <b>History</b> tab.")}
+      ${step(3, "Right-click anywhere in the list and choose <b>Positions</b>, so each trade shows as one line with its open and close.")}
+      ${step(4, "Right-click again and choose <b>All History</b> (or <b>Custom period</b> and pick your dates). Check the trades you expect are listed.")}
+      ${step(5, "Right-click once more → <b>Report</b> → <b>Open XML (MS Office Excel 2007)</b>. HTML works too. Save the file; it's named something like <code>ReportHistory-511440621.xlsx</code>.")}
+      ${step(6, "Back here, choose <b>Import</b>, pick that file, check <b>Import into</b> is the right account, and press Import.")}</ol>`],
+    web: ["MT5 (web)", `<ol class="cg-steps">
+      ${step(1, "Log in to your account in the <b>MT5 web terminal</b> (your prop firm's link or mt5 web trader).")}
+      ${step(2, "Open the <b>History</b> tab at the bottom of the screen.")}
+      ${step(3, "Set the period to cover all your trades (e.g. <b>Last 3 months</b> or a custom range).")}
+      ${step(4, "Open the <b>Report</b> option and download it as <b>Excel (.xlsx)</b>. If HTML isn't offered, Excel is the one to use.")}
+      ${step(5, "Back here, choose <b>Import</b>, pick the file, check the account, and press Import.")}
+      <li class="cg-note">The MT5 <b>phone app</b> can't export history. Use the computer or web version.</li></ol>`],
+    mt4: ["MT4 (computer)", `<ol class="cg-steps">
+      ${step(1, "Open <b>MetaTrader 4</b> and log in to the account.")}
+      ${step(2, "In the <b>Terminal</b> window at the bottom (<b>Ctrl + T</b>), click the <b>Account History</b> tab.")}
+      ${step(3, "Right-click → <b>All History</b>, so every closed trade is listed.")}
+      ${step(4, "Right-click → <b>Save as Detailed Report</b> and save the <b>.htm</b> file.")}
+      ${step(5, "Back here, choose <b>Import</b>, pick the file, check the account, and press Import.")}</ol>`],
+    csv: ["Other / CSV", `<ol class="cg-steps">
+      ${step(1, "Export your closed trades from your platform or old journal as a <b>CSV</b> file (cTrader, TradeLocker, Tradovate and most journals have an export button in their history page).")}
+      ${step(2, "Make sure it has columns for at least <b>symbol</b>, <b>buy/sell</b>, <b>size</b>, <b>open price</b>, <b>close price</b>, <b>open time</b>, <b>close time</b> and <b>profit</b>. Commission and swap are picked up if they're there.")}
+      ${step(3, "Back here, choose <b>Import</b>, pick the file, check the account, and press Import. The preview shows how many trades were found before anything is saved.")}
+      <li class="cg-note">Backups exported from The Execution Log (Settings → Export) import here too.</li></ol>`],
+  };
+  const close = showDrawer(`<div class="drawer cg"><div class="panel-head"><h2>How to get your trades file</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Export your closed trades from your platform, then import the file here. Pick where you trade:</p>
+    <div class="cg-tabs" role="tablist">${Object.entries(tabs).map(([k, v], i) => `<button type="button" role="tab" data-cg="${k}" aria-selected="${i === 0}">${v[0]}</button>`).join("")}</div>
+    <div id="cgBody">${tabs.mt5[1]}</div>
+    <div class="cg-tips"><b>Good to know</b><ul>
+      <li><b>One account per file.</b> Import each trading account's report into its own account here (e.g. FTMO 50K into your FTMO account).</li>
+      <li><b>Importing again is safe.</b> Trades that are already in your journal are skipped, so you can export your full history every week and only new trades are added.</li>
+      <li><b>Times:</b> MetaTrader uses your broker's server time. Pick it under <b>Times in this file are</b> (FTMO and most brokers: GMT+2/+3, US daylight saving) and every trade is converted to your time.</li>
+      <li><b>Add your starting stops after importing.</b> MetaTrader only reports where the stop was when the trade closed, so R needs the stop you started with. Use <b>Add starting stops</b> on the Trades page.</li>
+      <li>Check the totals: the net profit shown after import should match the profit at the bottom of your MetaTrader report.</li></ul></div>
+    <div class="drawer-foot"><div></div><div class="actions">${back ? `<button type="button" class="btn" id="igBack">Back to import</button>` : ""}<button type="button" class="btn primary" data-close>Got it</button></div></div></div>`);
+  const host = document.querySelector(".cg");
+  host?.querySelectorAll("[data-cg]").forEach(b => b.onclick = () => { host.querySelectorAll("[data-cg]").forEach(x => x.setAttribute("aria-selected", String(x === b))); $("#cgBody").innerHTML = tabs[b.dataset.cg][1]; });
+  const bk = $("#igBack"); if (bk) bk.onclick = () => { close(); openImport(); };
+}
 function openImport(){
   const accts = accountsList(); if (state.mode === "live" && !accts.length){ toast(t("needAcct")); return; }
   let parsed = null, fromAcct = "";
   const close = showDrawer(`<div class="drawer" id="impD">
     <div class="panel-head"><h2>${esc(t("impH"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <p class="hint" style="margin:0">${esc(t("impP"))}</p>
-    <ul class="imp-how"><li>${esc(t("impHowMt5"))}</li><li>${esc(t("impHowMt4"))}</li><li>${esc(t("impHowCsv"))}</li></ul>
+    <button type="button" class="btn small" id="impGuide" style="align-self:flex-start">📘 How to get your trades file</button>
     <label class="shot-drop" id="impDrop"><input type="file" id="impFile" accept=".html,.htm,.csv,.txt,.json,.xlsx,.xls" class="sr"><b>${esc(t("impChoose"))}</b><span class="hint" id="impName">.html · .htm · .csv · .json</span></label>
     <div class="f"><label for="impAcct">${esc(t("impInto"))}</label><select id="impAcct">${accts.map(a => `<option value="${esc(a.id)}" ${a.id === activeAcct()?.id ? "selected" : ""}>${esc(a.name)} · ${esc(a.ccy)}</option>`).join("")}</select><span class="hint" id="impCcy"></span></div>
     <div class="f" id="impTzF" hidden><label for="impTz">Times in this file are</label><select id="impTz">${Object.entries(BROKER_TZ).map(([k, z]) => `<option value="${k}">${esc(z.label)}</option>`).join("")}</select><span class="hint" id="impTzH"></span></div>
     <div id="impOut"></div>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="impGo" disabled>${esc(t("impGo", { n: 0 }))}</button></div></div>
   </div>`);
+  $("#impGuide").onclick = () => { close(); openImportGuide(true); };
   const target = () => accountsList().find(a => a.id === $("#impAcct").value) || S();
   const build = () => {
     const out = $("#impOut"), go = $("#impGo"), a = target();
