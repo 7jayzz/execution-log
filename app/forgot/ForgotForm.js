@@ -38,7 +38,7 @@ export default function ForgotForm() {
 
   const resend = async () => {
     if (left || busy) return;
-    if (await send()) setNote("Sent again. Check your inbox and spam folder.");
+    if (await send()) setNote("Sent again. Check your inbox and junk folder.");
   };
 
   return (
@@ -47,7 +47,7 @@ export default function ForgotForm() {
       {sent ? (
         <>
           <div className="box good"><b>Check your inbox.</b> We've sent a reset link to <b>{email.trim()}</b>, if that address has an account with us.</div>
-          <div className="box info">Not there after a few minutes? Check your spam or promotions folder, and make sure the email above is the one you signed up with. New here? <Link href="/signup" className="link">Create an account</Link>.</div>
+          <div className="box info">Not there after a few minutes? Check your junk, spam or promotions folder (it comes from hello@theexecutionlog.com), and make sure the email above is the one you signed up with. New here? <Link href="/signup" className="link">Create an account</Link>.</div>
           {note && <div className="box good" role="status">{note}</div>}
           {error && <div className="err" role="alert">{error}</div>}
           <button type="button" className="btn block" onClick={resend} disabled={busy || left > 0} aria-live="polite">

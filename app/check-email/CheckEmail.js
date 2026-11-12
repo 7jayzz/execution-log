@@ -16,13 +16,13 @@ export default function CheckEmail({ email }) {
     const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}/auth/confirm` } });
     setBusy(false);
     start();
-    setMsg(error ? "Couldn't send it just now. Try again in a minute." : "Sent again. Check your inbox and spam folder.");
+    setMsg(error ? "Couldn't send it just now. Try again in a minute." : "Sent again. Check your inbox and junk folder.");
   };
   return (
     <div className="auth-card">
       <h1>Check your email</h1>
       <p className="lead">We sent a confirmation link to <b>{email || "your email"}</b>. Tap it to finish creating your account.</p>
-      <div className="box info">It can take a minute to arrive. Check your spam or promotions folder if you can't see it.</div>
+      <div className="box info">It can take a minute to arrive. It comes from <b>hello@theexecutionlog.com</b>. Not in your inbox? Check your <b>junk</b>, spam or promotions folder, and mark it as &quot;not junk&quot; so the next one lands in your inbox.</div>
       {msg && <div className="box good" role="status">{msg}</div>}
       <button type="button" className="btn block" onClick={resend} disabled={!email || busy || left > 0}>
         {busy ? "Sending…" : left > 0 ? `Send another email in ${left}s` : "Send another email"}
