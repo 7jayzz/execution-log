@@ -3356,7 +3356,17 @@ const normSym = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").rep
 const sameSym = (a, b) => { const p = normSym(a), q = normSym(b); return !!p && !!q && (p === q || p.startsWith(q) || q.startsWith(p)); };
 function symFromName(name){ const u = String(name || "").toUpperCase(); const keys = Object.keys(INSTR).sort((p, q) => q.length - p.length); return keys.find(k => u.includes(k)) || null; }
 // Move candle times by whole hours, for when the broker's server time differs from the times on your trades.
-function shiftCandles(cs, h){ if (!h) return cs; return cs.map(c => { const dt = new Date(Date.parse(c.d + "T" + c.t + ":00Z") + h * 36e5).toISOString(); return { ...c, d: dt.slice(0, 10), t: dt.slice(11, 16) }; }); }
+// "auto": the file is in broker server time, so convert each hour with the same rules as the trade's account
+// (e.g. FTMO = GMT+2/+3 on US daylight-saving dates), so a file that spans a clock change still lines up.
+function shiftCandles(cs, h){ if (h === "auto") return autoShift(cs); h = +h || 0; if (!h) return cs; return cs.map(c => { const dt = new Date(Date.parse(c.d + "T" + c.t + ":00Z") + h * 36e5).toISOString(); return { ...c, d: dt.slice(0, 10), t: dt.slice(11, 16) }; }); }
+function autoShift(cs){
+  const a = replay.trade && accountsList().find(q => q.id === (replay.trade.accountId || activeAcct()?.id)), key = a?.serverTz || replay.trade?.tzFrom;
+  if (!key || !BROKER_TZ[key]?.zone) return cs;
+  const cache = {}, to = replay.trade?.tzTo || detectedTz();
+  return cs.map(c => { const hk = c.d + " " + c.t.slice(0, 2);
+    if (!(hk in cache)){ const r = convWall(c.d, c.t.slice(0, 2) + ":00", key, to); cache[hk] = r ? (Date.parse(r.date + "T" + r.time + ":00Z") - Date.parse(c.d + "T" + c.t.slice(0, 2) + ":00:00Z")) : 0; }
+    const dt = new Date(Date.parse(c.d + "T" + c.t + ":00Z") + cache[hk]).toISOString(); return { ...c, d: dt.slice(0, 10), t: dt.slice(11, 16) }; });
+}
 const rpSource = () => shiftCandles(replay.base || [], replay.shift || 0);
 // Timeframes: candles from the file can be merged into bigger ones (1m → 5m → 15m …), never split into smaller ones.
 const cMin = c => Date.parse(c.d + "T" + c.t + ":00Z") / 6e4;
@@ -3413,7 +3423,8 @@ function drawReplay(){
   rpInfo(x, null, false);
   if (!x || !cs.length){ host.innerHTML = `<p class="hint">Pick a trade and load the candles for that symbol.</p>`; return; }
   bindReplayChart(host);
-  const key = c => c.d + " " + c.t, inKey = `${x.date} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
+  const inDate = x.dateIn || (x.timeIn && x.timeOut && x.timeIn > x.timeOut ? prevDay(x.date) : x.date);
+  const key = c => c.d + " " + c.t, inKey = `${inDate} ${x.timeIn || "00:00"}`, outKey = `${x.date} ${x.timeOut || x.timeIn || "23:59"}`;
   // The candle that contains the entry (or exit) time.
   const holder = k => { let i = -1; for (let j = 0; j < cs.length; j++){ if (key(cs[j]) <= k) i = j; else break; } return i < 0 ? 0 : i; };
   const iIn = holder(inKey), iOut = Math.max(iIn, holder(outKey)), from = Math.max(0, iIn - 40);
@@ -4422,7 +4433,7 @@ function renderElite(){
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
       <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button><button type="button" class="btn small" id="rpSave" title="Save this replay with a note, to come back to later">💾 Save replay</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
-      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button><label class="hint" for="rpShift" style="margin-inline-start:6px">Time shift</label><select id="rpShift" class="ctl" style="width:auto">${[-3, -2, -1, 0, 1, 2, 3].map(h => `<option value="${h}"${h === (replay.shift || 0) ? " selected" : ""}>${h > 0 ? "+" + h : h}h</option>`).join("")}</select></div>
+      <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button><label class="hint" for="rpShift" style="margin-inline-start:6px">Time shift</label><select id="rpShift" class="ctl" style="width:auto" title="MT5 candle files use your broker's server time. Auto converts them the same way as your imported trades.">${[["auto", "Auto (broker time)"], ...[-3, -2, -1, 0, 1, 2, 3].map(h => [h, (h > 0 ? "+" + h : h) + "h"])].map(([v, l]) => `<option value="${v}"${String(v) === String(replay.shift || 0) ? " selected" : ""}>${l}</option>`).join("")}</select></div>
       <div id="rpChart" class="rp-chart"><p class="hint">Pick a trade and load the candles for that symbol.</p></div>
       <div id="rpInfo"></div>
       <div id="rpSaved"></div></section>
@@ -4480,7 +4491,8 @@ function renderElite(){
   $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
     if (saved && !(replay.base || []).some(c => c.d === x.date)){ openSavedReplay(saved.id); toast("Loaded your saved replay for this trade"); return; }
     rpLoad(); };
-  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f)); replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
+  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f));
+    { const tr = state.trades.find(t_ => t_.id === $("#rpTrade").value), ac = tr && accountsList().find(q => q.id === tr.accountId); if (tr && (tr.tzFrom || (ac?.serverTz && ac.serverTz !== "none"))){ replay.shift = "auto"; const sh = $("#rpShift"); if (sh) sh.value = "auto"; } } replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
     const days = new Set(replay.base.map(c => c.d)), fit = state.trades.filter(t => days.has(t.date) && (!replay.fileSym || sameSym(t.symbol, replay.fileSym))).sort((p, q) => (q.date + (q.timeIn || "")).localeCompare(p.date + (p.timeIn || "")));
     const cur = state.trades.find(t => t.id === $("#rpTrade").value);
@@ -4495,7 +4507,7 @@ function renderElite(){
   bindStrategyTester(); bindPractice();
   $("#rpSave").onclick = saveReplay;
   renderSavedReplays();
-  $("#rpShift").onchange = e => { replay.shift = +e.target.value || 0; if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
+  $("#rpShift").onchange = e => { replay.shift = e.target.value === "auto" ? "auto" : (+e.target.value || 0); if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
   $("#rpStart").onclick = () => replayJump(1); $("#rpEnd").onclick = () => replayJump(replay.max || 1);
   $("#rpAgain").onclick = () => { replayJump(1); replayPlay(); };
   $("#rpEntry").onclick = () => replayJump((replay.entryIdx || 1) - 2);
