@@ -529,7 +529,7 @@ details.adv[open] summary{margin-bottom:10px}
 .rr-f label{display:flex;justify-content:space-between;gap:6px;white-space:nowrap;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.rr-f label b{color:var(--ink);letter-spacing:0;text-transform:none;font-size:13px}
 .rr-f input[type=range]{width:100%;accent-color:var(--accent);margin-top:6px}
 .rr-opts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 8px}
-.rr-edge{margin:6px 0}
+.rr-edge{margin:6px 0}.rr-warn{margin:6px 0 10px;line-height:1.5}.rr-warn.hi{border-color:var(--loss);background:var(--loss-bg)}
 .coach-out{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-height:70px}
 .coach-text{white-space:pre-wrap;line-height:1.6;font-size:14px}
 .ch-list{display:flex;flex-direction:column;gap:8px}
@@ -3233,15 +3233,15 @@ const scoreCls = v => v >= 80 ? "pos" : v >= 55 ? "" : "neg";
 // Small seeded random generator so the simulator moves smoothly while you drag (same luck, different settings).
 const seededRng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 function monteCarlo(sample, { n = 100, sims = 1000, start = 10000, riskPct = 1, ddLimit = 10, target = 10, mode = "r", rng = Math.random }){
-  const paths = [], finals = [], dds = []; let hitDD = 0, hitT = 0; const Math_random = rng;
-  for (let s_ = 0; s_ < sims; s_++){ let bal = start, peak = start, mdd = 0, tgt = false, br = false; const path = s_ < 400 ? [bal] : null;
-    for (let i = 0; i < n; i++){ const v = sample[(Math_random() * sample.length) | 0];
+  const paths = [], finals = [], dds = [], streaks = []; let hitDD = 0, hitT = 0; const Math_random = rng;
+  for (let s_ = 0; s_ < sims; s_++){ let bal = start, peak = start, mdd = 0, tgt = false, br = false, run = 0, worstRun = 0; const path = s_ < 400 ? [bal] : null;
+    for (let i = 0; i < n; i++){ const v = sample[(Math_random() * sample.length) | 0]; if (v < 0){ run++; if (run > worstRun) worstRun = run; } else run = 0;
       bal += mode === "r" ? bal * riskPct / 100 * v : bal * v; peak = Math.max(peak, bal); const dd = (peak - bal) / peak; mdd = Math.max(mdd, dd);
       if (!br && (start - bal) / start * 100 >= ddLimit) br = true; if (!tgt && !br && (bal - start) / start * 100 >= target) tgt = true; if (path) path.push(bal); }
-    if (br) hitDD++; if (tgt) hitT++; finals.push(bal); dds.push(mdd); if (path) paths.push(path); }
+    if (br) hitDD++; if (tgt) hitT++; finals.push(bal); dds.push(mdd); streaks.push(worstRun); if (path) paths.push(path); }
   const q = (arr, p) => { const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; };
   const bands = [0.05, 0.25, 0.5, 0.75, 0.95].map(p => Array.from({ length: n + 1 }, (_, i) => q(paths.map(pt => pt[i]), p)));
-  return { bands, runs: paths.slice(0, 12), ddLimit, target, pBreach: hitDD / sims, pTarget: hitT / sims, median: q(finals, .5), p5: q(finals, .05), p95: q(finals, .95), ddMed: q(dds, .5), dd95: q(dds, .95), start, n };
+  return { bands, runs: paths.slice(0, 12), streakMed: q(streaks, .5), streak90: q(streaks, .9), ddLimit, target, pBreach: hitDD / sims, pTarget: hitT / sims, median: q(finals, .5), p5: q(finals, .05), p95: q(finals, .95), ddMed: q(dds, .5), dd95: q(dds, .95), start, n };
 }
 function fanSvg(m, ccy, opt = {}){
   const W = 640, H = 230, L = 64, R = 10, T = 10, B = 24, tg = m.start * (1 + (m.target || 0) / 100), br = m.start * (1 - (m.ddLimit || 0) / 100);
@@ -4560,7 +4560,7 @@ function renderElite(){
     const run = (fast) => { label(); const w = +$("#rrW").value / 100, rr = +$("#rrR").value, sample = Array.from({ length: 100 }, (_, i) => i < Math.round(w * 100) ? rr : -1), e = w * rr - (1 - w), be = 100 / (1 + rr);
       const m = monteCarlo(sample, { n: +$("#rrN").value, sims: fast ? 400 : 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value, ddLimit: +$("#rrDD").value, target: +$("#rrT").value, rng: seededRng(seed) });
       const edge = e > 0.05 ? `You have an edge: about <b class="pos">+${e.toFixed(2)}R</b> per trade.` : e < -0.05 ? `This loses about <b class="neg">${e.toFixed(2)}R</b> per trade over time.` : `This is about break-even (<b>${(e >= 0 ? "+" : "") + e.toFixed(2)}R</b> per trade).`;
-      $("#rrOut").innerHTML = `<p class="hint rr-edge">${edge} At 1:${rr.toFixed(1)} you need to win more than <b>${be.toFixed(0)}%</b> of trades to make money, and you're at ${Math.round(w * 100)}% (${w * 100 >= be ? "+" : ""}${(w * 100 - be).toFixed(0)} points).</p>` + simOut(m, { runs: $("#rrRuns").checked, lines: $("#rrLines").checked });
+      $("#rrOut").innerHTML = `<p class="hint rr-edge">${edge} At 1:${rr.toFixed(1)} you need to win more than <b>${be.toFixed(0)}%</b> of trades to make money, and you're at ${Math.round(w * 100)}% (${w * 100 >= be ? "+" : ""}${(w * 100 - be).toFixed(0)} points).</p>` + rrWarn(m, w, +$("#rrRisk").value) + simOut(m, { runs: $("#rrRuns").checked, lines: $("#rrLines").checked });
       bindFan($("#rrOut"), m, S().ccy); };
     rrIds.forEach(id => { $("#" + id).oninput = () => { label(); clearTimeout(tmr); tmr = setTimeout(() => run(true), 60); }; $("#" + id).onchange = () => { clearTimeout(tmr); run(false); }; });
     $("#rrRuns").onchange = $("#rrLines").onchange = () => run(false);
@@ -4602,6 +4602,12 @@ function renderElite(){
   $("#rpPlay").onclick = replayPlay; $("#rpBack").onclick = () => replayStep(-1); $("#rpFwd").onclick = () => replayStep(1);
   $("#rgEdit2").onclick = openRules; $("#eliteRep").onclick = openReportBuilder;
   if (trial) eliteTaster(host, { avgSc, wkAvg, n: scores.length, loS, hiS });
+}
+// Plain warning for the simulator: results aren't guaranteed, losing streaks are normal, keep risk small.
+function rrWarn(m, w, risk){
+  const st = m.streak90, hit = (1 - Math.pow(1 - risk / 100, st)) * 100, high = risk > 2 || hit >= (m.ddLimit || 10) * 0.6;
+  return `<div class="sample-warn rr-warn${high ? " hi" : ""}" role="note"><span aria-hidden="true">⚠️</span><div><b>Not guaranteed.</b> This shows what <i>could</i> happen if your win rate and reward : risk stay exactly as set. Real results move around, and win rates often drop on a bad week.
+    With a ${Math.round(w * 100)}% win rate, losing <b>${m.streakMed} in a row</b> is normal over ${m.n} trades, and <b>${st} in a row</b> happens in 1 run in 10. At ${risk}% risk, that streak costs about <b class="neg">−${hit.toFixed(1)}%</b> of your account${high ? `, which is ${hit >= (m.ddLimit || 10) ? `<b>more than</b> your ${m.ddLimit}% breach limit` : `a big chunk of your ${m.ddLimit}% breach limit`}. <b>Consider lowering your risk per trade.</b>` : `. <b>Keep your risk per trade small</b> so a bad run can't take you out.`}</div></div>`;
 }
 function simOut(m, opt = {}){
   const c = S().ccy;
