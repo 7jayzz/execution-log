@@ -841,6 +841,9 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
 .px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
 .px-spark{width:160px;height:34px;flex:none}
+.px-ln-hit{stroke:transparent;stroke-width:14;cursor:ns-resize}.px-ln.sel .px-user{stroke-width:2.5}.px-ln-t{font-size:11px;font-weight:700;font-family:inherit}
+.px-lined{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border:1px solid var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px;background:var(--surface-2)}.px-lined label{display:flex;gap:6px;align-items:center}.px-lined input{width:120px;padding:4px 8px}
+.px-cols{display:inline-flex;gap:5px}.px-cols button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer}.px-cols button.on{border-color:var(--ink)}
 .lib-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.lib-row:empty{display:none}
 .lib-chip{display:inline-flex;border:1px solid var(--accent);border-radius:999px;overflow:hidden}.lib-chip button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;padding:4px 10px;cursor:pointer}.lib-chip .lib-use:hover{background:var(--accent);color:var(--accent-ink,#111)}.lib-chip .lib-x{border-inline-start:1px solid var(--line-2);color:var(--muted);font-weight:600;padding:4px 8px}
 .px-tfs{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}.px-tfs button{border:0;background:transparent;color:var(--ink);padding:6px 10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}.px-tfs button+button{border-inline-start:1px solid var(--line-2)}.px-tfs button.on{background:var(--accent);color:var(--accent-ink,#111)}
@@ -4167,7 +4170,7 @@ function pxStart(from, keep){
   const i = px.cs.findIndex(c => c.d + " " + c.t >= from); if (i < 0){ toast("That date isn't in this file"); return; }
   if (i < 30){ toast("Pick a later start so there's some history on the chart"); return; }
   px.idx = i + 1;
-  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0;
+  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0; px.hist = [];
   pxTfMark(); px.active = true; px.badges = keep ? (px.badges || []) : []; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
 }
 const pxNow = () => px.cs[px.idx - 1];
@@ -4189,8 +4192,17 @@ function pxSetTf(tf){
   if ($("#pxTf")) $("#pxTf").value = String(tf); pxTfMark(); pxDraw();
 }
 const pxTfMark = () => document.querySelectorAll("#pxTfs [data-ptf]").forEach(b => b.classList.toggle("on", +b.dataset.ptf === px.tf));
+// Every step forward keeps a snapshot, so you can step back (and undo what happened in that candle).
+const pxSnap = () => ({ idx: px.idx, tf: px.tf, partial: px.partial ? { ...px.partial } : null, full: px.full, j: px.partial ? px.cs[px.partial.j] : null, pos: JSON.parse(JSON.stringify(px.pos)), done: px.done.slice(), bal: px.bal, peak: px.peak, dd: px.dd, badges: (px.badges || []).slice() });
+function pxBack(n = 1){
+  if (!px.hist?.length){ toast("You're back at where this session started"); return; } pxStop();
+  let s; for (let k = 0; k < n && px.hist.length; k++) s = px.hist.pop();
+  if (s.tf !== px.tf){ px.tf = s.tf; px.cs = resample(px.base, s.tf); px.ckeys = px.cs.map(pxKey); }
+  if (s.partial){ px.full = s.full; px.cs[s.partial.j] = s.j; } px.partial = s.partial;
+  Object.assign(px, { idx: s.idx, pos: s.pos, done: s.done, bal: s.bal, peak: s.peak, dd: s.dd, badges: s.badges }); px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; pxTfMark(); pxDraw(); }
 function pxStep(n = 1){
-  for (let k = 0; k < n; k++){
+  px.hist ||= [];
+  for (let k = 0; k < n; k++){ px.hist.push(pxSnap()); if (px.hist.length > 1500) px.hist.shift();
     let c;
     if (px.partial){ const { j, bEnd, jEnd } = px.partial, rest = px.base.slice(bEnd + 1, jEnd + 1); px.cs[j] = px.full; px.partial = null; px.atr = atrArr(px.cs);
       // Only the part of the candle the trader hadn't seen yet can hit their stop or target.
@@ -4233,6 +4245,16 @@ function pxOpen(dir){
   px.pos.push({ id: Date.now() + Math.random(), dir, entry: c.c, stop: c.c - dir * dist, tgt: rr > 0 ? c.c + dir * dist * rr : null, risk: dist, riskAmt, lots, costR: spread / dist, key: c.d + " " + c.t, i: px.idx - 1 });
   pxDraw();
 }
+// The small editor for the selected level: exact price, a label, colour, delete.
+function pxLineEdit(i){ const box = $("#pxLineEd"); if (!box) return; px.lineSel = i;
+  if (i == null || !px.lines[i]){ box.hidden = true; box.innerHTML = ""; pxDraw(); return; } const L = px.lines[i], cols = ["#5b8def", "#F4B53F", "#089981", "#F23645", "#a855f7", "#e5e7eb"];
+  box.hidden = false; box.innerHTML = `<b>Level</b><label>Price <input class="ctl" id="pxLeP" type="number" step="any" value="${pxPrice(L.p)}"></label><label>Label <input class="ctl" id="pxLeN" maxlength="30" placeholder="e.g. Asia high" value="${esc(L.note || "")}"></label>
+    <span class="px-cols">${cols.map(c => `<button type="button" data-c="${c}" style="background:${c}" class="${(L.col || cols[0]) === c ? "on" : ""}" aria-label="Colour"></button>`).join("")}</span><button type="button" class="btn small danger" id="pxLeDel">Delete</button><button type="button" class="btn small" id="pxLeOk">Done</button>`;
+  $("#pxLeP").oninput = e => { const v = +e.target.value; if (isFinite(v) && e.target.value !== ""){ L.p = v; pxDraw(); } };
+  $("#pxLeN").oninput = e => { L.note = e.target.value.trim(); pxDraw(); };
+  box.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { L.col = b.dataset.c; box.querySelectorAll("[data-c]").forEach(z => z.classList.toggle("on", z === b)); pxDraw(); });
+  $("#pxLeDel").onclick = () => { px.lines.splice(i, 1); pxLineEdit(null); };
+  $("#pxLeOk").onclick = () => pxLineEdit(null); pxDraw(); }
 function pxStop(){ if (px.timer){ clearInterval(px.timer); px.timer = null; } const b = $("#pxPlay"); if (b) b.textContent = "▶ Play"; }
 function pxPlay(){ if (px.timer){ pxStop(); return; } px.timer = setInterval(() => { if (!$("#pxChart")){ pxStop(); return; } pxStep(1); }, +$("#pxSpeed").value || 350); $("#pxPlay").textContent = "⏸ Pause"; }
 function pxDraw(){
@@ -4268,7 +4290,10 @@ function pxDraw(){
   const boxes = px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0; return rrBox(p.entry, p.stop, p.tgt, p.dir, iE >= 0 ? X(iE) - bw / 2 : 0, false); }).join("")
     + (px.preview && px.pan < 1 ? (() => { const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? null : +$("#pxRR").value;
         if (!(dist_ > 0)) return ""; const d_ = px.preview; hi = hi; return rrBox(c.c, c.c - d_ * dist_, rr_ > 0 ? c.c + d_ * dist_ * rr_ : null, d_, X(vis.length - 1) + bw / 2, true); })() : "");
-  const lines = px.lines.map(v => `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-user"/>`).join("");
+  // Your levels: drag to move, click to edit or delete.
+  px.lines = px.lines.map(v => typeof v === "number" ? { p: v } : v);
+  const lines = px.lines.map((L, i) => { const yy = y(L.p).toFixed(1), on = px.lineSel === i;
+    return `<g class="px-ln${on ? " sel" : ""}" data-li="${i}"><line x1="0" x2="${cw}" y1="${yy}" y2="${yy}" class="px-user" style="stroke:${L.col || "#5b8def"}"/>${L.note ? `<text x="6" y="${(+yy - 5).toFixed(1)}" class="px-ln-t" style="fill:${L.col || "#5b8def"}">${esc(L.note)}</text>` : ""}<rect x="${cw}" y="${(+yy - 9).toFixed(1)}" width="${R}" height="18" style="fill:${L.col || "#5b8def"}"/><text x="${cw + 4}" y="${(+yy + 4).toFixed(1)}" class="px-tagt">${pxPrice(L.p)}</text><line x1="0" x2="${W}" y1="${yy}" y2="${yy}" class="px-ln-hit"/></g>`; }).join("");
   host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Candles up to ${esc(c.d)} ${esc(c.t)}">${g}${boxes}${lines}${bars}${doneM}${posL}${hline(c.c, "px-last", pxPrice(c.c))}${tx}</svg>`;
   $("#pxPosTxt").textContent = `${px.sym || ""} · ${fmtDate(c.d)} ${c.t} · close ${pxPrice(c.c)} · ATR ${pxPrice(px.atr[px.idx - 1] || 0)}`;
   const atr = px.atr[px.idx - 1] || 0, sv = +$("#pxStopV").value, dist = $("#pxStopT").value === "atr" ? atr * (sv || 1.5) : sv, rr = $("#pxRR").value === "" ? null : +$("#pxRR").value, ins = INSTR[px.sym];
@@ -4321,7 +4346,7 @@ function bindPractice(){
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
   $("#pxResume").onclick = pxResume;
   $("#pxDate").onchange = pxTimes; $("#pxTf").addEventListener("change", pxTimes);
-  $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxNext10").onclick = () => pxStep(10);
+  $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxBack").onclick = () => pxBack(1); $("#pxNext10").onclick = () => pxStep(10);
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
   $("#pxBuy").onclick = () => { px.preview = 0; pxOpen(1); }; $("#pxSell").onclick = () => { px.preview = 0; pxOpen(-1); };
@@ -4335,10 +4360,16 @@ function bindPractice(){
   ["pxStopT", "pxStopV", "pxRR", "pxRisk"].forEach(id => $("#" + id).oninput = () => { if (px.cs.length && !$("#pxLive").hidden) pxDraw(); });
   $("#pxStopT").onchange = e => { $("#pxStopV").value = e.target.value === "atr" ? 1.5 : +(px.atr[px.idx - 1] * 1.5 || 1).toPrecision(3); pxDraw(); };
   $("#pxLineB").onclick = e => { px.lineMode = !px.lineMode; e.currentTarget.setAttribute("aria-pressed", String(px.lineMode)); if (px.lineMode) toast("Click the chart to mark a level"); };
-  $("#pxClearL").onclick = () => { px.lines = []; pxDraw(); };
+  $("#pxClearL").onclick = () => { px.lines = []; px.lineSel = null; pxLineEdit(null); pxDraw(); };
   // Drag (mouse or finger) to scroll back through history, wheel or +/− to zoom, like MT5.
   { const ch = $("#pxChart"); let drag = null;
-    ch.addEventListener("pointerdown", e => { if (px.lineMode || e.button > 0) return; drag = { x: e.clientX, y: e.clientY, pan: px.pan || 0, moved: false, id: e.pointerId }; });
+    ch.addEventListener("pointerdown", e => { if (px.lineMode || e.button > 0) return;
+      const g_ = e.target.closest && e.target.closest("[data-li]"); if (g_ && px.view){ e.preventDefault(); const i = +g_.dataset.li, sv = ch.querySelector("svg"), r = sv.getBoundingClientRect(), sc = +sv.getAttribute("height") / r.height;
+        let moved = false; try { ch.setPointerCapture(e.pointerId); } catch {}
+        const mv = ev => { const yy = (ev.clientY - r.top) * sc; if (!moved && Math.abs(ev.clientY - e.clientY) < 4) return; moved = true; px.lines[i].p = px.view.hi - Math.max(0, Math.min(px.view.H, yy)) / px.view.H * (px.view.hi - px.view.lo); px.lineSel = i; pxDraw(); };
+        const up = () => { ch.removeEventListener("pointermove", mv); ch.removeEventListener("pointerup", up); ch.removeEventListener("pointercancel", up); px.justDragged = Date.now(); if (!moved) pxLineEdit(i); else pxLineEdit(i); };
+        ch.addEventListener("pointermove", mv); ch.addEventListener("pointerup", up); ch.addEventListener("pointercancel", up); return; }
+      drag = { x: e.clientX, y: e.clientY, pan: px.pan || 0, moved: false, id: e.pointerId }; });
     ch.addEventListener("pointermove", e => { if (!drag || !px.view) return; const dx = e.clientX - drag.x;
       if (!drag.moved){ if (Math.abs(dx) < 6) return; if (Math.abs(e.clientY - drag.y) > Math.abs(dx)){ drag = null; return; } drag.moved = true; try { ch.setPointerCapture(drag.id); } catch {} ch.classList.add("grabbing"); }
       e.preventDefault(); const np = drag.pan + dx / (px.view.bw || 6); if (Math.round(np) !== Math.round(px.pan || 0)){ px.pan = np; pxDraw(); } else px.pan = np; });
@@ -4349,7 +4380,7 @@ function bindPractice(){
       else px.n = Math.max(20, Math.min(400, Math.round(px.n * (e.deltaY > 0 ? 1.12 : 1 / 1.12)))); pxDraw(); }, { passive: false }); }
   $("#pxLatest").onclick = () => { px.pan = 0; pxDraw(); };
   $("#pxChart").onclick = e => { if (Date.now() - (px.justDragged || 0) < 250) return; if (!px.lineMode || !px.view) return; const sv = e.currentTarget.querySelector("svg"); if (!sv) return; const r = sv.getBoundingClientRect(), yy = (e.clientY - r.top) * (+sv.getAttribute("height") / r.height);
-    if (yy < 0 || yy > px.view.H) return; px.lines.push(px.view.hi - yy / px.view.H * (px.view.hi - px.view.lo)); px.lineMode = false; $("#pxLineB").setAttribute("aria-pressed", "false"); pxDraw(); };
+    if (yy < 0 || yy > px.view.H) return; px.lines.push({ p: px.view.hi - yy / px.view.H * (px.view.hi - px.view.lo) }); px.lineSel = px.lines.length - 1; pxLineEdit(px.lineSel); px.lineMode = false; $("#pxLineB").setAttribute("aria-pressed", "false"); pxDraw(); };
   $("#pxChart").onkeydown = e => { if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
   $("#pxSave").onclick = pxSaveSession;
   $("#pxNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36); if (await saveNote(id, { kind: "note", title: `Practice session · ${px.sym || "candles"} · ${fmtDate(localToday())}`, body: pxReport(), tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
@@ -4690,13 +4721,13 @@ function renderElite(){
         <div class="actions"><button type="button" class="btn primary" id="pxGo">Start session here</button><button type="button" class="btn" id="pxResume" hidden></button></div>
       </div>
       <div id="pxLive" hidden>
-        <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
+        <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxBack" title="Go back one candle (undoes anything that happened in it)">◀ 1 candle</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
           <button type="button" class="btn small" id="pxLineB" aria-pressed="false" title="Then click the chart to mark a level">✎ Line</button><button type="button" class="btn small" id="pxClearL">Clear lines</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button>
           <span class="px-tfs" id="pxTfs" role="group" aria-label="Timeframe">${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" data-ptf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</span><span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
         <div class="px-hud" id="pxHud"></div>
-        <div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
+        <div class="px-lined" id="pxLineEd" hidden></div><div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
         <div class="px-ticket">
           <div class="fgrid bt-grid"><div class="f"><label for="pxRisk">Risk per trade (%)</label><input id="pxRisk" class="ctl" type="number" step="any" value="1"><div class="px-quick" data-for="pxRisk">${[0.5, 1, 2].map(v => `<button type="button" data-v="${v}">${v}%</button>`).join("")}</div></div>
             <div class="f"><label for="pxStopT">Stop loss</label><select id="pxStopT" class="ctl"><option value="atr">× ATR(14)</option><option value="pts">Price distance</option></select></div>
