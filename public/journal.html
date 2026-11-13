@@ -854,7 +854,7 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-chart{touch-action:pan-y;cursor:grab;user-select:none}.px-chart.grabbing{cursor:grabbing}.px-badges{font-size:18px;letter-spacing:2px}
 .px-tick{font-weight:800;font-size:13px;padding:3px 9px;border-radius:999px;animation:pxflash .5s ease}.px-tick.up{color:#089981;background:rgba(8,153,129,.14)}.px-tick.dn{color:#F23645;background:rgba(242,54,69,.14)}
 @keyframes pxflash{from{filter:brightness(1.6)}to{filter:none}}
-.px-stage{position:relative}.px-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:12px}
+.px-stage{position:relative}.px-float{position:absolute;right:84px;bottom:32px;display:flex;gap:6px;z-index:2}.px-float .btn{box-shadow:0 4px 12px rgba(0,0,0,.18)}.px-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:12px}
 .px-pop{position:absolute;left:50%;top:18%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 20px;border-radius:16px;color:#fff;font-size:15px;box-shadow:0 12px 30px rgba(0,0,0,.3);pointer-events:none;animation:pxpop 2.2s cubic-bezier(.2,1.4,.4,1) forwards;z-index:3;text-align:center}
 .px-pop.win{background:linear-gradient(135deg,#0bb592,#067a66)}.px-pop.lose{background:linear-gradient(135deg,#ff4d5c,#b81f2d)}.px-pop.be{background:linear-gradient(135deg,#6b7280,#374151)}
 .px-pop-i{font-size:28px;line-height:1}.px-pop .num{font-weight:800;font-size:17px}.px-pop-s{font-size:12px;font-weight:700;opacity:.95}
@@ -4173,7 +4173,7 @@ function pxStart(from, keep){
   const i = px.cs.findIndex(c => c.d + " " + c.t >= from); if (i < 0){ toast("That date isn't in this file"); return; }
   if (i < 30){ toast("Pick a later start so there's some history on the chart"); return; }
   px.idx = i + 1;
-  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0; px.hist = []; px.redo = []; px.lineSel = null; px.tool = null; px.pending = null; setTimeout(pxUndoUi);
+  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0; px.yMan = null; px.hist = []; px.redo = []; px.lineSel = null; px.tool = null; px.pending = null; setTimeout(pxUndoUi);
   pxTfMark(); px.active = true; px.badges = keep ? (px.badges || []) : []; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
 }
 const pxNow = () => px.cs[px.idx - 1];
@@ -4281,7 +4281,10 @@ function pxDraw(){
   px.pos.forEach(p => { [p.entry, p.stop, p.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } }); });
   if (px.preview){ const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? 0 : +$("#pxRR").value;
     if (dist_ > 0){ const cc = c.c, d_ = px.preview; [cc - d_ * dist_, cc + d_ * dist_ * rr_].forEach(v => { hi = Math.max(hi, v); lo = Math.min(lo, v); }); } }
-  const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad; px.view = { hi, lo, H: H - B, bw: bw * (+host.clientWidth || W) / W };
+  const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad;
+  // Manual price scale (after you drag up/down or stretch the price axis), like TradingView. Double-click or Auto to fit again.
+  if (px.yMan){ hi = px.yMan.mid + px.yMan.span / 2; lo = px.yMan.mid - px.yMan.span / 2; } if ($("#pxAutoY")) $("#pxAutoY").hidden = !px.yMan;
+  px.view = { hi, lo, H: H - B, bw: bw * (+host.clientWidth || W) / W };
   const y = v => (hi - v) / (hi - lo) * (H - B), X = i => (i + .5) * bw;
   const step = (() => { const raw = (hi - lo) / 6, m = 10 ** Math.floor(Math.log10(raw)), f = raw / m; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * m; })();
   let g = ""; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ g += `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-grid"/><text x="${cw + 6}" y="${(y(v) + 4).toFixed(1)}" class="px-ax">${pxPrice(v)}</text>`; }
@@ -4408,16 +4411,25 @@ function bindPractice(){
             else { L.a = pxEnc(pxAbs(a0) + dI, a0.p + dP); if (b0) L.b = pxEnc(pxAbs(b0) + dI, b0.p + dP); }
             px.lineSel = i; pxDraw(); }, () => pxLineEdit(i)); return; }
       if (px.lineSel != null) pxLineEdit(null);
-      drag = { x: e.clientX, y: e.clientY, pan: px.pan || 0, moved: false, id: e.pointerId }; });
-    ch.addEventListener("pointermove", e => { if (!drag || !px.view) return; const dx = e.clientX - drag.x;
-      if (!drag.moved){ if (Math.abs(dx) < 6) return; if (Math.abs(e.clientY - drag.y) > Math.abs(dx)){ drag = null; return; } drag.moved = true; try { ch.setPointerCapture(drag.id); } catch {} ch.classList.add("grabbing"); }
-      e.preventDefault(); const np = drag.pan + dx / (px.view.bw || 6); if (Math.round(np) !== Math.round(px.pan || 0)){ px.pan = np; pxDraw(); } else px.pan = np; });
+      // Drag the chart to move in time and price, drag the price axis to stretch it, drag the time axis to zoom.
+      const q = at(e), V = px.view, mode = q.sx > V.cw ? "yscale" : q.sy > V.H ? "xscale" : "pan", r = ch.querySelector("svg").getBoundingClientRect();
+      drag = { x: e.clientX, y: e.clientY, pan: px.pan || 0, n: px.n, moved: false, id: e.pointerId, mode, touch: e.pointerType === "touch", y0: px.yMan ? { ...px.yMan } : { mid: (V.hi + V.lo) / 2, span: V.hi - V.lo }, ppx: (V.hi - V.lo) / (V.H * r.height / V.Hs) }; });
+    ch.addEventListener("pointermove", e => {
+      if (!drag){ if (px.view && !px.tool && e.pointerType === "mouse" && !(e.target.closest && e.target.closest("[data-li]"))){ const q = at(e); ch.style.cursor = q.sx > px.view.cw ? "ns-resize" : q.sy > px.view.H ? "ew-resize" : ""; } return; }
+      if (!px.view) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved){ if (Math.hypot(dx, dy) < 5) return; if (drag.touch && drag.mode === "pan" && Math.abs(dy) > Math.abs(dx)){ drag = null; return; } drag.moved = true; try { ch.setPointerCapture(drag.id); } catch {} ch.classList.add("grabbing"); }
+      e.preventDefault();
+      if (drag.mode === "yscale"){ px.yMan = { mid: drag.y0.mid, span: Math.max(1e-6, drag.y0.span * Math.exp(dy * .006)) }; }
+      else if (drag.mode === "xscale"){ px.n = Math.max(20, Math.min(400, Math.round(drag.n * Math.exp(-dx * .006)))); }
+      else { px.pan = drag.pan + dx / (px.view.bw || 6); if (!drag.touch && (px.yMan || Math.abs(dy) > 3)) px.yMan = { mid: drag.y0.mid + dy * drag.ppx, span: drag.y0.span }; }
+      pxDraw(); });
+    ch.addEventListener("dblclick", e => { if (px.tool || (e.target.closest && e.target.closest("[data-li]"))) return; px.yMan = null; pxDraw(); });
     const end = () => { if (drag?.moved){ ch.classList.remove("grabbing"); px.justDragged = Date.now(); } drag = null; };
     ch.addEventListener("pointerup", end); ch.addEventListener("pointercancel", end);
     ch.addEventListener("wheel", e => { if (!px.view || !px.cs.length) return; e.preventDefault();
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)){ px.pan = (px.pan || 0) + e.deltaX / (px.view.bw || 6); }
       else px.n = Math.max(20, Math.min(400, Math.round(px.n * (e.deltaY > 0 ? 1.12 : 1 / 1.12)))); pxDraw(); }, { passive: false }); }
-  $("#pxLatest").onclick = () => { px.pan = 0; pxDraw(); };
+  $("#pxLatest").onclick = () => { px.pan = 0; pxDraw(); }; $("#pxAutoY").onclick = () => { px.yMan = null; pxDraw(); };
   // Shortcuts anywhere in the practice panel (not while typing in a box).
   $("#pxBox").addEventListener("keydown", e => { if ($("#pxLive").hidden || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (mod && (k === "y" || (k === "z" && e.shiftKey))){ e.preventDefault(); pxRedo(); }
@@ -4767,10 +4779,10 @@ function renderElite(){
         <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
-          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: click to add, keep clicking for more">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button>
+          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: click to add, keep clicking for more">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button>
           <span class="px-tfs" id="pxTfs" role="group" aria-label="Timeframe">${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" data-ptf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</span><span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
         <div class="px-hud" id="pxHud"></div>
-        <div class="px-lined" id="pxLineEd" hidden></div><div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
+        <div class="px-lined" id="pxLineEd" hidden></div><div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div><div class="px-float"><button type="button" class="btn small" id="pxAutoY" hidden title="Fit the price scale to the candles again (or double-click the chart)">⤢ Auto scale</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button></div></div>
         <div class="px-ticket">
           <div class="fgrid bt-grid"><div class="f"><label for="pxRisk">Risk per trade (%)</label><input id="pxRisk" class="ctl" type="number" step="any" value="1"><div class="px-quick" data-for="pxRisk">${[0.5, 1, 2].map(v => `<button type="button" data-v="${v}">${v}%</button>`).join("")}</div></div>
             <div class="f"><label for="pxStopT">Stop loss</label><select id="pxStopT" class="ctl"><option value="atr">× ATR(14)</option><option value="pts">Price distance</option></select></div>
