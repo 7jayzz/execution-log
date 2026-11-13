@@ -3,7 +3,7 @@ import "./globals.css";
 export const metadata = {
   title: { default: "The Execution Log — trading journal", template: "%s · The Execution Log" },
   manifest: "/manifest.webmanifest",
-  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/favicon.ico" }], apple: "/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/favicon.ico" }], apple: "/app-apple-touch.png" },
   appleWebApp: { capable: true, title: "Execution Log", statusBarStyle: "black-translucent" },
   description: "Your trades already tell the story. We help you read it. The trading journal for prop and retail traders: real lot sizes, MT5-matched costs, goals and discipline tracking.",
 };
