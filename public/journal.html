@@ -830,6 +830,13 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .a2hs-ico{font-size:24px;line-height:1}.a2hs-txt{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.45;color:var(--muted)}.a2hs-txt b{color:var(--ink);font-size:14px}
 .a2hs-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.a2hs .linkbtn{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
 @keyframes a2hsIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.boot-load{display:none}
+body.booting .boot-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:55vh;color:var(--muted);font-size:14px}
+body.booting .page,body.booting #acctBal,body.booting #acctBal2{visibility:hidden}
+body.booting .page{display:none}
+.boot-spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line-2);border-top-color:var(--accent);animation:bootspin .8s linear infinite}
+@keyframes bootspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.boot-spin{animation-duration:2.4s}}
 </style>
 
 <div class="app">
@@ -874,6 +881,7 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
       <div class="title-wrap"><span class="greet" id="greet" hidden></span><div class="title-row"><h2 class="page-title" id="pageTitle">Dashboard</h2><button type="button" class="guide-btn" id="guideBtn" hidden aria-label="Guide for this page"><span aria-hidden="true">📘</span> Guide</button></div></div>
       <div class="actions"><button class="btn acct-btn acct-chip" id="acctChip" aria-label="Switch or manage accounts" data-i18n-aria="accounts"><small><span id="acctName2">Account</span> ▾</small><span id="acctBal2">—</span></button><button class="btn primary" id="addBtn" data-i18n="logTradeBtnPlus">+ Log trade</button></div>
     </header>
+    <div class="boot-load" id="bootLoad" role="status"><span class="boot-spin" aria-hidden="true"></span><span id="bootTxt">Loading your journal…</span></div>
 
     <div id="banner"></div>
     <div id="setupHost"></div>
@@ -1511,7 +1519,7 @@ function bindRiskNote(pctId, balFn, noteId, ccyFn){
 }
 
 /* ---------- Render ---------- */
-function render(){ checkLockOnLoad(); renderHeader(); renderGuideBtn(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderBell(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
+function render(){ const boot = state.mode === "loading"; document.body.classList.toggle("booting", boot); if (boot && $("#bootTxt")) $("#bootTxt").textContent = t("loading"); checkLockOnLoad(); renderHeader(); renderGuideBtn(); renderGreet(); const lb = $("#lockBtn"); if (lb) lb.hidden = !hasLock(); renderRangeBar(); renderAlerts(); renderBell(); renderOpen(); renderRecent(); renderTape(); renderBanner(); renderSetup(); renderStrip(); renderGoals(); renderChart(); renderCal(); renderSetups(); renderInst(); renderPerf(); renderPsych(); renderProAnalytics(); renderLog(); renderNotes(); renderInsights(); renderElite(); renderTierChip(); renderFltBar(); updFltBtn(); applyDash(); }
 
 function renderHeader(){ const a = activeAcct();
   $("#pageTitle").textContent = t(VIEWS[state.view] || "navDash");
