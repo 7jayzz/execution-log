@@ -841,6 +841,8 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
 .px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
 .px-spark{width:160px;height:34px;flex:none}
+.lib-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.lib-row:empty{display:none}
+.lib-chip{display:inline-flex;border:1px solid var(--accent);border-radius:999px;overflow:hidden}.lib-chip button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;padding:4px 10px;cursor:pointer}.lib-chip .lib-use:hover{background:var(--accent);color:var(--accent-ink,#111)}.lib-chip .lib-x{border-inline-start:1px solid var(--line-2);color:var(--muted);font-weight:600;padding:4px 8px}
 .px-tfs{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}.px-tfs button{border:0;background:transparent;color:var(--ink);padding:6px 10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}.px-tfs button+button{border-inline-start:1px solid var(--line-2)}.px-tfs button.on{background:var(--accent);color:var(--accent-ink,#111)}
 .px-rr-tp{fill:#089981;fill-opacity:.18;stroke:#089981;stroke-opacity:.5}.px-rr-sl{fill:#F23645;fill-opacity:.18;stroke:#F23645;stroke-opacity:.5}.px-rr-tp.ghost,.px-rr-sl.ghost{fill-opacity:.12;stroke-dasharray:4 3}.px-rr-lbl{fill:var(--ink);font-size:11px;font-weight:800;font-family:inherit;paint-order:stroke;stroke:var(--surface-2);stroke-width:3px}.px-eq{transition:color .3s}.px-eq.up{color:#089981}.px-eq.dn{color:#F23645}
 .px-chart{touch-action:pan-y;cursor:grab;user-select:none}.px-chart.grabbing{cursor:grabbing}.px-badges{font-size:18px;letter-spacing:2px}
@@ -4110,13 +4112,41 @@ function openOptimiser(){
 }
 const sgn2 = v => (v >= 0 ? "+" : "") + v.toFixed(2);
 
+let rpApply = () => {};
+/* ---------- Candle library: files you load are kept on this device, one per symbol, so you never load the same file twice ---------- */
+const candleLib = (() => {
+  let dbp = null; const open = () => dbp ||= new Promise((res, rej) => { try { const r = indexedDB.open("tel-candles", 1); r.onupgradeneeded = () => r.result.createObjectStore("files", { keyPath: "sym" }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e){ rej(e); } });
+  const tx = async (mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction("files", mode), st = t.objectStore("files"), out = fn(st); t.oncomplete = () => res(out?.result ?? out); t.onerror = () => rej(t.error); }); };
+  const pack = cs => cs.map(c => [c.d, c.t, c.o, c.h, c.l, c.c]), unpack = rows => rows.map(r => ({ d: r[0], t: r[1], o: r[2], h: r[3], l: r[4], c: r[5] }));
+  const meta = rec => ({ sym: rec.sym, name: rec.name, n: rec.rows.length, from: rec.rows[0]?.[0], to: rec.rows[rec.rows.length - 1]?.[0], tf: rec.tf, saved: rec.saved });
+  return {
+    // Adds a file to the library. A newer export of the same symbol is merged in, so you can top it up with just the latest weeks.
+    async save(sym, name, cs){ if (!cs?.length) return null; const key = (sym || "CANDLES").toUpperCase(), tf = baseTf(cs);
+      try { const old = await tx("readonly", s => s.get(key)); let rows = pack(cs);
+        if (old?.rows?.length && old.tf === tf){ const m = new Map(old.rows.map(r => [r[0] + " " + r[1], r])); rows.forEach(r => m.set(r[0] + " " + r[1], r)); rows = [...m.values()].sort((a, b) => (a[0] + a[1]).localeCompare(b[0] + b[1])); }
+        const rec = { sym: key, name, rows, tf, saved: Date.now() }; await tx("readwrite", s => s.put(rec)); libChanged(); return meta(rec); } catch (e){ return null; } },
+    async list(){ try { const all = await tx("readonly", s => s.getAll()); return (all || []).map(meta).sort((a, b) => b.saved - a.saved); } catch (e){ return []; } },
+    async get(sym){ try { const rec = await tx("readonly", s => s.get(String(sym).toUpperCase())); return rec ? { ...meta(rec), cs: unpack(rec.rows) } : null; } catch (e){ return null; } },
+    async remove(sym){ try { await tx("readwrite", s => s.delete(String(sym).toUpperCase())); libChanged(); } catch (e){} },
+    async forSym(sym){ const ls = await this.list(), m = ls.find(x => sym && sameSym(x.sym, sym)); return m ? this.get(m.sym) : null; }
+  };
+})();
+// Each tool shows the saved files as one-tap chips.
+const libChanged = () => document.querySelectorAll("[data-lib]").forEach(el => libRender(el));
+async function libRender(el){ const ls = await candleLib.list();
+  el.innerHTML = ls.length ? `<span class="hint">💾 Saved on this device:</span>${ls.map(x => `<span class="lib-chip"><button type="button" class="lib-use" data-sym="${esc(x.sym)}" title="${esc(x.name || "")}">${esc(x.sym)} · ${esc(fmtDate(x.from))} to ${esc(fmtDate(x.to))}</button><button type="button" class="lib-x" data-rm="${esc(x.sym)}" aria-label="Remove ${esc(x.sym)} from this device">✕</button></span>`).join("")}` : "";
+  el.querySelectorAll("[data-sym]").forEach(b => b.onclick = async () => { b.disabled = true; const rec = await candleLib.get(b.dataset.sym); b.disabled = false; if (!rec) return toast("Couldn't open that file. Load it again."); const tool = el.dataset.lib;
+    if (tool === "rp") rpApply(rec.cs, rec.sym, rec.name); else if (tool === "px") pxLoad(rec.cs, rec.sym, rec.name); else if (tool === "bt") btApply(rec.cs, rec.sym, `${rec.sym} (saved)`); });
+  el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { if (b.dataset.armed){ candleLib.remove(b.dataset.rm); toast("Removed from this device"); } else { b.dataset.armed = "1"; b.textContent = "Remove?"; setTimeout(() => { delete b.dataset.armed; b.textContent = "✕"; }, 2500); } }); }
+const libToast = m => m && toast(`Saved ${m.sym} on this device (${m.n.toLocaleString()} candles, ${fmtDate(m.from)} to ${fmtDate(m.to)}). Next time it loads with one tap.`, 4500);
+
 /* ---------- Practice trading: a manual backtest on any date, future candles hidden ---------- */
 const px = { base: null, sym: null, tf: 5, cs: [], atr: [], idx: 0, n: 90, timer: null, pos: [], done: [], bal: 10000, start: 10000, peak: 10000, dd: 0, lines: [], lineMode: false };
 const pxPrice = v => { const a = Math.abs(v); return v == null ? "—" : (+v).toFixed(a >= 1000 ? 2 : a >= 10 ? 3 : 5); };
 function pxLoad(cs, sym, label){
   if (!cs.length){ $("#pxData").innerHTML = `<span class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</span>`; return; }
   px.base = cs; px.sym = sym || null; const b = baseTf(cs), days = [...new Set(cs.map(c => c.d))];
-  px.label = label || sym || "Candles"; px.dataText = `${px.label} · ${cs.length.toLocaleString()} candles · ${days.length} days · ${b}-minute`; $("#pxData").textContent = px.dataText;
+  px.label = label || sym || "Candles"; px.dataText = `${px.label} · ${cs.length.toLocaleString()} candles · ${days.length} day${days.length === 1 ? "" : "s"} · ${b}-minute`; $("#pxData").textContent = px.dataText;
   $("#pxTf").innerHTML = [1, 5, 15, 30, 60, 240].filter(m => m >= b).map(m => `<option value="${m}"${m === Math.max(b, 5) ? " selected" : ""}>${m < 60 ? m + " minutes" : m / 60 + " hour" + (m > 60 ? "s" : "")}</option>`).join("");
   // Only days and times that are actually in the file. The first day is left out so there's history on the chart.
   const pick = days.length > 1 ? days.slice(1) : days, mid = pick[Math.min(pick.length - 1, Math.floor(pick.length * .25))];
@@ -4285,7 +4315,7 @@ function pxReport(){ const d = px.done, w = d.filter(x => x.R > 0), net = d.redu
   return `PRACTICE SESSION\n${px.sym || "Candles"} · ${px.tf < 60 ? px.tf + "m" : px.tf / 60 + "h"} · ${d.length ? `${fmtDate(d[0].key.slice(0, 10))} to ${fmtDate(d[d.length - 1].exitKey.slice(0, 10))}` : ""}\n\nRESULTS\nTrades: ${d.length}\nWin rate: ${d.length ? (w.length / d.length * 100).toFixed(0) : 0}%\nNet: ${net >= 0 ? "+" : ""}${net.toFixed(2)}R\nBalance: ${money(px.start)} → ${money(px.bal)}\nMax drawdown: ${(px.dd * 100).toFixed(1)}%\n\nTRADES\n${d.map(x => `${x.key} ${x.dir > 0 ? "Buy" : "Sell"} ${pxPrice(x.entry)} → ${pxPrice(x.exit)} (${x.why}) ${x.R >= 0 ? "+" : ""}${x.R.toFixed(2)}R`).join("\n")}\n\nWHAT I LEARNED\n`; }
 function bindPractice(){
   if (!$("#pxBox")) return;
-  $("#pxFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; pxLoad(parseCandles(await readText(f)), symFromName(f.name), f.name); e.target.value = ""; };
+  $("#pxFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f)), sy = symFromName(f.name); pxLoad(cs, sy, f.name); e.target.value = ""; if (cs.length) libToast(await candleLib.save(sy, f.name, cs)); };
   $("#pxUseRp").onclick = () => { if (replay.base?.length) pxLoad(replay.base, replay.fileSym, "Trade Replay's candles"); else if (btState.base?.length) pxLoad(btState.base, btState.sym, "Strategy tester's candles"); else toast("Load a candles file in Trade Replay or the strategy tester first, or choose one here"); };
   $("#pxHow").onclick = openCandleGuide;
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
@@ -4329,19 +4359,22 @@ function bindPractice(){
   // The page can be redrawn (e.g. after a save), so put a running session back on screen.
   if (px.active && px.cs.length){ $("#pxData").textContent = px.dataText || px.label || ""; $("#pxLive").hidden = false; $("#pxSetup").hidden = true; if (px.timer){ $("#pxPlay").textContent = "⏸ Pause"; } requestAnimationFrame(pxDraw); }
   else if (px.base?.length){ const keep = px.base; pxLoad(keep, px.sym, px.label); }
+  else candleLib.list().then(ls => { if (ls.length && !px.base?.length && $("#pxBox")) candleLib.get(ls[0].sym).then(r => { if (r && !px.base?.length) pxLoad(r.cs, r.sym, r.name); }); });
   if (window.ResizeObserver){ const ro = new ResizeObserver(() => { if (!$("#pxLive")?.hidden) pxDraw(); }); ro.observe($("#pxBox")); }
 }
 // Local test hook only (never on the live site).
 if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telBt = { parseCandles, resample, runBacktest, btSeries, btDefaults, btState, condAt, cleanConds, optParams, px, get settings(){ return state.settings; } };
+function btApply(cs, sym, label){ btState.base = cs; btState.sym = sym || null; const days = new Set(cs.map(c => c.d)).size;
+  if ($("#btData")) $("#btData").innerHTML = `<span class="hint">${esc(label || btState.sym || "Candles")} · ${cs.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"} · ${baseTf(cs)}-minute</span>`; }
 function bindStrategyTester(){
   const host = $("#btBox"); if (!host) return;
   const sel = $("#btSaved"), drawSaved = (ls_ = btRules()) => { if (!sel) return; sel.innerHTML = `<option value="">New strategy</option>${ls_.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}`; };
   drawSaved(); btFill(btDefaults());
   sel.onchange = () => { const x = btRules().find(v => v.id === sel.value); btFill(x ? { ...btDefaults(), ...x } : btDefaults()); $("#btName").value = x?.name || ""; $("#btDel").hidden = !x; };
-  $("#btFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f));
+  $("#btFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f)), sy = symFromName(f.name);
     if (!cs.length){ $("#btData").innerHTML = `<span class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</span>`; return; }
-    btState.base = cs; btState.sym = symFromName(f.name); const days = new Set(cs.map(c => c.d)).size;
-    $("#btData").innerHTML = `<span class="hint">${esc(btState.sym || "Candles")} · ${cs.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"} · ${baseTf(cs)}-minute</span>`; };
+    btApply(cs, sy, f.name); libToast(await candleLib.save(sy, f.name, cs)); };
+  if (!btState.base?.length) candleLib.list().then(ls => { if (ls.length && !btState.base?.length && $("#btBox")) candleLib.get(ls[0].sym).then(r => { if (r && !btState.base?.length) btApply(r.cs, r.sym, `${r.sym} (saved)`); }); });
   $("#btUseReplay").onclick = () => { if (!replay.base?.length){ toast("Load a candles file in Trade Replay first, or choose one here"); return; } btState.base = replay.base; btState.sym = replay.fileSym; const days = new Set(replay.base.map(c => c.d)).size;
     $("#btData").innerHTML = `<span class="hint">Using Trade Replay's candles · ${esc(btState.sym || "")} · ${replay.base.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"}</span>`; };
   $("#btOpt").onclick = openOptimiser;
@@ -4608,6 +4641,7 @@ function renderElite(){
     <section class="panel" id="btBox"><div class="panel-head"><h2>Strategy tester</h2><span class="label">Your rules · historical candles</span></div>
       <p class="hint" style="margin:0">Test a strategy on real price history before you risk money. Load a candles file (a few months of 1-minute or 5-minute candles works best), set your rules and run it.</p>
       <div class="lock-mini"><div class="actions"><label class="btn small bt-file">📂 Choose candles file<input id="btFile" type="file" accept=".csv,.txt" hidden></label><button type="button" class="btn small" id="btUseReplay">Use Trade Replay's candles</button><button type="button" class="btn small" id="btHow">📘 How to get candles</button></div><span id="btData"><span class="hint">No candles loaded yet.</span></span></div>
+      <div class="lib-row" data-lib="bt"></div>
       <div class="fgrid"><div class="f"><label for="btSaved">Your strategies</label><select id="btSaved" class="ctl"></select></div><div class="f"><label for="btName">Strategy name</label><input id="btName" class="ctl" maxlength="40" placeholder="e.g. London ORB"></div></div>
       <div id="btRules"></div>
       <div class="actions"><button type="button" class="btn primary" id="btRun">▶ Run backtest</button><button type="button" class="btn" id="btOpt">⚙ Optimise</button><button type="button" class="btn" id="btSave">Save strategy</button><button type="button" class="btn danger" id="btDel" hidden>Delete</button></div>
@@ -4637,6 +4671,7 @@ function renderElite(){
       <div class="lock-mini"><p class="hint">Load the candles for the day of your trade, then replay it candle by candle. You can export them free from MT5, MT4 or TradingView.</p><button type="button" class="btn small" id="rpHow">📘 How to get your candles</button></div>
       <div class="fgrid"><div class="f"><label for="rpTrade">Trade</label><select id="rpTrade">${ts.slice().reverse().slice(0, 150).map(x => `<option value="${esc(x.id)}">${esc(fmtDate(x.date))} ${esc(x.timeIn || "")} · ${esc(x.symbol)} ${x.side === "long" ? "buy" : "sell"} · ${esc(money(pnl(x)))}</option>`).join("")}</select></div>
         <div class="f"><label for="rpFile">Candles file (CSV)</label><input id="rpFile" type="file" accept=".csv,.txt"></div></div>
+      <div class="lib-row" data-lib="rp"></div>
       <div class="actions"><button type="button" class="btn small" id="rpStart" title="Back to the first candle">⏮ Start</button><button type="button" class="btn small" id="rpBack" title="Go back one candle (← key)">◀ 1 candle</button><button type="button" class="btn small primary" id="rpPlay" title="Play or pause (space bar)">▶ Play</button><button type="button" class="btn small" id="rpFwd" title="Go forward one candle (→ key)">1 candle ▶</button><button type="button" class="btn small" id="rpEnd" title="Jump to the last candle">End ⏭</button><button type="button" class="btn small" id="rpAgain" title="Start again from the beginning and play">↻ Replay</button><button type="button" class="btn small" id="rpEntry" title="Jump to just before your entry">Go to entry</button><button type="button" class="btn small" id="rpSave" title="Save this replay with a note, to come back to later">💾 Save replay</button>
         <select id="rpSpeed" class="ctl"><option value="600">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select><span class="hint" id="rpPos"></span></div>
       <div class="rp-tfs" id="rpTfs" hidden>${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" class="btn small" data-tf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}<span class="rp-sep"></span><button type="button" class="btn small" id="rpOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="rpIn" aria-label="Zoom in">+</button><button type="button" class="btn small" id="rpFitB">Fit</button><button type="button" class="btn small" id="rpLbl" aria-pressed="true">Labels</button><label class="hint" for="rpShift" style="margin-inline-start:6px">Time shift</label><select id="rpShift" class="ctl" style="width:auto" title="MT5 candle files use your broker's server time. Auto converts them the same way as your imported trades.">${[["auto", "Auto (broker time)"], ...[-3, -2, -1, 0, 1, 2, 3].map(h => [h, (h > 0 ? "+" + h : h) + "h"])].map(([v, l]) => `<option value="${v}"${String(v) === String(replay.shift || 0) ? " selected" : ""}>${l}</option>`).join("")}</select></div>
@@ -4646,6 +4681,7 @@ function renderElite(){
     <section class="panel" id="pxBox"><div class="panel-head"><h2>🎯 Practice trading</h2><span class="label">Manual backtest · candle by candle</span></div>
       <p class="hint" style="margin:0 0 10px">Go back to any date and trade it as if it were live. Future candles stay hidden until you step forward. Place buys and sells with a stop and target, manage them as price moves, and see your results. It's the fastest way to test a strategy by hand and build screen time.</p>
       <div class="actions"><label class="btn small"><input type="file" id="pxFile" accept=".csv,.txt" class="sr">📂 Choose candles file</label><button type="button" class="btn small" id="pxUseRp">Use Trade Replay's candles</button><button type="button" class="btn small" id="pxHow">📘 How to get candles</button><span class="hint" id="pxData"></span></div>
+      <div class="lib-row" data-lib="px"></div>
       <div id="pxSetup" hidden>
         <div class="fgrid bt-grid"><div class="f"><label for="pxTf">Timeframe</label><select id="pxTf" class="ctl"></select></div>
           <div class="f"><label for="pxDate">Start trading from</label><select id="pxDate" class="ctl"></select></div>
@@ -4711,13 +4747,17 @@ function renderElite(){
   // Picking a trade that already has a saved replay loads its saved candles, unless the loaded file already covers that day.
   $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
     if (saved && !(replay.base || []).some(c => c.d === x.date)){ openSavedReplay(saved.id); toast("Loaded your saved replay for this trade"); return; }
+    if (x && !(replay.base || []).some(c => c.d === x.date)){ candleLib.forSym(x.symbol).then(rec => { if (rec && rec.cs.some(c => c.d === x.date) && $("#rpTrade")?.value === id){ rpApply(rec.cs, rec.sym, rec.name); toast(`Loaded your saved ${rec.sym} candles`); } else rpLoad(); }); return; }
     rpLoad(); };
   // The picker shows a trade straight away, so treat that one as picked (keep the current one if the page redraws).
   { const sel = $("#rpTrade");
     if (replay.trade && [...sel.options].some(o => o.value === replay.trade.id)) sel.value = replay.trade.id;
-    else if (sel.value){ replay.trade = state.trades.find(x => x.id === sel.value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; } }
-  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f));
-    { const tr = state.trades.find(t_ => t_.id === $("#rpTrade").value), ac = tr && accountsList().find(q => q.id === tr.accountId); if (tr && (tr.tzFrom || (ac?.serverTz && ac.serverTz !== "none"))){ replay.shift = "auto"; const sh = $("#rpShift"); if (sh) sh.value = "auto"; } } replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
+    else if (sel.value){ replay.trade = state.trades.find(x => x.id === sel.value) || null; replay.idx = 1; replay.pan = 0; replay.started = false;
+      const x0 = replay.trade; if (x0 && !(replay.base || []).some(c => c.d === x0.date) && !state.replays.some(r => r.tradeId === x0.id)) candleLib.forSym(x0.symbol).then(rec => { if (rec && rec.cs.some(c => c.d === x0.date) && $("#rpTrade")?.value === x0.id && !(replay.base || []).length) rpApply(rec.cs, rec.sym, rec.name); }); } }
+  libChanged();
+  $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f)), sy = symFromName(f.name); e.target.value = ""; rpApply(cs, sy, f.name); if (cs.length) libToast(await candleLib.save(sy, f.name, cs)); };
+  rpApply = (cs, sym, name) => { replay.base = cs;
+    { const tr = state.trades.find(t_ => t_.id === $("#rpTrade").value), ac = tr && accountsList().find(q => q.id === tr.accountId); if (tr && (tr.tzFrom || (ac?.serverTz && ac.serverTz !== "none"))){ replay.shift = "auto"; const sh = $("#rpShift"); if (sh) sh.value = "auto"; } } replay.fileSym = sym || null; replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
     const days = new Set(replay.base.map(c => c.d)), fit = state.trades.filter(t => days.has(t.date) && (!replay.fileSym || sameSym(t.symbol, replay.fileSym))).sort((p, q) => (q.date + (q.timeIn || "")).localeCompare(p.date + (p.timeIn || "")));
     const cur = state.trades.find(t => t.id === $("#rpTrade").value);
