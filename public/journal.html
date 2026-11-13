@@ -519,7 +519,17 @@ details.adv[open] summary{margin-bottom:10px}
 .ann-col{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer}.ann-col[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
 .ann-stage{position:relative;flex:1;display:grid;place-items:center;overflow:auto}.ann-stage canvas{max-width:100%;max-height:calc(100dvh - 120px);border-radius:8px;cursor:crosshair;touch-action:none;background:#111}
 .ann-text{position:absolute;z-index:2;border:1px solid var(--accent);background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 8px}.ann-msg{color:#cfd5e4}
-.pro-fan{width:100%;height:auto;display:block}
+.pro-fan{width:100%;height:auto;display:block;touch-action:pan-y}
+.fan-wrap{position:relative}.fan-tip[hidden]{display:none!important}.fan-hit{cursor:crosshair}
+.fan-tip{position:absolute;top:6px;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:2px;box-shadow:0 6px 18px rgba(0,0,0,.18);min-width:190px;z-index:2}
+.rr-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 4px}
+.rr-presets .chip{border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
+.rr-presets .chip:hover{border-color:var(--accent)}
+.rr-sl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 18px;margin:8px 0}@media (max-width:700px){.rr-sl{grid-template-columns:1fr 1fr}}
+.rr-f label{display:flex;justify-content:space-between;gap:6px;white-space:nowrap;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.rr-f label b{color:var(--ink);letter-spacing:0;text-transform:none;font-size:13px}
+.rr-f input[type=range]{width:100%;accent-color:var(--accent);margin-top:6px}
+.rr-opts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 8px}
+.rr-edge{margin:6px 0}
 .coach-out{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-height:70px}
 .coach-text{white-space:pre-wrap;line-height:1.6;font-size:14px}
 .ch-list{display:flex;flex-direction:column;gap:8px}
@@ -3220,26 +3230,49 @@ function execScore(x, a = S()){
 const scoreCls = v => v >= 80 ? "pos" : v >= 55 ? "" : "neg";
 
 /* ---------- Elite: simulations ---------- */
-function monteCarlo(sample, { n = 100, sims = 1000, start = 10000, riskPct = 1, ddLimit = 10, target = 10, mode = "r" }){
-  const paths = [], finals = [], dds = []; let hitDD = 0, hitT = 0;
+// Small seeded random generator so the simulator moves smoothly while you drag (same luck, different settings).
+const seededRng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+function monteCarlo(sample, { n = 100, sims = 1000, start = 10000, riskPct = 1, ddLimit = 10, target = 10, mode = "r", rng = Math.random }){
+  const paths = [], finals = [], dds = []; let hitDD = 0, hitT = 0; const Math_random = rng;
   for (let s_ = 0; s_ < sims; s_++){ let bal = start, peak = start, mdd = 0, tgt = false, br = false; const path = s_ < 400 ? [bal] : null;
-    for (let i = 0; i < n; i++){ const v = sample[(Math.random() * sample.length) | 0];
+    for (let i = 0; i < n; i++){ const v = sample[(Math_random() * sample.length) | 0];
       bal += mode === "r" ? bal * riskPct / 100 * v : bal * v; peak = Math.max(peak, bal); const dd = (peak - bal) / peak; mdd = Math.max(mdd, dd);
       if (!br && (start - bal) / start * 100 >= ddLimit) br = true; if (!tgt && !br && (bal - start) / start * 100 >= target) tgt = true; if (path) path.push(bal); }
     if (br) hitDD++; if (tgt) hitT++; finals.push(bal); dds.push(mdd); if (path) paths.push(path); }
   const q = (arr, p) => { const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; };
   const bands = [0.05, 0.25, 0.5, 0.75, 0.95].map(p => Array.from({ length: n + 1 }, (_, i) => q(paths.map(pt => pt[i]), p)));
-  return { bands, pBreach: hitDD / sims, pTarget: hitT / sims, median: q(finals, .5), p5: q(finals, .05), p95: q(finals, .95), ddMed: q(dds, .5), dd95: q(dds, .95), start, n };
+  return { bands, runs: paths.slice(0, 12), ddLimit, target, pBreach: hitDD / sims, pTarget: hitT / sims, median: q(finals, .5), p5: q(finals, .05), p95: q(finals, .95), ddMed: q(dds, .5), dd95: q(dds, .95), start, n };
 }
-function fanSvg(m, ccy){
-  const W = 640, H = 220, L = 64, R = 10, T = 10, B = 24, all = m.bands.flat(), lo = Math.min(...all, m.start), hi = Math.max(...all, m.start);
+function fanSvg(m, ccy, opt = {}){
+  const W = 640, H = 230, L = 64, R = 10, T = 10, B = 24, tg = m.start * (1 + (m.target || 0) / 100), br = m.start * (1 - (m.ddLimit || 0) / 100);
+  const all = [...m.bands.flat(), ...(opt.runs ? m.runs.flat() : [])], lo = Math.min(...all, m.start), hi = Math.max(...all, m.start);
   const x = i => L + i / m.n * (W - L - R), y = v => T + (1 - (v - lo) / (hi - lo || 1)) * (H - T - B);
   const area = (a, b) => `M${a.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" L")} L${b.map((v, i) => [i, v]).reverse().map(([i, v]) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" L")} Z`;
   const line = a => `M${a.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" L")}`;
-  return `<svg viewBox="0 0 ${W} ${H}" class="pro-fan" role="img"><path d="${area(m.bands[0], m.bands[4])}" style="fill:var(--accent)" fill-opacity=".12"/><path d="${area(m.bands[1], m.bands[3])}" style="fill:var(--accent)" fill-opacity=".22"/>
-    <line x1="${L}" x2="${W - R}" y1="${y(m.start)}" y2="${y(m.start)}" stroke="var(--line-2)" stroke-dasharray="3 4"/><path d="${line(m.bands[2])}" fill="none" style="stroke:var(--accent)" stroke-width="2"/>
-    ${[hi, m.start, lo].map(v => `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="pb-l">${esc(compact(v, false))}</text>`).join("")}
-    <text x="${L}" y="${H - 6}" class="pb-l">Trade 0</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">Trade ${m.n}</text></svg>`;
+  // Axis labels: top, start and bottom, dropping any that would overlap.
+  const labs = []; [hi, m.start, lo].forEach(v => { if (labs.every(u => Math.abs(y(u) - y(v)) > 13)) labs.push(v); });
+  const ref = (v, txt, col) => v > lo && v < hi ? `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${col}" stroke-dasharray="2 4" stroke-opacity=".8"/><text x="${W - R - 4}" y="${y(v) - 4}" text-anchor="end" class="pb-l" style="fill:${col}">${txt}</text>` : "";
+  return `<div class="fan-wrap"><svg viewBox="0 0 ${W} ${H}" class="pro-fan" role="img" aria-label="Range of simulated balances over ${m.n} trades"><path d="${area(m.bands[0], m.bands[4])}" style="fill:var(--accent)" fill-opacity=".12"/><path d="${area(m.bands[1], m.bands[3])}" style="fill:var(--accent)" fill-opacity=".22"/>
+    <line x1="${L}" x2="${W - R}" y1="${y(m.start)}" y2="${y(m.start)}" stroke="var(--line-2)" stroke-dasharray="3 4"/>${opt.lines ? ref(tg, "Target", "var(--win)") + ref(br, "Breach", "var(--loss)") : ""}
+    ${opt.runs ? m.runs.map(r => `<path d="${line(r)}" fill="none" stroke="var(--ink)" stroke-opacity=".22" stroke-width="1"/>`).join("") : ""}
+    <path d="${line(m.bands[2])}" fill="none" style="stroke:var(--accent)" stroke-width="2"/>
+    ${labs.map(v => `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="pb-l">${esc(compact(v, false))}</text>`).join("")}
+    <text x="${L}" y="${H - 6}" class="pb-l">Trade 0</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">Trade ${m.n}</text>
+    <line class="fan-x" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-opacity=".35" visibility="hidden"/><circle class="fan-dot" r="4" style="fill:var(--accent)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <rect class="fan-hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/></svg><div class="fan-tip" hidden></div></div>`;
+}
+// Hover or drag on a simulation chart to read the range at any trade.
+function bindFan(root, m, ccy){
+  const svg = root?.querySelector(".pro-fan"); if (!svg) return;
+  const W = 640, H = 230, L = 64, R = 10, T = 10, B = 24, all = [...m.bands.flat(), ...(svg.querySelector('path[stroke-opacity=".22"]') ? m.runs.flat() : [])], lo = Math.min(...all, m.start), hi = Math.max(...all, m.start);
+  const y = v => T + (1 - (v - lo) / (hi - lo || 1)) * (H - T - B), tip = root.querySelector(".fan-tip"), xl = svg.querySelector(".fan-x"), dot = svg.querySelector(".fan-dot");
+  const show = e => { const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W, i = Math.max(0, Math.min(m.n, Math.round((px - L) / (W - L - R) * m.n))), xx = L + i / m.n * (W - L - R);
+    xl.setAttribute("x1", xx); xl.setAttribute("x2", xx); xl.setAttribute("visibility", "visible"); dot.setAttribute("cx", xx); dot.setAttribute("cy", y(m.bands[2][i])); dot.setAttribute("visibility", "visible");
+    const f = v => money(v - m.start, true, ccy);
+    tip.innerHTML = `<b>After ${i} trade${i === 1 ? "" : "s"}</b><span>Median <b class="${cls(m.bands[2][i] - m.start)}">${f(m.bands[2][i])}</b></span><span>Middle 50%: ${f(m.bands[1][i])} to ${f(m.bands[3][i])}</span><span>90% of runs: ${f(m.bands[0][i])} to ${f(m.bands[4][i])}</span>`;
+    tip.hidden = false; const left = xx / W * r.width; tip.style.left = Math.min(r.width - tip.offsetWidth - 4, Math.max(4, left - tip.offsetWidth / 2)) + "px"; };
+  const hide = () => { tip.hidden = true; xl.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
+  const hit = svg.querySelector(".fan-hit"); hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
 }
 function whatIf(ts){
   const base = ts, sessions = groupPro(ts, sessionOf).filter(r => r.s.n >= 3).sort((p, q) => q.s.exp - p.s.exp), worstWd = groupPro(ts, x => new Date(x.date + "T00:00:00Z").getUTCDay()).filter(r => r.s.n >= 3).sort((p, q) => p.s.net - q.s.net)[0];
@@ -4455,10 +4488,14 @@ function renderElite(){
       <div id="btRules"></div>
       <div class="actions"><button type="button" class="btn primary" id="btRun">▶ Run backtest</button><button type="button" class="btn" id="btOpt">⚙ Optimise</button><button type="button" class="btn" id="btSave">Save strategy</button><button type="button" class="btn danger" id="btDel" hidden>Delete</button></div>
       <div id="btOut"></div></section>
-    <section class="panel"><div class="panel-head"><h2>Risk-to-reward simulator</h2><span class="label">Any strategy</span></div>
-      <div class="fgrid sim-in"><div class="f"><label>Win rate (%)</label><input id="rrW" type="number" value="${ts.length ? Math.round(proStats(ts).winRate * 100) : 45}"></div><div class="f"><label>Reward : risk (1 : x)</label><input id="rrR" type="number" step="any" value="2"></div>
-        <div class="f"><label>Risk per trade (%)</label><input id="rrRisk" type="number" step="any" value="${esc(a.risk ?? 1)}"></div><div class="f"><label>Trades</label><input id="rrN" type="number" value="100"></div></div>
-      <button type="button" class="btn small primary" id="rrRun">Simulate</button><div id="rrOut"></div></section>
+    <section class="panel" id="rrBox"><div class="panel-head"><h2>Risk-to-reward simulator</h2><span class="label">Any strategy · live</span></div>
+      <p class="hint" style="margin:0">Drag the sliders and the results update as you go.</p>
+      <div class="rr-presets"><span class="hint">Try:</span>${ts.length ? `<button type="button" class="chip" data-rrp="mine">My stats</button>` : ""}<button type="button" class="chip" data-rrp="45,2">45% · 1:2</button><button type="button" class="chip" data-rrp="60,1">Scalper 60% · 1:1</button><button type="button" class="chip" data-rrp="35,3">Swing 35% · 1:3</button><button type="button" class="chip" data-rrp="30,5">Runner 30% · 1:5</button></div>
+      <div class="rr-sl">${[["rrW", "Win rate", 5, 95, 1, ts.length ? Math.round(proStats(ts).winRate * 100) : 45, "%"], ["rrR", "Reward : risk", 0.5, 6, 0.1, 2, "rr"], ["rrRisk", "Risk per trade", 0.25, 5, 0.25, Math.min(5, Math.max(0.25, +(a.risk ?? 1) || 1)), "%"], ["rrN", "Trades", 20, 500, 10, 100, ""],
+        ["rrT", "Target", 1, 30, 1, Math.min(30, Math.max(1, +(a.rules?.targetPct ?? 10) || 10)), "+%"], ["rrDD", "Breach level", 1, 30, 1, Math.min(30, Math.max(1, +(a.rules?.maxPct ?? 10) || 10)), "−%"]]
+        .map(([id, l, mn, mx, st, v, u]) => `<div class="rr-f"><label for="${id}">${l} <b class="num" id="${id}V"></b></label><input type="range" id="${id}" min="${mn}" max="${mx}" step="${st}" value="${v}" data-u="${u}"></div>`).join("")}</div>
+      <div class="rr-opts"><label class="check"><input type="checkbox" id="rrRuns"><span>Show example runs</span></label><label class="check"><input type="checkbox" id="rrLines" checked><span>Show target and breach lines</span></label><button type="button" class="btn small" id="rrRun">↻ New luck</button></div>
+      <div id="rrOut"></div></section>
     <section class="panel"><div class="panel-head"><h2>What if…</h2><span class="label">Strategy variations on your real trades</span></div>
       ${wi.length ? `<div class="tbl-wrap"><table><thead><tr><th>Scenario</th><th class="r">Trades</th><th class="r">Win %</th><th class="r">PF</th><th class="r">Max DD</th><th class="r">Net</th><th class="r">vs actual</th></tr></thead><tbody>${wi.map((r, i) => `<tr><td><b>${esc(r.label)}</b></td><td class="r num">${r.n}</td><td class="r num">${(r.wr * 100).toFixed(0)}%</td><td class="r num">${r.pf == null ? "—" : r.pf.toFixed(2)}</td><td class="r num">${money(-r.dd)}</td><td class="r num ${cls(r.net)}">${money(r.net)}</td><td class="r num ${i ? cls(r.net - wi[0].net) : ""}">${i ? money(r.net - wi[0].net) : "—"}</td></tr>`).join("")}</tbody></table></div>` : `<p class="hint">Log trades to compare scenarios.</p>`}</section>
     <section class="panel"><div class="panel-head"><h2>▶ Trade Replay Lab</h2><span class="label">Candle by candle</span></div>
@@ -4516,10 +4553,23 @@ function renderElite(){
   $("#chQ").oninput = () => renderCoachHist();
   renderCoachHist();
   $("#mcRun").onclick = () => { const m = monteCarlo(rs, { n: Math.min(500, Math.max(10, +$("#mcN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#mcRisk").value || 1, ddLimit: +$("#mcDD").value || 10, target: +$("#mcT").value || 10 });
-    $("#mcOut").innerHTML = simOut(m); };
-  $("#rrRun").onclick = () => { const w = Math.min(99, Math.max(1, +$("#rrW").value || 45)) / 100, rr = +$("#rrR").value || 2, sample = Array.from({ length: 100 }, (_, i) => i < w * 100 ? rr : -1);
-    const m = monteCarlo(sample, { n: Math.min(500, Math.max(10, +$("#rrN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value || 1, ddLimit: +(a.rules?.maxPct ?? 10), target: +(a.rules?.targetPct ?? 10) });
-    $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
+    $("#mcOut").innerHTML = simOut(m); bindFan($("#mcOut"), m, S().ccy); };
+  // Risk-to-reward simulator: live sliders, presets, example runs and a hoverable chart.
+  { let seed = 7, tmr = null; const rrIds = ["rrW", "rrR", "rrRisk", "rrN", "rrT", "rrDD"];
+    const label = () => rrIds.forEach(id => { const el = $("#" + id), u = el.dataset.u, v = +el.value; $("#" + id + "V").textContent = u === "rr" ? "1:" + v.toFixed(1) : u === "%" ? v + "%" : u === "+%" ? "+" + v + "%" : u === "−%" ? "−" + v + "%" : String(v); });
+    const run = (fast) => { label(); const w = +$("#rrW").value / 100, rr = +$("#rrR").value, sample = Array.from({ length: 100 }, (_, i) => i < Math.round(w * 100) ? rr : -1), e = w * rr - (1 - w), be = 100 / (1 + rr);
+      const m = monteCarlo(sample, { n: +$("#rrN").value, sims: fast ? 400 : 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value, ddLimit: +$("#rrDD").value, target: +$("#rrT").value, rng: seededRng(seed) });
+      const edge = e > 0.05 ? `You have an edge: about <b class="pos">+${e.toFixed(2)}R</b> per trade.` : e < -0.05 ? `This loses about <b class="neg">${e.toFixed(2)}R</b> per trade over time.` : `This is about break-even (<b>${(e >= 0 ? "+" : "") + e.toFixed(2)}R</b> per trade).`;
+      $("#rrOut").innerHTML = `<p class="hint rr-edge">${edge} At 1:${rr.toFixed(1)} you need to win more than <b>${be.toFixed(0)}%</b> of trades to make money, and you're at ${Math.round(w * 100)}% (${w * 100 >= be ? "+" : ""}${(w * 100 - be).toFixed(0)} points).</p>` + simOut(m, { runs: $("#rrRuns").checked, lines: $("#rrLines").checked });
+      bindFan($("#rrOut"), m, S().ccy); };
+    rrIds.forEach(id => { $("#" + id).oninput = () => { label(); clearTimeout(tmr); tmr = setTimeout(() => run(true), 60); }; $("#" + id).onchange = () => { clearTimeout(tmr); run(false); }; });
+    $("#rrRuns").onchange = $("#rrLines").onchange = () => run(false);
+    $("#rrRun").onclick = () => { seed = (Math.random() * 1e9) | 0; run(false); };
+    $("#rrBox").querySelectorAll("[data-rrp]").forEach(b => b.onclick = () => { let w, rr;
+      if (b.dataset.rrp === "mine"){ const s_ = proStats(ts); w = Math.round(s_.winRate * 100); rr = s_.avgLoss ? Math.abs(s_.avgWin / s_.avgLoss) : 2; toast(`Using your journal: ${w}% win rate, average win ${rr.toFixed(1)}× your average loss`); }
+      else [w, rr] = b.dataset.rrp.split(",").map(Number);
+      $("#rrW").value = Math.min(95, Math.max(5, w)); $("#rrR").value = Math.min(6, Math.max(0.5, Math.round(rr * 10) / 10)); run(false); });
+    run(false); }
   const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); autoSaveReplay(); };
   // Picking a trade that already has a saved replay loads its saved candles, unless the loaded file already covers that day.
   $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
@@ -4553,11 +4603,11 @@ function renderElite(){
   $("#rgEdit2").onclick = openRules; $("#eliteRep").onclick = openReportBuilder;
   if (trial) eliteTaster(host, { avgSc, wkAvg, n: scores.length, loS, hiS });
 }
-function simOut(m){
+function simOut(m, opt = {}){
   const c = S().ccy;
   return `<div class="kgrid">${[["Median result", money(m.median - m.start, true, c), cls(m.median - m.start)], ["Worst 5%", money(m.p5 - m.start, true, c), cls(m.p5 - m.start)], ["Best 5%", money(m.p95 - m.start, true, c), cls(m.p95 - m.start)],
     ["Chance of hitting target", Math.round(m.pTarget * 100) + "%", "pos"], ["Chance of breaching", Math.round(m.pBreach * 100) + "%", m.pBreach > .2 ? "neg" : ""], ["Typical max drawdown", (m.ddMed * 100).toFixed(1) + "%", ""], ["Bad-case drawdown (95%)", (m.dd95 * 100).toFixed(1) + "%", "neg"]]
-    .map(([l, v, cl]) => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span></div>`).join("")}</div>${fanSvg(m, c)}<p class="hint" style="margin:0">Shaded bands show the middle 50% and 90% of outcomes. The gold line is the median. Simulations show a range of possibilities, not a prediction.</p>`;
+    .map(([l, v, cl]) => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span></div>`).join("")}</div>${fanSvg(m, c, opt)}<p class="hint" style="margin:0">Shaded bands show the middle 50% and 90% of outcomes. The gold line is the median${opt.runs ? ", and the thin lines are single example runs" : ""}. Hover or drag on the chart to read any point. Simulations show a range of possibilities, not a prediction.</p>`;
 }
 // Each strategy (setup) across every account, in R so different currencies and sizes compare fairly.
 function crossStrategyTable(){
