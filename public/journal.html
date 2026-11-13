@@ -829,7 +829,29 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-en-tag{fill:var(--muted)}.px-sl-tag{fill:#F23645}.px-tp-tag{fill:#089981}.px-last-tag{fill:var(--accent)}.px-tagt{fill:#fff;font-size:10.5px;font-weight:700;font-family:inherit}
 .px-mk{font-size:12px}.px-mk.pos{fill:#089981}.px-mk.neg{fill:#F23645}.px-path{stroke:var(--muted);stroke-dasharray:3 3}.px-path.pos{stroke:#089981}.px-path.neg{stroke:#F23645}
 .px-ex{fill:var(--muted)}.px-ex.pos{fill:#089981}.px-ex.neg{fill:#F23645}.px-user{stroke:#5b8def;stroke-width:1.5}
-.px-ticket{border:1px solid var(--line-2);border-radius:12px;padding:12px;margin:8px 0}.px-buy{background:#089981;color:#fff;border-color:#089981;font-weight:800;min-width:96px}.px-sell{background:#F23645;color:#fff;border-color:#F23645;font-weight:800;min-width:96px}
+.px-ticket{border:1px solid var(--line-2);border-radius:14px;padding:14px;margin:10px 0;background:linear-gradient(180deg,var(--surface-2),transparent)}
+.px-trade{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.px-big{border:0;border-radius:14px;padding:12px 16px;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;transition:transform .12s ease,box-shadow .2s ease,filter .2s}
+.px-big span{font-size:12px;font-weight:800;letter-spacing:.14em;opacity:.9}.px-big b{font-size:20px;font-weight:800}
+.px-big:hover{transform:translateY(-2px);filter:brightness(1.08)}.px-big:active{transform:translateY(1px) scale(.98)}
+.px-buy{background:linear-gradient(135deg,#0bb592,#078a73);box-shadow:0 6px 18px rgba(8,153,129,.35)}.px-sell{background:linear-gradient(135deg,#ff4d5c,#d72a39);box-shadow:0 6px 18px rgba(242,54,69,.35)}
+.px-prev{margin:8px 0 0;text-align:center}
+.px-quick{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}.px-quick button{border:1px solid var(--line-2);background:transparent;color:var(--ink);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}.px-quick button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#111)}
+.px-hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:12px 16px;margin:8px 0;border-radius:14px;border:1px solid var(--line-2);background:radial-gradient(120% 140% at 0% 0%,var(--accent-soft,rgba(244,181,63,.15)),transparent 60%),var(--surface-2)}
+.px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
+.px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
+.px-spark{width:160px;height:34px;flex:none}.px-badges{font-size:18px;letter-spacing:2px}
+.px-tick{font-weight:800;font-size:13px;padding:3px 9px;border-radius:999px;animation:pxflash .5s ease}.px-tick.up{color:#089981;background:rgba(8,153,129,.14)}.px-tick.dn{color:#F23645;background:rgba(242,54,69,.14)}
+@keyframes pxflash{from{filter:brightness(1.6)}to{filter:none}}
+.px-stage{position:relative}.px-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:12px}
+.px-pop{position:absolute;left:50%;top:18%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 20px;border-radius:16px;color:#fff;font-size:15px;box-shadow:0 12px 30px rgba(0,0,0,.3);pointer-events:none;animation:pxpop 2.2s cubic-bezier(.2,1.4,.4,1) forwards;z-index:3;text-align:center}
+.px-pop.win{background:linear-gradient(135deg,#0bb592,#067a66)}.px-pop.lose{background:linear-gradient(135deg,#ff4d5c,#b81f2d)}.px-pop.be{background:linear-gradient(135deg,#6b7280,#374151)}
+.px-pop-i{font-size:28px;line-height:1}.px-pop .num{font-weight:800;font-size:17px}.px-pop-s{font-size:12px;font-weight:700;opacity:.95}
+@keyframes pxpop{0%{opacity:0;transform:translateX(-50%) scale(.6)}12%{opacity:1;transform:translateX(-50%) scale(1.05)}20%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-14px)}}
+.px-conf{position:absolute;top:30%;width:8px;height:12px;border-radius:2px;pointer-events:none;z-index:2;animation:pxconf 1.3s ease-out forwards}
+@keyframes pxconf{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),calc(var(--dy) * -1.4 + 120px)) rotate(var(--rot));opacity:0}}
+.px-shake{animation:pxshake .4s ease}@keyframes pxshake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.px-pop,.px-shake,.px-tick{animation-duration:.01s}.px-pop{animation:none;opacity:1}}
 .px-ed{width:100px;text-align:right;padding:4px 6px}.px-tbl td,.px-tbl th{padding:6px 8px;vertical-align:middle}.px-ctl{flex-wrap:wrap}
 .opt-heat{display:grid;gap:2px;font-size:11px;margin:6px 0;overflow-x:auto}.opt-heat .hd{color:var(--muted);text-align:center;padding:2px}.opt-heat .c{text-align:center;padding:6px 2px;border-radius:4px;font-variant-numeric:tabular-nums}.opt-heat .na{color:var(--muted)}
 .opt-tbl tr.best td{font-weight:700}.opt-tbl td,.opt-tbl th{padding:6px 8px}.bt-more{margin-top:12px;border:1px solid var(--line-2);border-radius:12px;padding:10px 14px}.bt-more summary{cursor:pointer}.bt-more[open] summary{margin-bottom:8px}
@@ -4091,7 +4113,7 @@ const pxPrice = v => { const a = Math.abs(v); return v == null ? "—" : (+v).to
 function pxLoad(cs, sym, label){
   if (!cs.length){ $("#pxData").innerHTML = `<span class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</span>`; return; }
   px.base = cs; px.sym = sym || null; const b = baseTf(cs), days = [...new Set(cs.map(c => c.d))];
-  $("#pxData").textContent = `${label || sym || "Candles"} · ${cs.length.toLocaleString()} candles · ${days.length} days · ${b}-minute`;
+  px.label = label || sym || "Candles"; px.dataText = `${px.label} · ${cs.length.toLocaleString()} candles · ${days.length} days · ${b}-minute`; $("#pxData").textContent = px.dataText;
   $("#pxTf").innerHTML = [1, 5, 15, 30, 60, 240].filter(m => m >= b).map(m => `<option value="${m}"${m === Math.max(b, 5) ? " selected" : ""}>${m < 60 ? m + " minutes" : m / 60 + " hour" + (m > 60 ? "s" : "")}</option>`).join("");
   const mid = days[Math.min(days.length - 1, Math.max(1, Math.floor(days.length * .25)))]; $("#pxDate").min = days[1] || days[0]; $("#pxDate").max = days[days.length - 1]; $("#pxDate").value = mid;
   $("#pxSetup").hidden = false; $("#pxLive").hidden = true;
@@ -4105,7 +4127,7 @@ function pxStart(from, keep){
   if (i < 30){ toast("Pick a later start so there's some history on the chart"); return; }
   px.idx = i + 1;
   if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; }
-  px.active = true; px.label = $("#pxData").textContent; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
+  px.active = true; px.badges = keep ? (px.badges || []) : []; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
 }
 const pxNow = () => px.cs[px.idx - 1];
 function pxStep(n = 1){
@@ -4120,7 +4142,26 @@ function pxStep(n = 1){
 }
 function pxClose(p, price, why){ const c = pxNow(), R = (price - p.entry) * p.dir / p.risk - p.costR, pnl = R * p.riskAmt;
   px.pos = px.pos.filter(q => q !== p); px.bal += pnl; px.peak = Math.max(px.peak, px.bal); px.dd = Math.max(px.dd, (px.peak - px.bal) / px.peak);
-  px.done.push({ ...p, exit: price, exitKey: c.d + " " + c.t, R, pnl, why }); }
+  px.done.push({ ...p, exit: price, exitKey: c.d + " " + c.t, R, pnl, why }); pxFx(R, pnl, why); }
+// The fun bits: a result pop-up over the chart, confetti on wins, and badges as you go.
+const PX_BADGES = [["first", "🚀", "First trade", d => d.length >= 1], ["win", "✅", "First win", d => d.some(x => x.R > 0)], ["sniper", "🎯", "Sniper: 3 targets hit", d => d.filter(x => x.why === "Target").length >= 3],
+  ["streak3", "🔥", "On fire: 3 wins in a row", () => pxStreak() >= 3], ["streak5", "☄️", "Unstoppable: 5 wins in a row", () => pxStreak() >= 5], ["ten", "💪", "10 trades done", d => d.length >= 10],
+  ["bigr", "💎", "Big win: +3R or more", d => d.some(x => x.R >= 3)], ["comeback", "🦅", "Comeback: back above your start after a drawdown", () => px.dd >= .02 && px.bal > px.start], ["up5", "🏆", "Account up 5%", () => px.bal >= px.start * 1.05]];
+const pxStreak = () => { let n = 0; for (let i = px.done.length - 1; i >= 0 && px.done[i].R > 0; i--) n++; return n; };
+function pxFx(R, pnl, why){
+  const box = $("#pxChart"), fx = $("#pxFx"); if (!box || !fx) return;
+  const win = R > 0.001, lose = R < -0.001, icon = why === "Target" ? "🎯" : why === "Breakeven" ? "🛡️" : why === "Stop" ? "🛑" : win ? "💰" : "✋";
+  const title = why === "Target" ? "Target hit!" : why === "Breakeven" ? "Out at breakeven" : why === "Stop" ? "Stopped out" : win ? "Nice close!" : "Closed";
+  const el = document.createElement("div"); el.className = `px-pop ${win ? "win" : lose ? "lose" : "be"}`;
+  el.innerHTML = `<span class="px-pop-i">${icon}</span><b>${title}</b><span class="num">${R >= 0 ? "+" : ""}${R.toFixed(2)}R · ${money(pnl)}</span>${win && pxStreak() >= 2 ? `<span class="px-pop-s">🔥 ${pxStreak()} in a row</span>` : ""}`;
+  fx.appendChild(el); setTimeout(() => el.remove(), 2200);
+  if (lose){ box.classList.remove("px-shake"); void box.offsetWidth; box.classList.add("px-shake"); }
+  if (win && !matchMedia("(prefers-reduced-motion: reduce)").matches){ const n = why === "Target" ? 36 : 18, cols = ["#F4B53F", "#089981", "#5b8def", "#ff7ab6", "#fff"];
+    for (let i = 0; i < n; i++){ const s = document.createElement("i"); s.className = "px-conf"; s.style.left = (40 + Math.random() * 20) + "%"; s.style.background = cols[i % cols.length];
+      s.style.setProperty("--dx", (Math.random() * 2 - 1) * 220 + "px"); s.style.setProperty("--dy", -(80 + Math.random() * 180) + "px"); s.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg"); s.style.animationDelay = (Math.random() * .08) + "s";
+      fx.appendChild(s); setTimeout(() => s.remove(), 1400); } }
+  px.badges = px.badges || []; PX_BADGES.forEach(([id, ic, label, test]) => { if (!px.badges.includes(id) && test(px.done)){ px.badges.push(id); setTimeout(() => toast(`${ic} Badge unlocked: ${label}`, 3500), 700); } });
+}
 function pxOpen(dir){
   if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; }
   const c = pxNow(), atr = px.atr[px.idx - 1] || 0, st = $("#pxStopT").value, sv = +$("#pxStopV").value, dist = st === "atr" ? atr * (sv || 1.5) : sv;
@@ -4155,6 +4196,8 @@ function pxDraw(){
   host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Candles up to ${esc(c.d)} ${esc(c.t)}">${g}${lines}${bars}${doneM}${posL}${hline(c.c, "px-last", pxPrice(c.c))}${tx}</svg>`;
   $("#pxPosTxt").textContent = `${px.sym || ""} · ${fmtDate(c.d)} ${c.t} · close ${pxPrice(c.c)} · ATR ${pxPrice(px.atr[px.idx - 1] || 0)}`;
   const atr = px.atr[px.idx - 1] || 0, sv = +$("#pxStopV").value, dist = $("#pxStopT").value === "atr" ? atr * (sv || 1.5) : sv, rr = $("#pxRR").value === "" ? null : +$("#pxRR").value, ins = INSTR[px.sym];
+  if ($("#pxBuyP")){ $("#pxBuyP").textContent = pxPrice(c.c); $("#pxSellP").textContent = pxPrice(c.c); const prev = px.cs[px.idx - 2], t_ = $("#pxTick");
+    if (t_){ const up = prev ? c.c >= prev.c : true; t_.className = "px-tick num " + (up ? "up" : "dn"); t_.textContent = `${up ? "▲" : "▼"} ${pxPrice(c.c)}`; } }
   $("#pxPrev").textContent = dist > 0 ? `Buy: stop ${pxPrice(c.c - dist)}${rr > 0 ? `, target ${pxPrice(c.c + dist * rr)}` : ""} · Sell: stop ${pxPrice(c.c + dist)}${rr > 0 ? `, target ${pxPrice(c.c - dist * rr)}` : ""}${ins?.contract ? ` · ${(px.bal * (+$("#pxRisk").value || 1) / 100 / (dist * ins.contract)).toFixed(2)} lots` : ""}` : "";
   // Open positions, editable.
   $("#pxPos").innerHTML = px.pos.length ? `<div class="tbl-wrap"><table class="px-tbl"><thead><tr><th>Open</th><th class="r">Entry</th><th class="r">Stop</th><th class="r">Target</th><th class="r">Now</th><th></th></tr></thead><tbody>${px.pos.map(p => { const Rn = (c.c - p.entry) * p.dir / p.risk - p.costR;
@@ -4172,7 +4215,13 @@ function pxEdit(inp, c){ { const p = px.pos.find(q => String(q.id) === inp.datas
 }
 function pxStatsDraw(){
   // Results so far.
-  const d = px.done, w = d.filter(x => x.R > 0), gw = w.reduce((q, x) => q + x.R, 0), gl = -d.filter(x => x.R <= 0).reduce((q, x) => q + x.R, 0), net = gw - gl, k = (l, v, cl = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  const d = px.done, w = d.filter(x => x.R > 0), gw = w.reduce((q, x) => q + x.R, 0), gl = -d.filter(x => x.R <= 0).reduce((q, x) => q + x.R, 0), net = Math.abs(gw - gl) < 0.005 ? 0 : gw - gl, k = (l, v, cl = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
+  const st_ = pxStreak(), chg = px.bal - px.start, eq = [px.start]; d.forEach(x => eq.push(eq[eq.length - 1] + x.pnl));
+  const spark = eq.length > 1 ? (() => { const W = 160, H = 34, lo = Math.min(...eq), hi = Math.max(...eq), X = i => i / (eq.length - 1) * W, Y = v => H - 2 - (v - lo) / (hi - lo || 1) * (H - 4);
+    return `<svg viewBox="0 0 ${W} ${H}" class="px-spark" aria-hidden="true"><path d="M${eq.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" L")}" fill="none" stroke="${chg >= 0 ? "#089981" : "#F23645"}" stroke-width="2" stroke-linejoin="round"/></svg>`; })() : "";
+  if ($("#pxHud")) $("#pxHud").innerHTML = `<div class="px-hud-bal"><span class="label">Practice balance</span><b class="num">${money(px.bal, false)}</b><span class="px-chip ${chg > 0 ? "up" : chg < 0 ? "dn" : ""}">${chg >= 0 ? "▲" : "▼"} ${((px.bal / px.start - 1) * 100).toFixed(2)}%</span></div>${spark}
+    <div class="px-hud-i"><span class="label">Streak</span><b>${st_ >= 2 ? "🔥 " : ""}${st_}</b></div><div class="px-hud-i"><span class="label">Net</span><b class="num ${cls(net)}">${(net >= 0 ? "+" : "") + net.toFixed(2)}R</b></div>
+    <div class="px-hud-i"><span class="label">Badges</span><b class="px-badges" title="${esc((px.badges || []).map(id => PX_BADGES.find(b => b[0] === id)?.[2]).filter(Boolean).join(", ") || "Trade to unlock badges")}">${(px.badges || []).map(id => PX_BADGES.find(b => b[0] === id)?.[1] || "").join("") || `<span class="hint">0 / ${PX_BADGES.length}</span>`}</b></div>`;
   $("#pxStats").innerHTML = `<div class="kgrid">${k("Balance", money(px.bal, false), cls(px.bal - px.start), `${((px.bal / px.start - 1) * 100).toFixed(1)}% since start`)}${k("Trades", String(d.length), "", px.pos.length ? `${px.pos.length} open` : "")}${k("Win rate", d.length ? (w.length / d.length * 100).toFixed(0) + "%" : "—")}${k("Net", (net >= 0 ? "+" : "") + net.toFixed(2) + "R", cls(net))}${k("Profit factor", gl ? (gw / gl).toFixed(2) : d.length ? "—" : "—")}${k("Max drawdown", (px.dd * 100).toFixed(1) + "%", px.dd ? "neg" : "")}</div>
     ${d.length ? `<details class="bt-trades"><summary>Your ${d.length} practice trade${d.length === 1 ? "" : "s"}</summary><div class="tbl-wrap"><table><thead><tr><th>Opened</th><th>Side</th><th class="r">Entry</th><th class="r">Exit</th><th>How it ended</th><th class="r">R</th><th class="r">P&amp;L</th></tr></thead><tbody>${d.slice().reverse().slice(0, 200).map(x => `<tr><td>${esc(fmtDate(x.key.slice(0, 10)))} ${esc(x.key.slice(11))}</td><td>${x.dir > 0 ? "Buy" : "Sell"}</td><td class="r">${pxPrice(x.entry)}</td><td class="r">${pxPrice(x.exit)}</td><td>${esc(x.why)}</td><td class="r ${cls(x.R)}">${x.R >= 0 ? "+" : ""}${x.R.toFixed(2)}</td><td class="r ${cls(x.pnl)}">${money(x.pnl)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}`;
 }
@@ -4186,7 +4235,7 @@ function pxReport(){ const d = px.done, w = d.filter(x => x.R > 0), net = d.redu
   return `PRACTICE SESSION\n${px.sym || "Candles"} · ${px.tf < 60 ? px.tf + "m" : px.tf / 60 + "h"} · ${d.length ? `${fmtDate(d[0].key.slice(0, 10))} to ${fmtDate(d[d.length - 1].exitKey.slice(0, 10))}` : ""}\n\nRESULTS\nTrades: ${d.length}\nWin rate: ${d.length ? (w.length / d.length * 100).toFixed(0) : 0}%\nNet: ${net >= 0 ? "+" : ""}${net.toFixed(2)}R\nBalance: ${money(px.start)} → ${money(px.bal)}\nMax drawdown: ${(px.dd * 100).toFixed(1)}%\n\nTRADES\n${d.map(x => `${x.key} ${x.dir > 0 ? "Buy" : "Sell"} ${pxPrice(x.entry)} → ${pxPrice(x.exit)} (${x.why}) ${x.R >= 0 ? "+" : ""}${x.R.toFixed(2)}R`).join("\n")}\n\nWHAT I LEARNED\n`; }
 function bindPractice(){
   if (!$("#pxBox")) return;
-  $("#pxFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; pxLoad(parseCandles(await readText(f)), symFromName(f.name), f.name); px.label = f.name; e.target.value = ""; };
+  $("#pxFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; pxLoad(parseCandles(await readText(f)), symFromName(f.name), f.name); e.target.value = ""; };
   $("#pxUseRp").onclick = () => { if (replay.base?.length) pxLoad(replay.base, replay.fileSym, "Trade Replay's candles"); else if (btState.base?.length) pxLoad(btState.base, btState.sym, "Strategy tester's candles"); else toast("Load a candles file in Trade Replay or the strategy tester first, or choose one here"); };
   $("#pxHow").onclick = openCandleGuide;
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
@@ -4195,6 +4244,9 @@ function bindPractice(){
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
   $("#pxBuy").onclick = () => pxOpen(1); $("#pxSell").onclick = () => pxOpen(-1);
+  $("#pxBox").querySelectorAll(".px-quick button").forEach(b => b.onclick = () => { const inp = $("#" + b.closest(".px-quick").dataset.for); inp.value = b.dataset.v; inp.dispatchEvent(new Event("input")); pxQuickMark(); });
+  const pxQuickMark = () => $("#pxBox").querySelectorAll(".px-quick").forEach(q => { const v = $("#" + q.dataset.for).value; q.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === v || (b.dataset.v !== "" && v !== "" && +b.dataset.v === +v))); });
+  ["pxRisk", "pxRR"].forEach(id => $("#" + id).addEventListener("input", pxQuickMark)); pxQuickMark();
   ["pxStopT", "pxStopV", "pxRR", "pxRisk"].forEach(id => $("#" + id).oninput = () => { if (px.cs.length && !$("#pxLive").hidden) pxDraw(); });
   $("#pxStopT").onchange = e => { $("#pxStopV").value = e.target.value === "atr" ? 1.5 : +(px.atr[px.idx - 1] * 1.5 || 1).toPrecision(3); pxDraw(); };
   $("#pxLineB").onclick = e => { px.lineMode = !px.lineMode; e.currentTarget.setAttribute("aria-pressed", String(px.lineMode)); if (px.lineMode) toast("Click the chart to mark a level"); };
@@ -4208,7 +4260,7 @@ function bindPractice(){
     saveFile(`practice-${(px.sym || "candles").toLowerCase()}-${localToday()}.csv`, rows.map(r => r.join(",")).join("\n")); };
   $("#pxReset").onclick = () => { pxStop(); px.active = false; px.pos = []; px.done = []; if (px.base?.length) pxLoad(px.base, px.sym, px.label); };
   // The page can be redrawn (e.g. after a save), so put a running session back on screen.
-  if (px.active && px.cs.length){ $("#pxData").textContent = px.label || ""; $("#pxLive").hidden = false; $("#pxSetup").hidden = true; if (px.timer){ $("#pxPlay").textContent = "⏸ Pause"; } requestAnimationFrame(pxDraw); }
+  if (px.active && px.cs.length){ $("#pxData").textContent = px.dataText || px.label || ""; $("#pxLive").hidden = false; $("#pxSetup").hidden = true; if (px.timer){ $("#pxPlay").textContent = "⏸ Pause"; } requestAnimationFrame(pxDraw); }
   else if (px.base?.length){ const keep = px.base; pxLoad(keep, px.sym, px.label); }
   if (window.ResizeObserver){ const ro = new ResizeObserver(() => { if (!$("#pxLive")?.hidden) pxDraw(); }); ro.observe($("#pxBox")); }
 }
@@ -4539,15 +4591,16 @@ function renderElite(){
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
           <button type="button" class="btn small" id="pxLineB" aria-pressed="false" title="Then click the chart to mark a level">✎ Line</button><button type="button" class="btn small" id="pxClearL">Clear lines</button>
-          <span class="hint" id="pxPosTxt"></span></div>
-        <div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Right arrow for the next candle, space to play or pause."></div>
+          <span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
+        <div class="px-hud" id="pxHud"></div>
+        <div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
         <div class="px-ticket">
-          <div class="fgrid bt-grid"><div class="f"><label for="pxRisk">Risk per trade (%)</label><input id="pxRisk" class="ctl" type="number" step="any" value="1"></div>
+          <div class="fgrid bt-grid"><div class="f"><label for="pxRisk">Risk per trade (%)</label><input id="pxRisk" class="ctl" type="number" step="any" value="1"><div class="px-quick" data-for="pxRisk">${[0.5, 1, 2].map(v => `<button type="button" data-v="${v}">${v}%</button>`).join("")}</div></div>
             <div class="f"><label for="pxStopT">Stop loss</label><select id="pxStopT" class="ctl"><option value="atr">× ATR(14)</option><option value="pts">Price distance</option></select></div>
             <div class="f"><label for="pxStopV">Stop size</label><input id="pxStopV" class="ctl" type="number" step="any" value="1.5"></div>
-            <div class="f"><label for="pxRR">Target (R, empty for none)</label><input id="pxRR" class="ctl" type="number" step="any" value="2"></div>
+            <div class="f"><label for="pxRR">Target (R, empty for none)</label><input id="pxRR" class="ctl" type="number" step="any" value="2"><div class="px-quick" data-for="pxRR">${[["1", "1R"], ["2", "2R"], ["3", "3R"], ["", "None"]].map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join("")}</div></div>
             <div class="f"><label for="pxSpread">Spread (price)</label><input id="pxSpread" class="ctl" type="number" step="any" value="0"></div></div>
-          <div class="actions"><button type="button" class="btn px-buy" id="pxBuy">Buy</button><button type="button" class="btn px-sell" id="pxSell">Sell</button><span class="hint" id="pxPrev"></span></div>
+          <div class="px-trade"><button type="button" class="px-big px-sell" id="pxSell"><span>SELL</span><b class="num" id="pxSellP"></b></button><button type="button" class="px-big px-buy" id="pxBuy"><span>BUY</span><b class="num" id="pxBuyP"></b></button></div><p class="hint px-prev" id="pxPrev"></p>
         </div>
         <div id="pxPos"></div><div id="pxStats"></div>
         <div class="actions"><button type="button" class="btn small" id="pxSave">💾 Save session</button><button type="button" class="btn small" id="pxNote">Save results to Notes</button><button type="button" class="btn small" id="pxCsv">Download trades (CSV)</button><button type="button" class="btn small danger" id="pxReset">New session</button></div>
