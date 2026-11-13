@@ -4497,6 +4497,10 @@ function renderElite(){
   $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
     if (saved && !(replay.base || []).some(c => c.d === x.date)){ openSavedReplay(saved.id); toast("Loaded your saved replay for this trade"); return; }
     rpLoad(); };
+  // The picker shows a trade straight away, so treat that one as picked (keep the current one if the page redraws).
+  { const sel = $("#rpTrade");
+    if (replay.trade && [...sel.options].some(o => o.value === replay.trade.id)) sel.value = replay.trade.id;
+    else if (sel.value){ replay.trade = state.trades.find(x => x.id === sel.value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; } }
   $("#rpFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; replay.base = parseCandles(await readText(f));
     { const tr = state.trades.find(t_ => t_.id === $("#rpTrade").value), ac = tr && accountsList().find(q => q.id === tr.accountId); if (tr && (tr.tzFrom || (ac?.serverTz && ac.serverTz !== "none"))){ replay.shift = "auto"; const sh = $("#rpShift"); if (sh) sh.value = "auto"; } } replay.fileSym = symFromName(f.name); replay.tf = baseTf(replay.base); replay.candles = resample(rpSource(), replay.tf); setTfButtons(); if (!replay.candles.length){ $("#rpChart").innerHTML = `<p class="err">Couldn't read candles from this file. It needs date, open, high, low and close columns.</p>`; return; }
     // Pick a trade that's actually in this file (same day, and same symbol if the file name says).
