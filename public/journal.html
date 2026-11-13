@@ -840,7 +840,8 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:12px 16px;margin:8px 0;border-radius:14px;border:1px solid var(--line-2);background:radial-gradient(120% 140% at 0% 0%,var(--accent-soft,rgba(244,181,63,.15)),transparent 60%),var(--surface-2)}
 .px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
 .px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
-.px-spark{width:160px;height:34px;flex:none}.px-badges{font-size:18px;letter-spacing:2px}
+.px-spark{width:160px;height:34px;flex:none}.px-eq{transition:color .3s}.px-eq.up{color:#089981}.px-eq.dn{color:#F23645}
+.px-chart{touch-action:pan-y;cursor:grab;user-select:none}.px-chart.grabbing{cursor:grabbing}.px-badges{font-size:18px;letter-spacing:2px}
 .px-tick{font-weight:800;font-size:13px;padding:3px 9px;border-radius:999px;animation:pxflash .5s ease}.px-tick.up{color:#089981;background:rgba(8,153,129,.14)}.px-tick.dn{color:#F23645;background:rgba(242,54,69,.14)}
 @keyframes pxflash{from{filter:brightness(1.6)}to{filter:none}}
 .px-stage{position:relative}.px-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:12px}
@@ -4115,18 +4116,26 @@ function pxLoad(cs, sym, label){
   px.base = cs; px.sym = sym || null; const b = baseTf(cs), days = [...new Set(cs.map(c => c.d))];
   px.label = label || sym || "Candles"; px.dataText = `${px.label} · ${cs.length.toLocaleString()} candles · ${days.length} days · ${b}-minute`; $("#pxData").textContent = px.dataText;
   $("#pxTf").innerHTML = [1, 5, 15, 30, 60, 240].filter(m => m >= b).map(m => `<option value="${m}"${m === Math.max(b, 5) ? " selected" : ""}>${m < 60 ? m + " minutes" : m / 60 + " hour" + (m > 60 ? "s" : "")}</option>`).join("");
-  const mid = days[Math.min(days.length - 1, Math.max(1, Math.floor(days.length * .25)))]; $("#pxDate").min = days[1] || days[0]; $("#pxDate").max = days[days.length - 1]; $("#pxDate").value = mid;
+  // Only days and times that are actually in the file. The first day is left out so there's history on the chart.
+  const pick = days.length > 1 ? days.slice(1) : days, mid = pick[Math.min(pick.length - 1, Math.floor(pick.length * .25))];
+  $("#pxDate").innerHTML = pick.slice().reverse().map(d => `<option value="${d}"${d === mid ? " selected" : ""}>${esc(new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d + "T00:00:00Z")))}</option>`).join("");
+  pxTimes();
   $("#pxSetup").hidden = false; $("#pxLive").hidden = true;
   const sv = state.settings?.practice; const rb = $("#pxResume");
   rb.hidden = !(sv && sv.key && (!sv.sym || !px.sym || sameSym(sv.sym, px.sym)) && cs.some(c => c.d + " " + c.t >= sv.key));
   if (!rb.hidden) rb.textContent = `Resume saved session (${sv.sym || ""} ${fmtDate(sv.key.slice(0, 10))} ${sv.key.slice(11)} · ${sv.done?.length || 0} trades)`;
 }
+// Times to start from on the chosen day: every candle for 15-minute charts and up, otherwise every 15 minutes, from the file itself.
+function pxTimes(){ const d = $("#pxDate")?.value, tf = Math.max(+$("#pxTf")?.value || 1, 1), step = Math.max(tf, 15), prev = $("#pxTime").value || "08:00";
+  const ts = [...new Set((px.base || []).filter(c => c.d === d).map(c => { const [H, M] = c.t.split(":").map(Number), m = Math.floor((H * 60 + M) / step) * step; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }))].sort();
+  const best = ts.includes(prev) ? prev : ts.find(t => t >= "08:00") || ts[0];
+  $("#pxTime").innerHTML = ts.map(t => `<option${t === best ? " selected" : ""}>${t}</option>`).join("") || `<option value="00:00">No candles</option>`; }
 function pxStart(from, keep){
   pxStop(); px.tf = +$("#pxTf").value || baseTf(px.base); px.cs = resample(px.base, px.tf); px.atr = atrArr(px.cs);
   const i = px.cs.findIndex(c => c.d + " " + c.t >= from); if (i < 0){ toast("That date isn't in this file"); return; }
   if (i < 30){ toast("Pick a later start so there's some history on the chart"); return; }
   px.idx = i + 1;
-  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; }
+  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0;
   px.active = true; px.badges = keep ? (px.badges || []) : []; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
 }
 const pxNow = () => px.cs[px.idx - 1];
@@ -4176,10 +4185,12 @@ function pxPlay(){ if (px.timer){ pxStop(); return; } px.timer = setInterval(() 
 function pxDraw(){
   const host = $("#pxChart"); if (!host || !px.cs.length) return;
   const W = Math.max(300, host.clientWidth || 700), H = W < 520 ? 320 : 400, R = W < 520 ? 58 : 70, B = 22, cw = W - R;
-  const nShow = Math.max(20, Math.min(px.n, Math.floor(cw / 3.2))), lo0 = Math.max(0, px.idx - nShow), vis = px.cs.slice(lo0, px.idx), n = Math.max(nShow, vis.length), bw = cw / n, c = pxNow();
+  const nShow = Math.max(20, Math.min(px.n, Math.floor(cw / 3.2))); px.pan = Math.max(0, Math.min(px.pan || 0, px.idx - 20));
+  const end = px.idx - Math.round(px.pan), lo0 = Math.max(0, end - nShow), vis = px.cs.slice(lo0, end), n = Math.max(nShow, vis.length), bw = cw / n, c = pxNow();
+  if ($("#pxLatest")) $("#pxLatest").hidden = px.pan < 1;
   let hi = Math.max(...vis.map(k => k.h)), lo = Math.min(...vis.map(k => k.l));
   px.pos.forEach(p => { [p.entry, p.stop, p.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } }); });
-  const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad; px.view = { hi, lo, H: H - B };
+  const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad; px.view = { hi, lo, H: H - B, bw: bw * (+host.clientWidth || W) / W };
   const y = v => (hi - v) / (hi - lo) * (H - B), X = i => (i + .5) * bw;
   const step = (() => { const raw = (hi - lo) / 6, m = 10 ** Math.floor(Math.log10(raw)), f = raw / m; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * m; })();
   let g = ""; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ g += `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-grid"/><text x="${cw + 6}" y="${(y(v) + 4).toFixed(1)}" class="px-ax">${pxPrice(v)}</text>`; }
@@ -4216,10 +4227,14 @@ function pxEdit(inp, c){ { const p = px.pos.find(q => String(q.id) === inp.datas
 function pxStatsDraw(){
   // Results so far.
   const d = px.done, w = d.filter(x => x.R > 0), gw = w.reduce((q, x) => q + x.R, 0), gl = -d.filter(x => x.R <= 0).reduce((q, x) => q + x.R, 0), net = Math.abs(gw - gl) < 0.005 ? 0 : gw - gl, k = (l, v, cl = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
-  const st_ = pxStreak(), chg = px.bal - px.start, eq = [px.start]; d.forEach(x => eq.push(eq[eq.length - 1] + x.pnl));
+  const cNow = pxNow(), flt = cNow ? px.pos.reduce((q, p) => q + ((cNow.c - p.entry) * p.dir / p.risk - p.costR) * p.riskAmt, 0) : 0, equity = px.bal + flt;
+  const st_ = pxStreak(), chg = equity - px.start, eq = [px.start]; d.forEach(x => eq.push(eq[eq.length - 1] + x.pnl));
   const spark = eq.length > 1 ? (() => { const W = 160, H = 34, lo = Math.min(...eq), hi = Math.max(...eq), X = i => i / (eq.length - 1) * W, Y = v => H - 2 - (v - lo) / (hi - lo || 1) * (H - 4);
     return `<svg viewBox="0 0 ${W} ${H}" class="px-spark" aria-hidden="true"><path d="M${eq.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" L")}" fill="none" stroke="${chg >= 0 ? "#089981" : "#F23645"}" stroke-width="2" stroke-linejoin="round"/></svg>`; })() : "";
-  if ($("#pxHud")) $("#pxHud").innerHTML = `<div class="px-hud-bal"><span class="label">Practice balance</span><b class="num">${money(px.bal, false)}</b><span class="px-chip ${chg > 0 ? "up" : chg < 0 ? "dn" : ""}">${chg >= 0 ? "▲" : "▼"} ${((px.bal / px.start - 1) * 100).toFixed(2)}%</span></div>${spark}
+  if (px.pos.length) eq.push(equity);
+  const prevEq = px.lastEq ?? equity, tick = equity > prevEq + 1e-9 ? "up" : equity < prevEq - 1e-9 ? "dn" : ""; px.lastEq = equity;
+  if ($("#pxHud")) $("#pxHud").innerHTML = `<div class="px-hud-bal"><span class="label">${px.pos.length ? "Equity (live)" : "Practice balance"}</span><b class="num px-eq ${tick}">${money(equity, false)}</b><span class="px-chip ${chg > 0 ? "up" : chg < 0 ? "dn" : ""}">${chg >= 0 ? "▲" : "▼"} ${((equity / px.start - 1) * 100).toFixed(2)}%</span></div>${spark}
+    <div class="px-hud-i"><span class="label">Balance</span><b class="num">${money(px.bal, false)}</b></div><div class="px-hud-i"><span class="label">Floating P&amp;L</span><b class="num ${cls(flt)}">${px.pos.length ? money(flt) : "—"}</b></div>
     <div class="px-hud-i"><span class="label">Streak</span><b>${st_ >= 2 ? "🔥 " : ""}${st_}</b></div><div class="px-hud-i"><span class="label">Net</span><b class="num ${cls(net)}">${(net >= 0 ? "+" : "") + net.toFixed(2)}R</b></div>
     <div class="px-hud-i"><span class="label">Badges</span><b class="px-badges" title="${esc((px.badges || []).map(id => PX_BADGES.find(b => b[0] === id)?.[2]).filter(Boolean).join(", ") || "Trade to unlock badges")}">${(px.badges || []).map(id => PX_BADGES.find(b => b[0] === id)?.[1] || "").join("") || `<span class="hint">0 / ${PX_BADGES.length}</span>`}</b></div>`;
   $("#pxStats").innerHTML = `<div class="kgrid">${k("Balance", money(px.bal, false), cls(px.bal - px.start), `${((px.bal / px.start - 1) * 100).toFixed(1)}% since start`)}${k("Trades", String(d.length), "", px.pos.length ? `${px.pos.length} open` : "")}${k("Win rate", d.length ? (w.length / d.length * 100).toFixed(0) + "%" : "—")}${k("Net", (net >= 0 ? "+" : "") + net.toFixed(2) + "R", cls(net))}${k("Profit factor", gl ? (gw / gl).toFixed(2) : d.length ? "—" : "—")}${k("Max drawdown", (px.dd * 100).toFixed(1) + "%", px.dd ? "neg" : "")}</div>
@@ -4240,6 +4255,7 @@ function bindPractice(){
   $("#pxHow").onclick = openCandleGuide;
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
   $("#pxResume").onclick = pxResume;
+  $("#pxDate").onchange = pxTimes; $("#pxTf").addEventListener("change", pxTimes);
   $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxNext10").onclick = () => pxStep(10);
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
@@ -4251,9 +4267,21 @@ function bindPractice(){
   $("#pxStopT").onchange = e => { $("#pxStopV").value = e.target.value === "atr" ? 1.5 : +(px.atr[px.idx - 1] * 1.5 || 1).toPrecision(3); pxDraw(); };
   $("#pxLineB").onclick = e => { px.lineMode = !px.lineMode; e.currentTarget.setAttribute("aria-pressed", String(px.lineMode)); if (px.lineMode) toast("Click the chart to mark a level"); };
   $("#pxClearL").onclick = () => { px.lines = []; pxDraw(); };
-  $("#pxChart").onclick = e => { if (!px.lineMode || !px.view) return; const sv = e.currentTarget.querySelector("svg"); if (!sv) return; const r = sv.getBoundingClientRect(), yy = (e.clientY - r.top) * (+sv.getAttribute("height") / r.height);
+  // Drag (mouse or finger) to scroll back through history, wheel or +/− to zoom, like MT5.
+  { const ch = $("#pxChart"); let drag = null;
+    ch.addEventListener("pointerdown", e => { if (px.lineMode || e.button > 0) return; drag = { x: e.clientX, y: e.clientY, pan: px.pan || 0, moved: false, id: e.pointerId }; });
+    ch.addEventListener("pointermove", e => { if (!drag || !px.view) return; const dx = e.clientX - drag.x;
+      if (!drag.moved){ if (Math.abs(dx) < 6) return; if (Math.abs(e.clientY - drag.y) > Math.abs(dx)){ drag = null; return; } drag.moved = true; try { ch.setPointerCapture(drag.id); } catch {} ch.classList.add("grabbing"); }
+      e.preventDefault(); const np = drag.pan + dx / (px.view.bw || 6); if (Math.round(np) !== Math.round(px.pan || 0)){ px.pan = np; pxDraw(); } else px.pan = np; });
+    const end = () => { if (drag?.moved){ ch.classList.remove("grabbing"); px.justDragged = Date.now(); } drag = null; };
+    ch.addEventListener("pointerup", end); ch.addEventListener("pointercancel", end);
+    ch.addEventListener("wheel", e => { if (!px.view || !px.cs.length) return; e.preventDefault();
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)){ px.pan = (px.pan || 0) + e.deltaX / (px.view.bw || 6); }
+      else px.n = Math.max(20, Math.min(400, Math.round(px.n * (e.deltaY > 0 ? 1.12 : 1 / 1.12)))); pxDraw(); }, { passive: false }); }
+  $("#pxLatest").onclick = () => { px.pan = 0; pxDraw(); };
+  $("#pxChart").onclick = e => { if (Date.now() - (px.justDragged || 0) < 250) return; if (!px.lineMode || !px.view) return; const sv = e.currentTarget.querySelector("svg"); if (!sv) return; const r = sv.getBoundingClientRect(), yy = (e.clientY - r.top) * (+sv.getAttribute("height") / r.height);
     if (yy < 0 || yy > px.view.H) return; px.lines.push(px.view.hi - yy / px.view.H * (px.view.hi - px.view.lo)); px.lineMode = false; $("#pxLineB").setAttribute("aria-pressed", "false"); pxDraw(); };
-  $("#pxChart").onkeydown = e => { if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
+  $("#pxChart").onkeydown = e => { if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
   $("#pxSave").onclick = pxSaveSession;
   $("#pxNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36); if (await saveNote(id, { kind: "note", title: `Practice session · ${px.sym || "candles"} · ${fmtDate(localToday())}`, body: pxReport(), tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
   $("#pxCsv").onclick = () => { const rows = [["opened", "side", "entry", "stop", "target", "closed", "exit", "reason", "r", "pnl"], ...px.done.map(x => [x.key, x.dir > 0 ? "buy" : "sell", x.entry, x.stop, x.tgt ?? "", x.exitKey, x.exit, x.why, x.R.toFixed(3), x.pnl.toFixed(2)])];
@@ -4581,8 +4609,8 @@ function renderElite(){
       <div class="actions"><label class="btn small"><input type="file" id="pxFile" accept=".csv,.txt" class="sr">📂 Choose candles file</label><button type="button" class="btn small" id="pxUseRp">Use Trade Replay's candles</button><button type="button" class="btn small" id="pxHow">📘 How to get candles</button><span class="hint" id="pxData"></span></div>
       <div id="pxSetup" hidden>
         <div class="fgrid bt-grid"><div class="f"><label for="pxTf">Timeframe</label><select id="pxTf" class="ctl"></select></div>
-          <div class="f"><label for="pxDate">Start trading from</label><input id="pxDate" class="ctl" type="date"></div>
-          <div class="f"><label for="pxTime">at</label><input id="pxTime" class="ctl" type="time" value="08:00"></div>
+          <div class="f"><label for="pxDate">Start trading from</label><select id="pxDate" class="ctl"></select></div>
+          <div class="f"><label for="pxTime">at</label><select id="pxTime" class="ctl"></select></div>
           <div class="f"><label for="pxBal">Starting balance</label><input id="pxBal" class="ctl" type="number" step="any" value="10000"></div></div>
         <div class="actions"><button type="button" class="btn primary" id="pxGo">Start session here</button><button type="button" class="btn" id="pxResume" hidden></button></div>
       </div>
@@ -4590,10 +4618,10 @@ function renderElite(){
         <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
-          <button type="button" class="btn small" id="pxLineB" aria-pressed="false" title="Then click the chart to mark a level">✎ Line</button><button type="button" class="btn small" id="pxClearL">Clear lines</button>
+          <button type="button" class="btn small" id="pxLineB" aria-pressed="false" title="Then click the chart to mark a level">✎ Line</button><button type="button" class="btn small" id="pxClearL">Clear lines</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button>
           <span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
         <div class="px-hud" id="pxHud"></div>
-        <div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
+        <div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div></div>
         <div class="px-ticket">
           <div class="fgrid bt-grid"><div class="f"><label for="pxRisk">Risk per trade (%)</label><input id="pxRisk" class="ctl" type="number" step="any" value="1"><div class="px-quick" data-for="pxRisk">${[0.5, 1, 2].map(v => `<button type="button" data-v="${v}">${v}%</button>`).join("")}</div></div>
             <div class="f"><label for="pxStopT">Stop loss</label><select id="pxStopT" class="ctl"><option value="atr">× ATR(14)</option><option value="pts">Price distance</option></select></div>
