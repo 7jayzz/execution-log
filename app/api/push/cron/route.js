@@ -4,6 +4,7 @@ import { pushSecrets, sendToUser, unsubToken } from "@/lib/push";
 import { sendReminderEmail } from "@/lib/email";
 import { SITE_URL } from "@/lib/site";
 import { ACTIVE_STATUSES } from "@/lib/subscription";
+import { askClaude } from "@/lib/claude";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -124,5 +125,8 @@ export async function POST(request) {
   }
   // Keep the log small.
   await admin.from("push_log").delete().lt("sent_at", new Date(Date.now() - 60 * 864e5).toISOString());
-  return NextResponse.json({ users: users.length, sent, emailed });
+  // Once a day, check the AI coach still answers, so a problem (no credit, bad key) emails support before a trader finds it.
+  let coach;
+  if (new Date().getUTCHours() === 7){ try { await askClaude("Reply with the single word OK.", { maxTokens: 50, where: "the daily health check" }); coach = "ok"; } catch (e) { coach = "failed: " + (e?.message || e); } }
+  return NextResponse.json({ users: users.length, sent, emailed, coach });
 }
