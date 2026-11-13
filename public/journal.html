@@ -3428,7 +3428,7 @@ function drawReplay(){
   // The candle that contains the entry (or exit) time.
   const holder = k => { let i = -1; for (let j = 0; j < cs.length; j++){ if (key(cs[j]) <= k) i = j; else break; } return i < 0 ? 0 : i; };
   const iIn = holder(inKey), iOut = Math.max(iIn, holder(outKey)), from = Math.max(0, iIn - 40);
-  replay.entryIdx = iIn - from + 1;
+  replay.entryIdx = iIn - from + 1; replay.exitIdx = iOut - from + 1;
   if (replay.atKey){ replay.idx = Math.max(1, cs.slice(from).filter(c => key(c) <= replay.atKey).length); replay.atKey = null; }
   replay.max = cs.length - from; replay.idx = Math.min(Math.max(1, replay.idx || 1), replay.max);
   const last = from + replay.idx - 1; replay.shownKey = key(cs[last]);
@@ -3582,7 +3582,8 @@ function replayPlay(){ if (replay.timer){ replayStop(); return; }
   if (!replay.base?.length || !replay.trade){ toast(replay.trade ? "Load the candles for this trade first: choose a candles file, or open one of your saved replays below." : "Pick a trade first, then load its candles.", 5000); return; }
   if (!replay.started){ if (!replayAllowed()) return; replay.started = true; replay.idx = 1; replay.pan = 0; drawReplay(); }
   if (replay.idx >= (replay.max || 0)){ replay.idx = 1; replay.pan = 0; }
-  $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; return; } replayStep(1); }, +($("#rpSpeed")?.value || 350)); }
+  $("#rpPlay").textContent = "❚❚ Pause"; replay.timer = setInterval(() => { if (!$("#rpChart") || replay.idx >= (replay.max || 0)){ clearInterval(replay.timer); replay.timer = null; if ($("#rpPlay")) $("#rpPlay").textContent = "▶ Play"; askSaveReplay(); return; }
+    replayStep(1); if (replay.exitIdx && replay.idx >= replay.exitIdx + 3) askSaveReplay(true); }, +($("#rpSpeed")?.value || 350)); }
 
 /* ---------- Strategy tester (Elite): your own rules on historical candles ---------- */
 const BT_SIGNALS = { custom: "✎ Build my own rules", orb: "Opening range breakout", ma: "Moving average crossover", brk: "Breakout of recent high/low", rsi: "RSI reversal" };
@@ -4208,22 +4209,41 @@ function bindStrategyTester(){
 /* ---------- Saved replay sessions (Elite) ---------- */
 // A saved replay keeps the trade, the candles for that day, the timeframe, where you stopped and your note, so it reopens exactly as you left it.
 state.replays = state.replays || [];
-function saveReplay(){
+const replayRec = (x, note) => { const lo = isoAdd(x.date, -1), hi = isoAdd(x.date, 1), keep = replay.base.filter(c => c.d >= lo && c.d <= hi).slice(0, 4500);
+  return { kind: "replay", tradeId: x.id, label: `${x.symbol} ${x.side === "short" ? "sell" : "buy"} · ${fmtDate(x.date)} ${x.timeIn || ""}`.trim(), note,
+    tf: replay.tf || 1, shift: replay.shift || 0, idx: replay.idx || 1, fileSym: replay.fileSym || x.symbol, candles: keep.map(c => [c.d, c.t, c.o, c.h, c.l, c.c]), saved: Date.now() }; };
+async function storeReplay(x, rec){
+  const prev = state.replays.find(r => r.tradeId === x.id), id = prev?.id || "rp" + Date.now().toString(36);
+  state.replays = [...state.replays.filter(r => r.id !== id), { id, ...rec }];
+  if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).set(rec); } catch (err){ handleWriteError(err); return false; } }
+  renderSavedReplays(); return true;
+}
+// Elite: as soon as a file covers the picked trade, keep that trade's candles to the account so it opens on any device.
+async function autoSaveReplay(){
+  const x = replay.trade; if (!x || !replay.base?.length || !hasTier("elite")) return;
+  if (replay.fileSym && x.symbol && !sameSym(replay.fileSym, x.symbol)) return;
+  if (!replay.base.some(c => c.d === x.date)) return;
+  const key = x.id + "|" + replay.base.length; if (replay.autoKey === key) return; replay.autoKey = key;
+  const prev = state.replays.find(r => r.tradeId === x.id);
+  if (await storeReplay(x, replayRec(x, prev?.note || "")) && !replay.autoTold){ replay.autoTold = true; toast("Replay saved to your account, so it opens on your other devices too"); }
+}
+// When a played trade finishes, ask once whether to save it with a note.
+function askSaveReplay(pause){
+  const x = replay.trade; if (!x || !hasTier("elite") || !replay.base?.length) return;
+  replay.asked = replay.asked || new Set(); if (replay.asked.has(x.id)) return; replay.asked.add(x.id);
+  if (pause) replayStop(); saveReplay(true);
+}
+function saveReplay(done){
   if (!hasTier("elite")){ toast("Saving replays is part of Elite"); goUpgrade(); return; }
   const x = replay.trade; if (!x || !replay.base?.length){ toast("Load a trade and its candles first"); return; }
   const prev = state.replays.find(r => r.tradeId === x.id);
-  const close = showDrawer(`<form class="drawer" id="rsForm" novalidate><div class="panel-head"><h2>Save this replay</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-    <p class="hint" style="margin:0">${esc(x.symbol)} ${x.side === "short" ? "sell" : "buy"} · ${esc(fmtDate(x.date))} ${esc(x.timeIn || "")}. It saves the candles, timeframe and where you are, so you can pick it up later.</p>
+  const close = showDrawer(`<form class="drawer" id="rsForm" novalidate><div class="panel-head"><h2>${done === true ? "Trade finished. Save this replay?" : "Save this replay"}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">${esc(x.symbol)} ${x.side === "short" ? "sell" : "buy"} · ${esc(fmtDate(x.date))} ${esc(x.timeIn || "")}. It saves the candles, timeframe and where you are, so you can pick it up later on any device.</p>
     <div class="f"><label for="rsNote">What did you learn from this trade? <span class="opt">(optional)</span></label><textarea id="rsNote" rows="4" maxlength="2000" placeholder="e.g. Entered too early. Should have waited for the retest.">${esc(prev?.note || "")}</textarea></div>
-    <div class="drawer-foot"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">Save replay</button></div></form>`);
+    <div class="drawer-foot"><button type="button" class="btn" data-close>${done === true ? "Not now" : esc(t("cancel"))}</button><button type="submit" class="btn primary">Save replay</button></div></form>`);
   $("#rsForm").onsubmit = async e => { e.preventDefault();
-    const lo = isoAdd(x.date, -1), hi = isoAdd(x.date, 1), keep = replay.base.filter(c => c.d >= lo && c.d <= hi).slice(0, 4500);
-    const rec = { kind: "replay", tradeId: x.id, label: `${x.symbol} ${x.side === "short" ? "sell" : "buy"} · ${fmtDate(x.date)} ${x.timeIn || ""}`.trim(), note: $("#rsNote").value.trim(),
-      tf: replay.tf || 1, shift: replay.shift || 0, idx: replay.idx || 1, fileSym: replay.fileSym || x.symbol, candles: keep.map(c => [c.d, c.t, c.o, c.h, c.l, c.c]), saved: Date.now() };
-    const id = prev?.id || "rp" + Date.now().toString(36);
-    state.replays = [...state.replays.filter(r => r.id !== id), { id, ...rec }];
-    if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).set(rec); } catch (err){ handleWriteError(err); return; } }
-    close(); toast("Replay saved"); renderSavedReplays(); };
+    if (!await storeReplay(x, replayRec(x, $("#rsNote").value.trim()))) return;
+    close(); toast("Replay saved"); };
 }
 function openSavedReplay(id){
   const r = state.replays.find(v => v.id === id); if (!r) return;
@@ -4492,7 +4512,7 @@ function renderElite(){
   $("#rrRun").onclick = () => { const w = Math.min(99, Math.max(1, +$("#rrW").value || 45)) / 100, rr = +$("#rrR").value || 2, sample = Array.from({ length: 100 }, (_, i) => i < w * 100 ? rr : -1);
     const m = monteCarlo(sample, { n: Math.min(500, Math.max(10, +$("#rrN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#rrRisk").value || 1, ddLimit: +(a.rules?.maxPct ?? 10), target: +(a.rules?.targetPct ?? 10) });
     $("#rrOut").innerHTML = `<p class="hint">Expectancy: <b class="${cls(w * rr - (1 - w))}">${(w * rr - (1 - w) > 0 ? "+" : "") + (w * rr - (1 - w)).toFixed(2)}R</b> per trade. Break-even win rate at 1:${rr}: ${(100 / (1 + rr)).toFixed(0)}%.</p>` + simOut(m); };
-  const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); };
+  const rpLoad = () => { replayStop(); replay.trade = state.trades.find(x => x.id === $("#rpTrade").value) || null; replay.idx = 1; replay.pan = 0; replay.started = false; drawReplay(); autoSaveReplay(); };
   // Picking a trade that already has a saved replay loads its saved candles, unless the loaded file already covers that day.
   $("#rpTrade").onchange = () => { const id = $("#rpTrade").value, x = state.trades.find(t_ => t_.id === id), saved = x && state.replays.find(r => r.tradeId === id);
     if (saved && !(replay.base || []).some(c => c.d === x.date)){ openSavedReplay(saved.id); toast("Loaded your saved replay for this trade"); return; }
@@ -4515,7 +4535,7 @@ function renderElite(){
   $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
   $("#rpHow").onclick = openCandleGuide; $("#btHow").onclick = openCandleGuide;
   bindStrategyTester(); bindPractice();
-  $("#rpSave").onclick = saveReplay;
+  $("#rpSave").onclick = () => saveReplay();
   renderSavedReplays();
   $("#rpShift").onchange = e => { replay.shift = e.target.value === "auto" ? "auto" : (+e.target.value || 0); if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
   $("#rpStart").onclick = () => replayJump(1); $("#rpEnd").onclick = () => replayJump(replay.max || 1);
