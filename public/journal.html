@@ -841,6 +841,10 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
 .px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
 .px-spark{width:160px;height:34px;flex:none}
+.px-planm{margin:8px 0 4px;font-size:13px}.px-planbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px}.px-planbar .actions{margin-inline-start:auto}.px-planbar .px-buy,.px-planbar .px-sell{color:#fff;border:0}
+.px-dl{cursor:ns-resize}
+.px-sess{margin:8px 0;border:1px solid var(--line-2);border-radius:12px;padding:8px 12px}.px-sess summary{cursor:pointer}.px-sess-list{display:grid;gap:6px;margin-top:8px}.px-sess-row{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:var(--surface-2)}.px-sess-row.on{outline:1px solid var(--accent)}.px-sess-row>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.px-sess-row input{width:240px}
+.px-saved{margin-inline-start:6px}
 .px-ln-hit{stroke:transparent;stroke-width:14;cursor:move}.px-ln-hit.ns{cursor:ns-resize}.px-ln-hit.ew{cursor:ew-resize}
 .px-zone{fill-opacity:.14;stroke-width:1.2;stroke-opacity:.8;cursor:move}.px-ln.sel .px-zone{fill-opacity:.22}.px-hnd{fill:var(--surface);stroke-width:2;cursor:grab}
 .px-chart.drawing,.px-chart.drawing *{cursor:crosshair!important}
@@ -4159,9 +4163,7 @@ function pxLoad(cs, sym, label){
   $("#pxDate").innerHTML = pick.slice().reverse().map(d => `<option value="${d}"${d === mid ? " selected" : ""}>${esc(new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d + "T00:00:00Z")))}</option>`).join("");
   pxTimes();
   $("#pxSetup").hidden = false; $("#pxLive").hidden = true;
-  const sv = state.settings?.practice; const rb = $("#pxResume");
-  rb.hidden = !(sv && sv.key && (!sv.sym || !px.sym || sameSym(sv.sym, px.sym)) && cs.some(c => c.d + " " + c.t >= sv.key));
-  if (!rb.hidden) rb.textContent = `Resume saved session (${sv.sym || ""} ${fmtDate(sv.key.slice(0, 10))} ${sv.key.slice(11)} · ${sv.done?.length || 0} trades)`;
+  pxSessionsRender();
 }
 // Times to start from on the chosen day: every candle for 15-minute charts and up, otherwise every 15 minutes, from the file itself.
 function pxTimes(){ const d = $("#pxDate")?.value, tf = Math.max(+$("#pxTf")?.value || 1, 1), step = Math.max(tf, 15), prev = $("#pxTime").value || "08:00";
@@ -4173,7 +4175,8 @@ function pxStart(from, keep){
   const i = px.cs.findIndex(c => c.d + " " + c.t >= from); if (i < 0){ toast("That date isn't in this file"); return; }
   if (i < 30){ toast("Pick a later start so there's some history on the chart"); return; }
   px.idx = i + 1;
-  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; } px.pan = 0; px.yMan = null; px.hist = []; px.redo = []; px.lineSel = null; px.tool = null; px.pending = null; setTimeout(pxUndoUi);
+  if (!keep){ px.start = px.bal = px.peak = Math.max(1, +$("#pxBal").value || 10000); px.dd = 0; px.pos = []; px.done = []; px.lines = []; px.sid = "ps" + Date.now().toString(36); px.created = Date.now(); px.fromKey = from; px.savedAt = 0;
+    const d0 = from.slice(0, 10); px.sname = `${px.sym || "Practice"} · ${new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(d0 + "T00:00:00Z"))} from ${from.slice(11)}`; } px.pan = 0; px.yMan = null; px.hist = []; px.redo = []; px.lineSel = null; px.tool = null; px.pending = null; setTimeout(pxUndoUi);
   pxTfMark(); px.active = true; px.badges = keep ? (px.badges || []) : []; $("#pxSetup").hidden = true; $("#pxLive").hidden = false; pxDraw(); $("#pxChart").focus({ preventScroll: true });
 }
 const pxNow = () => px.cs[px.idx - 1];
@@ -4202,13 +4205,13 @@ function pxRestore(s){
   else if (!s.partial && px.partial && px.full){ px.cs[px.partial.j] = px.full; }
   if (s.partial){ px.full = s.full; px.cs[s.partial.j] = s.j; } px.partial = s.partial;
   Object.assign(px, { idx: s.idx, pos: s.pos, done: s.done, bal: s.bal, peak: s.peak, dd: s.dd, badges: s.badges, lines: s.lines }); px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; px.lineSel = null; pxLineEdit(null, true); pxTfMark(); pxDraw(); }
-function pxRecord(){ px.hist ||= []; px.hist.push(pxSnap()); if (px.hist.length > 1500) px.hist.shift(); px.redo = []; pxUndoUi(); }
-function pxUndo(){ if (!px.hist?.length){ toast("Nothing to undo. This is where the session started."); return; } pxStop(); (px.redo ||= []).push(pxSnap()); pxRestore(px.hist.pop()); pxUndoUi(); }
-function pxRedo(){ if (!px.redo?.length){ toast("Nothing to redo"); return; } pxStop(); (px.hist ||= []).push(pxSnap()); pxRestore(px.redo.pop()); pxUndoUi(); }
+function pxRecord(){ pxDirty(); px.hist ||= []; px.hist.push(pxSnap()); if (px.hist.length > 1500) px.hist.shift(); px.redo = []; pxUndoUi(); }
+function pxUndo(){ pxDirty(); if (!px.hist?.length){ toast("Nothing to undo. This is where the session started."); return; } pxStop(); (px.redo ||= []).push(pxSnap()); pxRestore(px.hist.pop()); pxUndoUi(); }
+function pxRedo(){ pxDirty(); if (!px.redo?.length){ toast("Nothing to redo"); return; } pxStop(); (px.hist ||= []).push(pxSnap()); pxRestore(px.redo.pop()); pxUndoUi(); }
 const pxBack = pxUndo;
 function pxUndoUi(){ const u = $("#pxUndo"), r = $("#pxRedo"); if (u) u.disabled = !px.hist?.length; if (r) r.disabled = !px.redo?.length; }
 function pxStep(n = 1){
-  if (!px.cs.length) return; pxRecord();
+  if (!px.cs.length) return; if (px.plan){ pxPlace(); toast("Placed your planned trade before moving on"); } pxRecord();
   for (let k = 0; k < n; k++){
     let c;
     if (px.partial){ const { j, bEnd, jEnd } = px.partial, rest = px.base.slice(bEnd + 1, jEnd + 1); px.cs[j] = px.full; px.partial = null; px.atr = atrArr(px.cs);
@@ -4243,15 +4246,30 @@ function pxFx(R, pnl, why){
       fx.appendChild(s); setTimeout(() => s.remove(), 1400); } }
   px.badges = px.badges || []; PX_BADGES.forEach(([id, ic, label, test]) => { if (!px.badges.includes(id) && test(px.done)){ px.badges.push(id); setTimeout(() => toast(`${ic} Badge unlocked: ${label}`, 3500), 700); } });
 }
-function pxOpen(dir){
+// Where the stop and target would go from the ticket settings.
+function pxLevels(dir){ const c = pxNow(), atr = px.atr[px.idx - 1] || 0, st = $("#pxStopT").value, sv = +$("#pxStopV").value, dist = st === "atr" ? atr * (sv || 1.5) : sv, rr = $("#pxRR").value === "" ? null : +$("#pxRR").value;
+  return dist > 0 ? { stop: c.c - dir * dist, tgt: rr > 0 ? c.c + dir * dist * rr : null } : null; }
+function pxOpen(dir, ov){
   if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; }
-  const c = pxNow(), atr = px.atr[px.idx - 1] || 0, st = $("#pxStopT").value, sv = +$("#pxStopV").value, dist = st === "atr" ? atr * (sv || 1.5) : sv;
-  if (!(dist > 0)){ toast("Set a stop size first"); return; } pxRecord();
-  const rr = $("#pxRR").value === "" ? null : +$("#pxRR").value, riskPct = Math.max(.01, +$("#pxRisk").value || 1), riskAmt = px.bal * riskPct / 100;
+  // "Set stop and target on the chart first": the first click shows a position you can drag, the second places it.
+  if (!ov && $("#pxPlanMode")?.checked){ if (px.plan && px.plan.dir === dir){ pxPlace(); return; } const lv = pxLevels(dir); if (!lv){ toast("Set a stop size first"); return; } px.plan = { dir, ...lv }; px.preview = 0; pxDraw(); return; }
+  const c = pxNow(), lv = ov || pxLevels(dir); if (!lv){ toast("Set a stop size first"); return; } const dist = Math.abs(c.c - lv.stop);
+  if (!(dist > 0) || (lv.stop - c.c) * dir >= 0){ toast(dir > 0 ? "A buy's stop must be below the price" : "A sell's stop must be above the price"); return; }
+  if (lv.tgt != null && (lv.tgt - c.c) * dir <= 0){ toast(dir > 0 ? "A buy's target must be above the price" : "A sell's target must be below the price"); return; } pxRecord();
+  const riskPct = Math.max(.01, +$("#pxRisk").value || 1), riskAmt = px.bal * riskPct / 100;
   const ins = INSTR[px.sym] || null, lots = ins?.contract ? riskAmt / (dist * ins.contract) : null, spread = Math.max(0, +$("#pxSpread").value || 0);
-  px.pos.push({ id: Date.now() + Math.random(), dir, entry: c.c, stop: c.c - dir * dist, tgt: rr > 0 ? c.c + dir * dist * rr : null, risk: dist, riskAmt, lots, costR: spread / dist, key: c.d + " " + c.t, i: px.idx - 1 });
+  px.pos.push({ id: Date.now() + Math.random(), dir, entry: c.c, stop: lv.stop, tgt: lv.tgt ?? null, risk: dist, riskAmt, lots, costR: spread / dist, key: c.d + " " + c.t, i: px.idx - 1 });
   pxDraw();
 }
+function pxPlace(){ const pl = px.plan; if (!pl) return; px.plan = null; pxOpen(pl.dir, { stop: pl.stop, tgt: pl.tgt }); if (px.plan == null) toast(`${pl.dir > 0 ? "Buy" : "Sell"} placed`); }
+function pxPlanBar(){ const bar = $("#pxPlanBar"); if (!bar) return; const pl = px.plan, c = pxNow();
+  if (!pl || !c){ bar.hidden = true; return; } const risk = Math.abs(c.c - pl.stop), rr = pl.tgt != null && risk ? Math.abs(pl.tgt - c.c) / risk : null, riskAmt = px.bal * Math.max(.01, +$("#pxRisk").value || 1) / 100, ins = INSTR[px.sym];
+  bar.hidden = false; bar.innerHTML = `<span class="px-plan-t ${pl.dir > 0 ? "pos" : "neg"}"><b>${pl.dir > 0 ? "Planned buy" : "Planned sell"}</b> · drag the red and green lines on the chart</span><span class="hint">Stop ${pxPrice(pl.stop)} · ${pl.tgt != null ? `Target ${pxPrice(pl.tgt)} · <b>R:R 1 : ${rr.toFixed(2)}</b>` : "No target"} · risking ${money(riskAmt, false)}${ins?.contract && risk ? ` · ${(riskAmt / (risk * ins.contract)).toFixed(2)} lots` : ""}</span>
+    <span class="actions">${pl.tgt == null ? `<button type="button" class="btn small" id="pxPlanTp">+ Add target</button>` : `<button type="button" class="btn small" id="pxPlanNoTp">Remove target</button>`}<button type="button" class="btn small" id="pxPlanFlip">⇅ Flip</button><button type="button" class="btn small" id="pxPlanX">Cancel</button><button type="button" class="btn small ${pl.dir > 0 ? "px-buy" : "px-sell"}" id="pxPlanGo">Place ${pl.dir > 0 ? "buy" : "sell"}</button></span>`;
+  $("#pxPlanGo").onclick = pxPlace; $("#pxPlanX").onclick = () => { px.plan = null; pxDraw(); };
+  $("#pxPlanFlip").onclick = () => { const r_ = Math.abs(c.c - pl.stop), t_ = pl.tgt != null ? Math.abs(pl.tgt - c.c) : null; pl.dir *= -1; pl.stop = c.c - pl.dir * r_; pl.tgt = t_ != null ? c.c + pl.dir * t_ : null; pxDraw(); };
+  if ($("#pxPlanTp")) $("#pxPlanTp").onclick = () => { pl.tgt = c.c + pl.dir * Math.abs(c.c - pl.stop) * 2; pxDraw(); };
+  if ($("#pxPlanNoTp")) $("#pxPlanNoTp").onclick = () => { pl.tgt = null; pxDraw(); }; }
 // Drawings: levels, trend lines, zones and time lines. Points are stored by candle time so they survive timeframe changes.
 const PX_TOOLS = { h: "Level", t: "Trend line", r: "Zone", v: "Time line" }, PX_COLS = ["#5b8def", "#F4B53F", "#089981", "#F23645", "#a855f7", "#e5e7eb"];
 const pxNorm = L => typeof L === "number" ? { type: "h", a: { p: L } } : L.type ? L : { type: "h", a: { p: L.p }, note: L.note, col: L.col };
@@ -4279,6 +4297,7 @@ function pxDraw(){
   if ($("#pxLatest")) $("#pxLatest").hidden = px.pan < 1;
   let hi = Math.max(...vis.map(k => k.h)), lo = Math.min(...vis.map(k => k.l));
   px.pos.forEach(p => { [p.entry, p.stop, p.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } }); });
+  if (px.plan) [px.plan.stop, px.plan.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } });
   if (px.preview){ const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? 0 : +$("#pxRR").value;
     if (dist_ > 0){ const cc = c.c, d_ = px.preview; [cc - d_ * dist_, cc + d_ * dist_ * rr_].forEach(v => { hi = Math.max(hi, v); lo = Math.min(lo, v); }); } }
   const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad;
@@ -4293,7 +4312,7 @@ function pxDraw(){
     return `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y(k.h).toFixed(1)}" y2="${y(k.l).toFixed(1)}" class="${up ? "px-up" : "px-dn"}"/><rect x="${(x - w / 2).toFixed(1)}" y="${t.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, b - t).toFixed(1)}" class="${up ? "px-upf" : "px-dnf"}"/>`; }).join("");
   const hline = (v, cls_, label) => v == null ? "" : `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls_}"/><rect x="${cw}" y="${(y(v) - 9).toFixed(1)}" width="${R}" height="18" class="${cls_}-tag"/><text x="${cw + 4}" y="${(y(v) + 4).toFixed(1)}" class="px-tagt">${esc(label)}</text>`;
   const posL = px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0; return (iE >= 0 ? `<text x="${X(iE).toFixed(1)}" y="${(y(p.entry) + (p.dir > 0 ? 16 : -8)).toFixed(1)}" class="px-mk ${p.dir > 0 ? "pos" : "neg"}" text-anchor="middle">${p.dir > 0 ? "▲" : "▼"}</text>` : "")
-    + hline(p.tgt, "px-tp", "TP " + pxPrice(p.tgt)) + hline(p.stop, "px-sl", (p.stop === p.entry ? "BE " : "SL ") + pxPrice(p.stop)) + hline(p.entry, "px-en", (p.dir > 0 ? "Buy " : "Sell ") + pxPrice(p.entry)); }).join("");
+    + hline(p.entry, "px-en", (p.dir > 0 ? "Buy " : "Sell ") + pxPrice(p.entry)); }).join("");
   const keyIdx = k => { const j = pxIdxOf(k); return j < 0 ? -1 : j - lo0; };
   const doneM = px.done.slice(-60).map(d => { const a = keyIdx(d.key), b = keyIdx(d.exitKey); if (b < 0 && a < 0) return ""; const col = d.R > 0 ? "pos" : d.R < 0 ? "neg" : "";
     return (a >= 0 && b >= 0 ? `<line x1="${X(a).toFixed(1)}" x2="${X(b).toFixed(1)}" y1="${y(d.entry).toFixed(1)}" y2="${y(d.exit).toFixed(1)}" class="px-path ${col}"/>` : "") + (b >= 0 ? `<circle cx="${X(b).toFixed(1)}" cy="${y(d.exit).toFixed(1)}" r="3.5" class="px-ex ${col}"/>` : ""); }).join("");
@@ -4304,7 +4323,12 @@ function pxDraw(){
     const rr = tgt != null && r ? Math.abs(tgt - entry) / r : null, ly = tgt != null ? (y(tgt) + yE) / 2 : yE - 8 * dir;
     if (w_ > 60) out += `<text x="${(x0 + 8).toFixed(1)}" y="${(ly + 4).toFixed(1)}" class="px-rr-lbl">${ghost ? (dir > 0 ? "Buy preview · " : "Sell preview · ") : ""}${rr != null ? "R:R 1 : " + rr.toFixed(2) : "No target"}</text>`;
     return out; };
-  const boxes = px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0; return rrBox(p.entry, p.stop, p.tgt, p.dir, iE >= 0 ? X(iE) - bw / 2 : 0, false); }).join("")
+  // Draggable stop/target lines (open trades and a planned trade), like TradingView's position tool.
+  const dragL = (v, key, cls_, label) => v == null ? "" : `<g class="px-dl" data-drag="${key}"><line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls_}"/><rect x="${cw}" y="${(y(v) - 9).toFixed(1)}" width="${R}" height="18" class="${cls_}-tag"/><text x="${cw + 4}" y="${(y(v) + 4).toFixed(1)}" class="px-tagt">${esc(label)}</text><line x1="0" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-ln-hit ns"/></g>`;
+  const planB = px.plan ? (() => { const pl = px.plan, x0 = X(vis.length - 1) + bw / 2; return `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.stop)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.stop) - y(c.c)).toFixed(1)}" class="px-rr-sl"/>` + (pl.tgt != null ? `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.tgt)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.tgt) - y(c.c)).toFixed(1)}" class="px-rr-tp"/>` : ""); })() : "";
+  const planL = px.plan ? dragL(px.plan.tgt, "plan:tgt", "px-tp", "TP " + pxPrice(px.plan.tgt)) + dragL(px.plan.stop, "plan:stop", "px-sl", "SL " + pxPrice(px.plan.stop)) : "";
+  const posDrag = px.pos.map(p => dragL(p.tgt, `pos:${p.id}:tgt`, "px-tp", "TP " + pxPrice(p.tgt)) + dragL(p.stop, `pos:${p.id}:stop`, "px-sl", (p.stop === p.entry ? "BE " : "SL ") + pxPrice(p.stop))).join("");
+  const boxes = planB + px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0; return rrBox(p.entry, p.stop, p.tgt, p.dir, iE >= 0 ? X(iE) - bw / 2 : 0, false); }).join("")
     + (px.preview && px.pan < 1 ? (() => { const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? null : +$("#pxRR").value;
         if (!(dist_ > 0)) return ""; const d_ = px.preview; hi = hi; return rrBox(c.c, c.c - d_ * dist_, rr_ > 0 ? c.c + d_ * dist_ * rr_ : null, d_, X(vis.length - 1) + bw / 2, true); })() : "");
   // Your drawings: drag to move, drag a dot to reshape, click to edit or delete.
@@ -4319,7 +4343,7 @@ function pxDraw(){
     else if (L.type === "r"){ const xa = PX(L.a), xb = PX(L.b), ya = y(L.a.p), yb = y(L.b.p), x0 = Math.min(xa, xb), y0 = Math.min(ya, yb);
       body = `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${Math.max(2, Math.abs(xb - xa)).toFixed(1)}" height="${Math.max(2, Math.abs(yb - ya)).toFixed(1)}" class="px-zone mv" style="fill:${col};stroke:${col}"/>${lab((x0 + 5).toFixed(1), (y0 + 13).toFixed(1))}${dot(L.a, "a")}${dot(L.b, "b")}`; }
     return `<g class="px-ln${on ? " sel" : ""}" data-li="${i}">${body}</g>`; }).join("");
-  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Candles up to ${esc(c.d)} ${esc(c.t)}">${g}${boxes}${bars}${lines}${doneM}${posL}${hline(c.c, "px-last", pxPrice(c.c))}${tx}</svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Candles up to ${esc(c.d)} ${esc(c.t)}">${g}${boxes}${bars}${lines}${doneM}${posL}${posDrag}${planL}${hline(c.c, "px-last", pxPrice(c.c))}${tx}</svg>`;
   $("#pxPosTxt").textContent = `${px.sym || ""} · ${fmtDate(c.d)} ${c.t} · close ${pxPrice(c.c)} · ATR ${pxPrice(px.atr[px.idx - 1] || 0)}`;
   const atr = px.atr[px.idx - 1] || 0, sv = +$("#pxStopV").value, dist = $("#pxStopT").value === "atr" ? atr * (sv || 1.5) : sv, rr = $("#pxRR").value === "" ? null : +$("#pxRR").value, ins = INSTR[px.sym];
   if ($("#pxBuyP")){ $("#pxBuyP").textContent = pxPrice(c.c); $("#pxSellP").textContent = pxPrice(c.c); const prev = px.cs[px.idx - 2], t_ = $("#pxTick");
@@ -4332,7 +4356,7 @@ function pxDraw(){
   $("#pxPos").querySelectorAll("[data-cl]").forEach(b => b.onclick = () => { const p = px.pos.find(q => String(q.id) === b.dataset.cl); if (p){ pxRecord(); pxClose(p, pxNow().c, "Closed by you"); pxDraw(); } });
   $("#pxPos").querySelectorAll("[data-be]").forEach(b => b.onclick = () => { const p = px.pos.find(q => String(q.id) === b.dataset.be); if (p){ pxRecord(); p.stop = p.entry; pxDraw(); } });
   $("#pxPos").querySelectorAll(".px-ed").forEach(inp => inp.onchange = () => setTimeout(() => pxEdit(inp, c), 0));
-  pxStatsDraw();
+  pxStatsDraw(); pxPlanBar();
 }
 function pxEdit(inp, c){ { const p = px.pos.find(q => String(q.id) === inp.dataset.id); if (!p) return; const v = inp.value === "" ? null : +inp.value;
     if (inp.dataset.ed === "stop"){ if (!(v == null || (v - c.c) * p.dir >= 0)) pxRecord(); if (v == null || (v - c.c) * p.dir >= 0){ toast(p.dir > 0 ? "A buy's stop must be below the current price" : "A sell's stop must be above the current price"); pxDraw(); return; } p.stop = v; }
@@ -4355,12 +4379,34 @@ function pxStatsDraw(){
   $("#pxStats").innerHTML = `<div class="kgrid">${k("Balance", money(px.bal, false), cls(px.bal - px.start), `${((px.bal / px.start - 1) * 100).toFixed(1)}% since start`)}${k("Trades", String(d.length), "", px.pos.length ? `${px.pos.length} open` : "")}${k("Win rate", d.length ? (w.length / d.length * 100).toFixed(0) + "%" : "—")}${k("Net", (net >= 0 ? "+" : "") + net.toFixed(2) + "R", cls(net))}${k("Profit factor", gl ? (gw / gl).toFixed(2) : d.length ? "—" : "—")}${k("Max drawdown", (px.dd * 100).toFixed(1) + "%", px.dd ? "neg" : "")}</div>
     ${d.length ? `<details class="bt-trades"><summary>Your ${d.length} practice trade${d.length === 1 ? "" : "s"}</summary><div class="tbl-wrap"><table><thead><tr><th>Opened</th><th>Side</th><th class="r">Entry</th><th class="r">Exit</th><th>How it ended</th><th class="r">R</th><th class="r">P&amp;L</th></tr></thead><tbody>${d.slice().reverse().slice(0, 200).map(x => `<tr><td>${esc(fmtDate(x.key.slice(0, 10)))} ${esc(x.key.slice(11))}</td><td>${x.dir > 0 ? "Buy" : "Sell"}</td><td class="r">${pxPrice(x.entry)}</td><td class="r">${pxPrice(x.exit)}</td><td>${esc(x.why)}</td><td class="r ${cls(x.R)}">${x.R >= 0 ? "+" : ""}${x.R.toFixed(2)}</td><td class="r ${cls(x.pnl)}">${money(x.pnl)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}`;
 }
-function pxSaveSession(){ const c = pxNow(); if (!c) return;
-  const practice = { sym: px.sym, tf: px.tf, key: c.d + " " + c.t, bal: px.bal, start: px.start, peak: px.peak, dd: px.dd, pos: px.pos, done: px.done.slice(-500), lines: px.lines, saved: Date.now() };
-  saveCfg({ practice }).then(() => toast("Session saved. Load the same candles file next time and press Resume.")); }
-function pxResume(){ const sv = state.settings?.practice; if (!sv) return; if (sv.tf) $("#pxTf").value = String(sv.tf);
-  Object.assign(px, { bal: sv.bal, start: sv.start, peak: sv.peak || sv.bal, dd: sv.dd || 0, pos: sv.pos || [], done: sv.done || [], lines: sv.lines || [] });
-  pxStart(sv.key, true); }
+// Practice sessions are saved to your account as you go (a few seconds after each change), so you can come back and carry on.
+state.practice = state.practice || [];
+function pxSessionDoc(){ const c = pxNow(); if (!c || !px.sid) return null; const d = px.done, net = d.reduce((q, x) => q + x.R, 0);
+  return { kind: "practice", name: px.sname || `${px.sym || "Practice"} session`, sym: px.sym, file: px.label || "", tf: px.tf, from: px.fromKey || "", key: c.d + " " + c.t, bal: px.bal, start: px.start, peak: px.peak, dd: px.dd,
+    pos: px.pos, done: d.slice(-300), lines: px.lines, badges: px.badges || [], trades: d.length, netR: +net.toFixed(2), created: px.created || Date.now(), saved: Date.now() }; }
+async function pxSaveSession(quiet){ const rec = pxSessionDoc(); if (!rec) return; clearTimeout(px.autoT);
+  state.practice = [{ id: px.sid, ...rec }, ...state.practice.filter(s => s.id !== px.sid)];
+  if (state.mode === "live" && !state.readOnly){ try { await col.doc(px.sid).set(rec); } catch (e){ if (!quiet) handleWriteError(e); return; } }
+  px.savedAt = Date.now(); pxSaveMark(); pxSessionsRender(); if (!quiet) toast("Session saved. Pick it from Your practice sessions any time to carry on."); }
+const pxDirty = () => { if (!px.sid || !px.active) return; clearTimeout(px.autoT); px.autoT = setTimeout(() => pxSaveSession(true), 3000); pxSaveMark(true); };
+const pxSaveMark = pending => { const el = $("#pxSaved"); if (el) el.textContent = pending ? "Saving…" : px.savedAt ? "✓ Saved" : ""; };
+async function pxContinue(id){ const s = state.practice.find(x => x.id === id); if (!s) return;
+  if (!px.base?.length || (s.sym && px.sym && !sameSym(s.sym, px.sym)) || !px.base.some(c => pxKey(c) >= s.key)){ const rec = s.sym ? await candleLib.forSym(s.sym) : null;
+    if (!rec || !rec.cs.some(c => pxKey(c) >= s.key)){ toast(`Load your ${s.sym || ""} candles file first (it needs to include ${fmtDate(s.key.slice(0, 10))}), then press Continue.`, 5000); return; }
+    pxLoad(rec.cs, rec.sym, rec.name); }
+  $("#pxTf").value = String(s.tf || 1); Object.assign(px, { bal: s.bal, start: s.start, peak: s.peak || s.bal, dd: s.dd || 0, pos: s.pos || [], done: s.done || [], lines: s.lines || [], badges: s.badges || [], sid: s.id, sname: s.name, created: s.created, fromKey: s.from, savedAt: s.saved });
+  pxStart(s.key, true); toast(`Back in ${s.name}. Carry on where you left off.`); }
+async function pxDeleteSession(id){ state.practice = state.practice.filter(s => s.id !== id); pxSessionsRender(); if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).delete(); } catch (e){ handleWriteError(e); } } }
+function pxSessionsRender(){ const box = $("#pxSessions"); if (!box) return; const ls = state.practice || [];
+  box.innerHTML = ls.length ? `<details class="px-sess" ${px.active ? "" : "open"}><summary><b>Your practice sessions</b> <span class="hint">(${ls.length})</span></summary><div class="px-sess-list">${ls.slice(0, 30).map(s => `<div class="px-sess-row${s.id === px.sid ? " on" : ""}">
+      <div><b>${esc(s.name || "Practice session")}</b><span class="hint">${esc(s.sym || "")} · ${s.tf < 60 ? s.tf + "m" : s.tf / 60 + "h"} · at ${esc(fmtDate(s.key.slice(0, 10)))} ${esc(s.key.slice(11))} · ${s.trades || 0} trade${s.trades === 1 ? "" : "s"} · <span class="${cls(s.netR || 0)}">${(s.netR || 0) >= 0 ? "+" : ""}${(s.netR || 0).toFixed(2)}R</span> · saved ${esc(new Date(s.saved).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</span></div>
+      <div class="actions">${s.id === px.sid && px.active ? `<span class="hint">Open now</span>` : `<button type="button" class="btn small primary" data-cont="${esc(s.id)}">▶ Continue</button>`}<button type="button" class="btn small" data-ren="${esc(s.id)}">Rename</button><button type="button" class="btn small danger" data-del="${esc(s.id)}">✕</button></div></div>`).join("")}</div></details>` : "";
+  box.querySelectorAll("[data-cont]").forEach(b => b.onclick = () => pxContinue(b.dataset.cont));
+  box.querySelectorAll("[data-ren]").forEach(b => b.onclick = () => { const s = state.practice.find(x => x.id === b.dataset.ren); if (!s) return; const nameEl = b.closest(".px-sess-row").querySelector("b");
+    const inp = document.createElement("input"); inp.className = "ctl"; inp.maxLength = 50; inp.value = s.name || ""; nameEl.replaceWith(inp); inp.focus(); inp.select(); let done = false;
+    const save = async ok => { if (done) return; done = true; const nm = inp.value.trim(); if (ok && nm && nm !== s.name){ s.name = nm; if (s.id === px.sid) px.sname = nm; if (state.mode === "live" && !state.readOnly){ try { const { id, ...rec } = s; await col.doc(id).set(rec); } catch (e){ handleWriteError(e); } } } pxSessionsRender(); };
+    inp.onkeydown = e => { if (e.key === "Enter") save(true); else if (e.key === "Escape") save(false); }; inp.onblur = () => save(true); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.armed){ pxDeleteSession(b.dataset.del); } else { b.dataset.armed = "1"; b.textContent = "Delete?"; setTimeout(() => { delete b.dataset.armed; b.textContent = "✕"; }, 2500); } }); }
 function pxReport(){ const d = px.done, w = d.filter(x => x.R > 0), net = d.reduce((q, x) => q + x.R, 0);
   return `PRACTICE SESSION\n${px.sym || "Candles"} · ${px.tf < 60 ? px.tf + "m" : px.tf / 60 + "h"} · ${d.length ? `${fmtDate(d[0].key.slice(0, 10))} to ${fmtDate(d[d.length - 1].exitKey.slice(0, 10))}` : ""}\n\nRESULTS\nTrades: ${d.length}\nWin rate: ${d.length ? (w.length / d.length * 100).toFixed(0) : 0}%\nNet: ${net >= 0 ? "+" : ""}${net.toFixed(2)}R\nBalance: ${money(px.start)} → ${money(px.bal)}\nMax drawdown: ${(px.dd * 100).toFixed(1)}%\n\nTRADES\n${d.map(x => `${x.key} ${x.dir > 0 ? "Buy" : "Sell"} ${pxPrice(x.entry)} → ${pxPrice(x.exit)} (${x.why}) ${x.R >= 0 ? "+" : ""}${x.R.toFixed(2)}R`).join("\n")}\n\nWHAT I LEARNED\n`; }
 function bindPractice(){
@@ -4369,12 +4415,14 @@ function bindPractice(){
   $("#pxUseRp").onclick = () => { if (replay.base?.length) pxLoad(replay.base, replay.fileSym, "Trade Replay's candles"); else if (btState.base?.length) pxLoad(btState.base, btState.sym, "Strategy tester's candles"); else toast("Load a candles file in Trade Replay or the strategy tester first, or choose one here"); };
   $("#pxHow").onclick = openCandleGuide;
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
-  $("#pxResume").onclick = pxResume;
+  pxSessionsRender();
   $("#pxDate").onchange = pxTimes; $("#pxTf").addEventListener("change", pxTimes);
   $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxNext10").onclick = () => pxStep(10);
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
   $("#pxBuy").onclick = () => { px.preview = 0; pxOpen(1); }; $("#pxSell").onclick = () => { px.preview = 0; pxOpen(-1); };
+  try { $("#pxPlanMode").checked = localStorage.getItem("tel-px-plan") === "1"; } catch {}
+  $("#pxPlanMode").onchange = e => { try { localStorage.setItem("tel-px-plan", e.target.checked ? "1" : "0"); } catch {} if (!e.target.checked && px.plan){ px.plan = null; pxDraw(); } };
   // Hover (or focus) Buy or Sell to see the stop and target box before you place it.
   [["#pxBuy", 1], ["#pxSell", -1]].forEach(([s, d]) => { const b = $(s); b.addEventListener("pointerenter", () => { px.preview = d; pxDraw(); }); b.addEventListener("focus", () => { px.preview = d; pxDraw(); });
     b.addEventListener("pointerleave", () => { if (px.preview){ px.preview = 0; pxDraw(); } }); b.addEventListener("blur", () => { if (px.preview){ px.preview = 0; pxDraw(); } }); });
@@ -4403,6 +4451,13 @@ function bindPractice(){
         if (t === "h" || t === "v"){ pxLineEdit(i); return; }
         let moved = false; follow(e, ev => { const q2 = at(ev); if (!moved && Math.hypot(q2.sx - q.sx, q2.sy - q.sy) < 6) return; moved = true; px.lines[i].b = pxEnc(q2.abs, q2.p); pxDraw(); },
           () => { if (!moved){ px.pending = i; toast("Now click where it should end"); } else pxLineEdit(i); }); return; }
+      // Dragging a stop or target line.
+      const dl = e.target.closest && e.target.closest("[data-drag]"); if (dl){ e.preventDefault(); const [kind, a1, a2] = dl.dataset.drag.split(":"); let rec = false;
+        follow(e, ev => { const q = at(ev), c = pxNow(); let obj, fld;
+            if (kind === "plan"){ obj = px.plan; fld = a1; } else { obj = px.pos.find(p => String(p.id) === a1); fld = a2; if (obj && !rec){ rec = true; pxRecord(); } }
+            if (!obj) return; const d = obj.dir, v = q.p;
+            if (fld === "stop" && (v - c.c) * d >= 0) return; if (fld === "tgt" && (v - c.c) * d <= 0) return;
+            obj[fld] = v; pxDraw(); }, () => {}); return; }
       // Moving or reshaping an existing drawing.
       const g_ = e.target.closest && e.target.closest("[data-li]"); if (g_){ e.preventDefault(); const i = +g_.dataset.li, L = px.lines[i], hnd = e.target.dataset?.h, q0 = at(e), a0 = L.a ? { ...L.a } : null, b0 = L.b ? { ...L.b } : null; let moved = false;
         follow(e, ev => { const q = at(ev); if (!moved && Math.hypot(q.sx - q0.sx, q.sy - q0.sy) < 4) return; if (!moved){ moved = true; pxRecord(); } const dI = q.abs - q0.abs, dP = q.p - q0.p;
@@ -4437,11 +4492,11 @@ function bindPractice(){
     else if ((k === "delete" || k === "backspace") && px.lineSel != null){ e.preventDefault(); pxRecord(); px.lines.splice(px.lineSel, 1); pxLineEdit(null); }
     else if (k === "escape"){ if (px.tool) pxSetTool(px.tool); else if (px.lineSel != null) pxLineEdit(null); } });
   $("#pxChart").onkeydown = e => { if (e.ctrlKey || e.metaKey || e.key === "Delete" || e.key === "Escape") return; if (e.key === "Backspace"){ e.preventDefault(); if (px.lineSel == null) pxUndo(); return; } if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
-  $("#pxSave").onclick = pxSaveSession;
+  $("#pxSave").onclick = () => pxSaveSession(false);
   $("#pxNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36); if (await saveNote(id, { kind: "note", title: `Practice session · ${px.sym || "candles"} · ${fmtDate(localToday())}`, body: pxReport(), tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
   $("#pxCsv").onclick = () => { const rows = [["opened", "side", "entry", "stop", "target", "closed", "exit", "reason", "r", "pnl"], ...px.done.map(x => [x.key, x.dir > 0 ? "buy" : "sell", x.entry, x.stop, x.tgt ?? "", x.exitKey, x.exit, x.why, x.R.toFixed(3), x.pnl.toFixed(2)])];
     saveFile(`practice-${(px.sym || "candles").toLowerCase()}-${localToday()}.csv`, rows.map(r => r.join(",")).join("\n")); };
-  $("#pxReset").onclick = () => { pxStop(); px.active = false; px.pos = []; px.done = []; if (px.base?.length) pxLoad(px.base, px.sym, px.label); };
+  $("#pxReset").onclick = async () => { if (px.autoT){ clearTimeout(px.autoT); px.autoT = null; await pxSaveSession(true); } pxStop(); px.plan = null; px.active = false; px.sid = null; px.pos = []; px.done = []; if (px.base?.length) pxLoad(px.base, px.sym, px.label); };
   // The page can be redrawn (e.g. after a save), so put a running session back on screen.
   if (px.active && px.cs.length){ $("#pxData").textContent = px.dataText || px.label || ""; $("#pxLive").hidden = false; $("#pxSetup").hidden = true; if (px.timer){ $("#pxPlay").textContent = "⏸ Pause"; } requestAnimationFrame(pxDraw); }
   else if (px.base?.length){ const keep = px.base; pxLoad(keep, px.sym, px.label); }
@@ -4768,12 +4823,13 @@ function renderElite(){
       <p class="hint" style="margin:0 0 10px">Go back to any date and trade it as if it were live. Future candles stay hidden until you step forward. Place buys and sells with a stop and target, manage them as price moves, and see your results. It's the fastest way to test a strategy by hand and build screen time.</p>
       <div class="actions"><label class="btn small"><input type="file" id="pxFile" accept=".csv,.txt" class="sr">📂 Choose candles file</label><button type="button" class="btn small" id="pxUseRp">Use Trade Replay's candles</button><button type="button" class="btn small" id="pxHow">📘 How to get candles</button><span class="hint" id="pxData"></span></div>
       <div class="lib-row" data-lib="px"></div>
+      <div id="pxSessions"></div>
       <div id="pxSetup" hidden>
         <div class="fgrid bt-grid"><div class="f"><label for="pxTf">Timeframe</label><select id="pxTf" class="ctl"></select></div>
           <div class="f"><label for="pxDate">Start trading from</label><select id="pxDate" class="ctl"></select></div>
           <div class="f"><label for="pxTime">at</label><select id="pxTime" class="ctl"></select></div>
           <div class="f"><label for="pxBal">Starting balance</label><input id="pxBal" class="ctl" type="number" step="any" value="10000"></div></div>
-        <div class="actions"><button type="button" class="btn primary" id="pxGo">Start session here</button><button type="button" class="btn" id="pxResume" hidden></button></div>
+        <div class="actions"><button type="button" class="btn primary" id="pxGo">Start session here</button></div>
       </div>
       <div id="pxLive" hidden>
         <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
@@ -4789,10 +4845,12 @@ function renderElite(){
             <div class="f"><label for="pxStopV">Stop size</label><input id="pxStopV" class="ctl" type="number" step="any" value="1.5"></div>
             <div class="f"><label for="pxRR">Target (R, empty for none)</label><input id="pxRR" class="ctl" type="number" step="any" value="2"><div class="px-quick" data-for="pxRR">${[["1", "1R"], ["2", "2R"], ["3", "3R"], ["", "None"]].map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join("")}</div></div>
             <div class="f"><label for="pxSpread">Spread (price)</label><input id="pxSpread" class="ctl" type="number" step="any" value="0"></div></div>
+          <label class="check px-planm"><input type="checkbox" id="pxPlanMode"><span>Set stop and target on the chart before placing (drag them like TradingView)</span></label>
+          <div class="px-planbar" id="pxPlanBar" hidden></div>
           <div class="px-trade"><button type="button" class="px-big px-sell" id="pxSell"><span>SELL</span><b class="num" id="pxSellP"></b></button><button type="button" class="px-big px-buy" id="pxBuy"><span>BUY</span><b class="num" id="pxBuyP"></b></button></div><p class="hint px-prev" id="pxPrev"></p>
         </div>
         <div id="pxPos"></div><div id="pxStats"></div>
-        <div class="actions"><button type="button" class="btn small" id="pxSave">💾 Save session</button><button type="button" class="btn small" id="pxNote">Save results to Notes</button><button type="button" class="btn small" id="pxCsv">Download trades (CSV)</button><button type="button" class="btn small danger" id="pxReset">New session</button></div>
+        <div class="actions"><button type="button" class="btn small" id="pxSave">💾 Save session</button><span class="hint px-saved" id="pxSaved"></span><button type="button" class="btn small" id="pxNote">Save results to Notes</button><button type="button" class="btn small" id="pxCsv">Download trades (CSV)</button><button type="button" class="btn small danger" id="pxReset">New session</button></div>
       </div></section>
     <section class="panel"><div class="panel-head"><h2>Planned vs actual</h2><span class="label">${planned.length} trades with a plan</span></div>
       ${pva ? `<div class="kgrid">${k("Entry slippage", pva.slip == null ? "—" : (pva.slip > 0 ? "+" : "") + pva.slip.toFixed(2) + "R", pva.slip > .1 ? "neg" : "", "Positive means you entered late")}${k("Stops widened", String(pva.widened), pva.widened ? "neg" : "", "Stop moved further than planned")}${k("Exited before target", pva.tgtN ? `${pva.early} / ${pva.tgtN}` : "—", "", "Winning trades closed early")}${k("Trades planned", String(pva.n))}</div>`
@@ -7089,9 +7147,10 @@ render();
       if (THEMES.includes(state.settings?.theme) && state.settings.theme !== state.theme){ applyTheme(state.settings.theme); ls.set("tel-theme", state.settings.theme); }
       if (validHex(state.settings?.accent) && state.settings.accent !== state.accent){ applyAccent(state.settings.accent); ls.set("tel-accent", state.settings.accent); }
       const all = snap.docs.filter(d => d.id !== "settings").map(d => ({ id: d.id, ...d.data() }));
-      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.kind !== "day" && t.date && t.symbol).map(normTrade);
+      state.trades = all.filter(t => t.kind !== "note" && t.kind !== "replay" && t.kind !== "day" && t.kind !== "practice" && t.date && t.symbol).map(normTrade);
       state.days = all.filter(t => t.kind === "day");
       state.replays = all.filter(t => t.kind === "replay");
+      state.practice = all.filter(t => t.kind === "practice").sort((a, b) => (b.saved || 0) - (a.saved || 0)); if (typeof pxSessionsRender === "function") pxSessionsRender();
       state.notes = all.filter(t => t.kind === "note");
       state.coachChats = all.filter(t => t.kind === "coach");
       state.usage = all.find(t => t.id === "usage") || state.usage || {};
