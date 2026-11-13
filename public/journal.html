@@ -4462,6 +4462,8 @@ function renderElite(){
     const prof = ts.reduce((q, x) => q + pnl(x), 0), best = Math.max(0, ...Object.values(days).map(arr => arr.reduce((q, x) => q + pnl(x), 0)));
     return { list: out.sort((p, q) => q.d.localeCompare(p.d)), share: prof > 0 ? best / prof : null, cons: num(r.consistencyPct) }; })();
   const rs = ts.map(rMult).filter(v => v != null);
+  // Monte Carlo uses R when enough trades have a starting stop, otherwise each trade's real result as a % of the balance at the time.
+  const mcR = rs.length >= 10, mcPct = (() => { let bal = +a.balance || 0; return ts.map(x => { const v = bal > 0 ? pnl(x) / bal : null; bal += pnl(x); return v; }).filter(v => v != null && isFinite(v)); })(), mcOk = mcR || mcPct.length >= 10;
   host.dataset.built = key;
   host.innerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span><span class="hint">${esc(a.name || "")}</span></div>
     <section class="panel"><div class="panel-head"><h2>✦ AI Trading Coach</h2><span class="label">Reads your journal</span></div>
@@ -4477,10 +4479,10 @@ function renderElite(){
         <p class="hint" style="margin:0">Plan followed 30 · no FOMO/revenge 20 · stop set 15 · risk within plan 15 · journaled 10 · grade 10.</p>
         <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Symbol</th><th class="r">Net</th><th class="r">Score</th><th>Missed</th></tr></thead><tbody>${scores.slice(-10).reverse().map(s_ => `<tr><td>${esc(fmtDate(s_.x.date))}</td><td><b>${esc(s_.x.symbol)}</b></td><td class="r num ${cls(pnl(s_.x))}">${money(pnl(s_.x))}</td><td class="r num ${scoreCls(s_.score)}"><b>${s_.score}</b></td><td class="hint">${esc(s_.parts.filter(p => !p[1]).map(p => p[0]).join(", ") || "—")}</td></tr>`).join("")}</tbody></table></div>` : `<p class="hint">Log trades to get scores.</p>`}</section>
     <section class="panel"><div class="panel-head"><h2>Backtesting Studio</h2><span class="label">Monte Carlo · your trades</span></div>
-      <p class="hint" style="margin:0">Replays your own results in ${"1,000"} random orders to show the range of outcomes over your next trades.${rs.length < 10 ? " You need at least 10 trades with a stop loss." : ""}</p>
-      <div class="fgrid sim-in"><div class="f"><label>Next trades</label><input id="mcN" type="number" value="100"></div><div class="f"><label>Risk per trade (%)</label><input id="mcRisk" type="number" step="any" value="${esc(a.risk ?? 1)}"></div>
+      <p class="hint" style="margin:0">Replays your own results in ${"1,000"} random orders to show the range of outcomes over your next trades.${!mcOk ? ` You need at least 10 trades to run it (you have ${ts.length}).` : mcR ? ` Uses the R of your ${rs.length} trades with a starting stop, scaled to the risk you set.` : ` Uses each trade's real result as a % of your balance at the time, so risk per trade isn't used. Add starting stops to ${Math.max(0, 10 - rs.length)} more trades to test a different risk.`}</p>
+      <div class="fgrid sim-in"><div class="f"><label>Next trades</label><input id="mcN" type="number" value="100"></div><div class="f"><label>Risk per trade (%)</label><input id="mcRisk" type="number" step="any" value="${esc(a.risk ?? 1)}" ${mcR ? "" : `disabled title="Needs 10 trades with a starting stop"`}></div>
         <div class="f"><label>Breach level (−%)</label><input id="mcDD" type="number" step="any" value="${esc(a.rules?.maxPct ?? 10)}"></div><div class="f"><label>Target (+%)</label><input id="mcT" type="number" step="any" value="${esc(a.rules?.targetPct ?? 10)}"></div></div>
-      <button type="button" class="btn small primary" id="mcRun" ${rs.length < 10 ? "disabled" : ""}>Run Monte Carlo</button><div id="mcOut"></div></section>
+      <button type="button" class="btn small primary" id="mcRun" ${mcOk ? "" : "disabled"}>Run Monte Carlo</button><div id="mcOut"></div></section>
     <section class="panel" id="btBox"><div class="panel-head"><h2>Strategy tester</h2><span class="label">Your rules · historical candles</span></div>
       <p class="hint" style="margin:0">Test a strategy on real price history before you risk money. Load a candles file (a few months of 1-minute or 5-minute candles works best), set your rules and run it.</p>
       <div class="lock-mini"><div class="actions"><label class="btn small bt-file">📂 Choose candles file<input id="btFile" type="file" accept=".csv,.txt" hidden></label><button type="button" class="btn small" id="btUseReplay">Use Trade Replay's candles</button><button type="button" class="btn small" id="btHow">📘 How to get candles</button></div><span id="btData"><span class="hint">No candles loaded yet.</span></span></div>
@@ -4563,7 +4565,7 @@ function renderElite(){
   $("#coachQ").onkeydown = e => { if (e.key === "Enter") $("#coachAsk").click(); };
   $("#chQ").oninput = () => renderCoachHist();
   renderCoachHist();
-  $("#mcRun").onclick = () => { const m = monteCarlo(rs, { n: Math.min(500, Math.max(10, +$("#mcN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#mcRisk").value || 1, ddLimit: +$("#mcDD").value || 10, target: +$("#mcT").value || 10 });
+  $("#mcRun").onclick = () => { const m = monteCarlo(mcR ? rs : mcPct, { mode: mcR ? "r" : "pct", n: Math.min(500, Math.max(10, +$("#mcN").value || 100)), sims: 1000, start: ledger().end || +a.balance || 10000, riskPct: +$("#mcRisk").value || 1, ddLimit: +$("#mcDD").value || 10, target: +$("#mcT").value || 10 });
     $("#mcOut").innerHTML = simOut(m); bindFan($("#mcOut"), m, S().ccy); };
   // Risk-to-reward simulator: live sliders, presets, example runs and a hoverable chart.
   { let seed = 7, tmr = null; const rrIds = ["rrW", "rrR", "rrRisk", "rrN", "rrT", "rrDD"];
