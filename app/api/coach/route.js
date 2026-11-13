@@ -6,6 +6,8 @@ import { planForPrice } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Long replies can take a while; don't let the platform cut the request off early.
+export const maxDuration = 60;
 
 // AI Trading Coach. Elite gets a daily allowance; Basic and Pro get a few free replies a month as a taster.
 const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT || 30);
@@ -56,17 +58,23 @@ export async function POST(request) {
     : NextResponse.json({ code: "upgrade", message: "Free coach replies used up", used: u.used, limit: u.limit, resets: u.resets }, { status: 403 });
   const { data: row } = await admin.from("ai_usage").select("count").eq("user_id", user.id).eq("day", day).maybeSingle();
   await admin.from("ai_usage").upsert({ user_id: user.id, day, count: (row?.count || 0) + 1 }, { onConflict: "user_id,day" });
+  // A failed reply shouldn't use up one of their replies.
+  const refund = async () => { try { const { data: r } = await admin.from("ai_usage").select("count").eq("user_id", user.id).eq("day", day).maybeSingle(); if (r?.count) await admin.from("ai_usage").update({ count: r.count - 1 }).eq("user_id", user.id).eq("day", day); } catch {} };
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  let res;
+  try { res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     // Sonnet 5.5 thinks by default and that thinking counts toward max_tokens, which can leave no room for the answer.
     // "between_tools" turns up-front thinking off, so the whole allowance goes to the reply.
     body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: 2500, thinking: { type: "between_tools" }, output_config: { effort: "medium" }, messages: [{ role: "user", content: imgs.length ? [...imgs.map((m) => ({ type: "image", source: { type: "base64", media_type: m.media_type, data: m.data } })), { type: "text", text: prompt }] : prompt }] }),
-  });
-  if (!res.ok) { console.error("Anthropic error", res.status, await res.text().catch(() => "")); return NextResponse.json({ code: "unavailable", message: "Coach unavailable" }, { status: 502 }); }
+    signal: AbortSignal.timeout(55000),
+  }); } catch (e) { console.error("Anthropic fetch failed", e?.name, e?.message); await refund(); return NextResponse.json({ code: "unavailable", message: "Coach unavailable", ref: e?.name === "TimeoutError" ? "timeout" : "network" }, { status: 502 }); }
+  if (!res.ok) { const detail = await res.text().catch(() => ""); console.error("Anthropic error", res.status, detail); await refund();
+    let type = ""; try { type = JSON.parse(detail)?.error?.type || ""; } catch {}
+    return NextResponse.json({ code: "unavailable", message: "Coach unavailable", ref: `${res.status}${type ? " " + type : ""}` }, { status: 502 }); }
   const data = await res.json();
   const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n").trim();
-  if (!text) { console.error("Coach returned no text", data.stop_reason); return NextResponse.json({ code: "unavailable", message: "Empty reply" }, { status: 502 }); }
+  if (!text) { console.error("Coach returned no text", data.stop_reason); await refund(); return NextResponse.json({ code: "unavailable", message: "Empty reply", ref: "empty " + (data.stop_reason || "") }, { status: 502 }); }
   return NextResponse.json({ text, truncated: data.stop_reason === "max_tokens", left: Math.max(0, u.limit - u.used - 1), limit: u.limit, period: u.period });
 }
