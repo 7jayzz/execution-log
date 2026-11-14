@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LegalPage, { WhoWeAre, Email } from "@/components/LegalPage";
+import { LEGAL } from "@/lib/legal";
 
 export const metadata = { title: "Privacy Policy" };
 
@@ -8,7 +9,7 @@ export default function Privacy() {
   return (
     <LegalPage title="Privacy Policy" current="/privacy" intro="This explains what personal data The Execution Log collects, why, who we share it with and the choices you have. Your trading journal is private, and we treat it that way.">
       <h2>Who is responsible for your data</h2>
-      <p><WhoWeAre /> We are the "controller" of your personal data under UK data protection law (the UK GDPR and the Data Protection Act 2018).</p>
+      <p><WhoWeAre /> We are the "controller" of your personal data under UK data protection law (the UK GDPR and the Data Protection Act 2018). We are registered with the Information Commissioner's Office (ICO), registration number <strong>{LEGAL.ico}</strong>.</p>
 
       <h2>What we collect</h2>
       <ul>
