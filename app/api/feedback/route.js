@@ -5,12 +5,12 @@ import { getSubscription } from "@/lib/subscription";
 import { planForPrice } from "@/lib/plans";
 import { sendEmail } from "@/lib/email";
 import { LEGAL } from "@/lib/legal";
+import { feedbackEmail } from "@/lib/emails/feedback";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const KINDS = { idea: "Idea", bug: "Something's broken", other: "Other" };
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // Feedback and feature requests from inside the journal. Stored for the user, and emailed to support.
 export async function POST(request) {
@@ -28,13 +28,8 @@ export async function POST(request) {
   const { error } = await admin.from("feedback").insert({ user_id: user.id, kind, message, page, plan });
   if (error) { console.error("Feedback insert failed", error.message); return NextResponse.json({ message: "Couldn't send that right now" }, { status: 500 }); }
   try {
-    await sendEmail({
-      to: LEGAL.email,
-      subject: `${plan === "elite" ? "[PRIORITY · Elite] " : ""}[${KINDS[kind]}] ${message.slice(0, 60)}${message.length > 60 ? "…" : ""}`,
-      text: `${KINDS[kind]} from ${user.email} (${plan || "no plan"}) on ${page || "unknown page"}\n\n${message}`,
-      html: `<p><b>${esc(KINDS[kind])}</b> from ${esc(user.email)} (${esc(plan || "no plan")}) on ${esc(page || "unknown page")}</p><p style="white-space:pre-wrap">${esc(message)}</p>`,
-      replyTo: user.email,
-    });
+    const mail = feedbackEmail({ kind, message, page, plan, email: user.email });
+    await sendEmail({ to: LEGAL.email, ...mail, replyTo: user.email });
   } catch (e) { console.error("Feedback email failed", e?.message || e); }
   return NextResponse.json({ ok: true });
 }
