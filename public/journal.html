@@ -841,7 +841,9 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-hud .label{display:block;font-size:10.5px}.px-hud-bal b{font-size:24px;font-weight:800;margin-inline-end:8px}.px-hud-i b{font-size:18px;font-weight:800}
 .px-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800;background:var(--line-2);vertical-align:middle}.px-chip.up{background:rgba(8,153,129,.18);color:#089981}.px-chip.dn{background:rgba(242,54,69,.16);color:#F23645}
 .px-spark{width:160px;height:34px;flex:none}
-.px-planm{margin:8px 0 4px;font-size:13px}.px-planbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px}.px-planbar .actions{margin-inline-start:auto}.px-planbar .px-buy,.px-planbar .px-sell{color:#fff;border:0}
+.px-planm{margin:8px 0 4px;font-size:13px}
+.px-tpmode,.px-parts{grid-column:1/-1}.px-parts{border:1px solid var(--line-2);border-radius:12px;padding:10px 12px;margin:6px 0;display:grid;gap:8px;font-size:13px}.px-part{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.px-part label{display:flex;gap:6px;align-items:center}.px-part input.ctl{width:76px;padding:4px 8px}.px-part input:disabled{opacity:.6}
+.px-tps{display:flex;flex-direction:column;gap:2px;font-size:12px;text-align:right}.px-tps .hit{color:var(--win);text-decoration:line-through;opacity:.8}.px-planbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px}.px-planbar .actions{margin-inline-start:auto}.px-planbar .px-buy,.px-planbar .px-sell{color:#fff;border:0}
 .px-dl{cursor:ns-resize}
 .px-sess{margin:8px 0;border:1px solid var(--line-2);border-radius:12px;padding:8px 12px}.px-sess summary{cursor:pointer}.px-sess-list{display:grid;gap:6px;margin-top:8px}.px-sess-row{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:var(--surface-2)}.px-sess-row.on{outline:1px solid var(--accent)}.px-sess-row>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.px-sess-row input{width:240px}
 .px-saved{margin-inline-start:6px}
@@ -2147,20 +2149,16 @@ const GUIDES = {
     { sel: "#noteQ", title: "Search", body: "Find any note by its words. Pin your trading plan so it always sits at the top." }
   ] },
   elite: { name: "Elite tools", tier: "pro", steps: [
-    { title: "Elite tools", body: "Your AI coach, Trade Replay, the strategy tester and the deeper risk tools. Here's how each one works." },
+    { title: "Elite tools", body: "Your AI coach, Trade Replay, practice trading and the deeper risk tools. Here's how each one works." },
     { sel: "#coachBtns", title: "AI Trading Coach", body: "One tap reviews your last trade, your week or your month using your real journal data. Or type any question below, like \"why do I lose on Fridays?\"." },
     { sel: "#coachShot", tier: "elite", title: "Screenshot review", body: "Pick a trade with a chart screenshot and the coach looks at the chart itself: structure, entry location, stop and target." },
     { sel: "#coachHist", title: "Saved coach chats", body: "Every answer is saved automatically. Search them, copy them or save one as a note." },
     { sel: "#rpTrade", title: "Trade Replay: pick a trade", body: "Choose any trade you've logged." },
     { sel: "#rpHow", title: "Get the candles", body: "Replay needs a candles file for that symbol and day. This guide shows how to export one for free from MT5, MT4 or TradingView in under a minute." },
     { sel: "#rpChart", title: "Replay it", body: "Press Play and watch the trade unfold candle by candle, with your entry, stop and target drawn on. Drag to move, scroll or pinch to zoom, and switch timeframes at the top." },
-    { sel: "#btBox", title: "Strategy tester", body: "Test a strategy on months of real price history before you risk money. Load a candles file, set your rules and run it." },
-    { sel: "#btSig", title: "Build your own rules", body: "Pick \"Build my own rules\" to combine indicators, price levels and candle patterns, for example \"close above the 200 EMA and RSI crosses above 40\". Or describe it in plain English and the coach builds it for you." },
-    { sel: "#btRun", title: "Run and read the report", body: "You get win rate, profit factor, drawdown, an equity curve and breakdowns by day and hour. Save the strategy to test it again on new data." },
     { sel: "#mcRun", tier: "elite", title: "Monte Carlo", body: "Shuffles your real results 1,000 times to show the range of outcomes over your next trades, and how likely you are to hit a drawdown limit." },
     { sel: "#pxBox", tier: "elite", title: "Practice trading", body: "Load candles, pick any past date and trade it candle by candle with the future hidden. Place buys and sells with a stop and target, manage them, and save the session to carry on later." },
-    { sel: "#btOpt", tier: "elite", title: "Optimiser", body: "Test a range of one or two settings at once. Look for a wide green area in the heatmap, and check the unseen-data result before trusting a setting." },
-    { sel: "#eliteRep", tier: "elite", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status and an AI-written summary." }
+        { sel: "#eliteRep", tier: "elite", title: "Premium reports", body: "Build a PDF with exactly the sections you want, including your challenge status and an AI-written summary." }
   ] },
   settings: { name: "Settings", tier: "pro", steps: [
     { title: "Settings", body: "Accounts, notifications, appearance, your data and your plan all live here." },
@@ -4219,15 +4217,23 @@ function pxStep(n = 1){
       // Only the part of the candle the trader hadn't seen yet can hit their stop or target.
       c = { o: rest[0].o, h: Math.max(...rest.map(z => z.h)), l: Math.min(...rest.map(z => z.l)), c: rest[rest.length - 1].c, d: px.full.d, t: px.full.t }; }
     else { if (px.idx >= px.cs.length){ pxStop(); toast("That's the end of this file"); break; } px.idx++; c = pxNow(); }
-    px.pos.slice().forEach(p => { const hitS = p.dir > 0 ? c.l <= p.stop : c.h >= p.stop, hitT = p.tgt != null && (p.dir > 0 ? c.h >= p.tgt : c.l <= p.tgt);
-      if (hitS) pxClose(p, p.dir > 0 ? Math.min(p.stop, c.o) : Math.max(p.stop, c.o), p.stop === p.entry ? "Breakeven" : "Stop");
-      else if (hitT) pxClose(p, p.tgt, "Target"); });
+    px.pos.slice().forEach(p => { const reach = v => p.dir > 0 ? c.h >= v : c.l <= v, hitS = p.dir > 0 ? c.l <= p.stop : c.h >= p.stop;
+      // Stop is checked first: if a candle touches both, it counts as the stop (the cautious assumption).
+      if (hitS){ pxClose(p, p.dir > 0 ? Math.min(p.stop, c.o) : Math.max(p.stop, c.o), p.stop === p.entry ? "Breakeven" : "Stop"); return; }
+      if (p.tps){ for (const t of p.tps){ if (t.hit || !reach(t.p)) continue; t.hit = true; const f = Math.min(t.f, p.size), R = ((t.p - p.entry) * p.dir / p.risk - p.costR) * f, pnl = R * p.riskAmt;
+          p.size = Math.max(0, p.size - f); p.realR += R; p.realPnl += pnl; px.bal += pnl; px.peak = Math.max(px.peak, px.bal);
+          if (t.n === 1 && p.beTp1 && (p.stop - p.entry) * p.dir < 0) p.stop = p.entry;
+          if (p.size <= 1e-6){ pxClose(p, t.p, "Target"); break; } pxFx(R, pnl, "TP" + t.n); }
+        return; }
+      if (p.tgt != null && reach(p.tgt)) pxClose(p, p.tgt, "Target"); });
   }
   pxDraw();
 }
-function pxClose(p, price, why){ const c = pxNow(), R = (price - p.entry) * p.dir / p.risk - p.costR, pnl = R * p.riskAmt;
-  px.pos = px.pos.filter(q => q !== p); px.bal += pnl; px.peak = Math.max(px.peak, px.bal); px.dd = Math.max(px.dd, (px.peak - px.bal) / px.peak);
-  px.done.push({ ...p, exit: price, exitKey: c.d + " " + c.t, R, pnl, why }); pxFx(R, pnl, why); }
+function pxClose(p, price, why){ const c = pxNow(), size = p.size ?? 1, Rr = ((price - p.entry) * p.dir / p.risk - p.costR) * size, pnlR = Rr * p.riskAmt;
+  // A trade that took partials adds what's left to what it already banked.
+  const R = (p.realR || 0) + Rr, pnl = (p.realPnl || 0) + pnlR;
+  px.pos = px.pos.filter(q => q !== p); px.bal += pnlR; px.peak = Math.max(px.peak, px.bal); px.dd = Math.max(px.dd, (px.peak - px.bal) / px.peak);
+  px.done.push({ ...p, exit: price, exitKey: c.d + " " + c.t, R, pnl, why: p.realR && why === "Breakeven" ? "Breakeven after TP1" : why }); pxFx(R, pnl, why); }
 // The fun bits: a result pop-up over the chart, confetti on wins, and badges as you go.
 const PX_BADGES = [["first", "🚀", "First trade", d => d.length >= 1], ["win", "✅", "First win", d => d.some(x => x.R > 0)], ["sniper", "🎯", "Sniper: 3 targets hit", d => d.filter(x => x.why === "Target").length >= 3],
   ["streak3", "🔥", "On fire: 3 wins in a row", () => pxStreak() >= 3], ["streak5", "☄️", "Unstoppable: 5 wins in a row", () => pxStreak() >= 5], ["ten", "💪", "10 trades done", d => d.length >= 10],
@@ -4235,8 +4241,8 @@ const PX_BADGES = [["first", "🚀", "First trade", d => d.length >= 1], ["win",
 const pxStreak = () => { let n = 0; for (let i = px.done.length - 1; i >= 0 && px.done[i].R > 0; i--) n++; return n; };
 function pxFx(R, pnl, why){
   const box = $("#pxChart"), fx = $("#pxFx"); if (!box || !fx) return;
-  const win = R > 0.001, lose = R < -0.001, icon = why === "Target" ? "🎯" : why === "Breakeven" ? "🛡️" : why === "Stop" ? "🛑" : win ? "💰" : "✋";
-  const title = why === "Target" ? "Target hit!" : why === "Breakeven" ? "Out at breakeven" : why === "Stop" ? "Stopped out" : win ? "Nice close!" : "Closed";
+  const win = R > 0.001, lose = R < -0.001, icon = /^TP\d/.test(why) ? "💰" : why === "Target" ? "🎯" : why === "Breakeven" ? "🛡️" : why === "Stop" ? "🛑" : win ? "💰" : "✋";
+  const title = /^TP\d/.test(why) ? `${why} hit! Partial banked` : why === "Target" ? "Target hit!" : why === "Breakeven" ? "Out at breakeven" : why === "Stop" ? "Stopped out" : win ? "Nice close!" : "Closed";
   const el = document.createElement("div"); el.className = `px-pop ${win ? "win" : lose ? "lose" : "be"}`;
   el.innerHTML = `<span class="px-pop-i">${icon}</span><b>${title}</b><span class="num">${R >= 0 ? "+" : ""}${R.toFixed(2)}R · ${money(pnl)}</span>${win && pxStreak() >= 2 ? `<span class="px-pop-s">🔥 ${pxStreak()} in a row</span>` : ""}`;
   fx.appendChild(el); setTimeout(() => el.remove(), 2200);
@@ -4249,7 +4255,19 @@ function pxFx(R, pnl, why){
 }
 // Where the stop and target would go from the ticket settings.
 function pxLevels(dir){ const c = pxNow(), atr = px.atr[px.idx - 1] || 0, st = $("#pxStopT").value, sv = +$("#pxStopV").value, dist = st === "atr" ? atr * (sv || 1.5) : sv, rr = $("#pxRR").value === "" ? null : +$("#pxRR").value;
-  return dist > 0 ? { stop: c.c - dir * dist, tgt: rr > 0 ? c.c + dir * dist * rr : null } : null; }
+  if (!(dist > 0)) return null;
+  const pc = pxPartCfg(); if (pc) return { stop: c.c - dir * dist, tps: pc.tps.map(t => ({ p: c.c + dir * dist * t.r, f: t.f })), runner: pc.runner, be: pc.be };
+  return { stop: c.c - dir * dist, tgt: rr > 0 ? c.c + dir * dist * rr : null }; }
+// Partial take-profit settings from the ticket: each TP's R and share. Without a runner, the last TP closes whatever is left.
+function pxPartCfg(){ if (px.tpMode !== "part") return null; const on = [1, 2, 3].filter(n => n === 1 || $(`[data-tpon="${n}"]`)?.checked), runner = !!$("#pxRunner")?.checked;
+  let left = 1; const tps = on.map((n, k) => { const r = Math.max(.1, +$(`[data-tpr="${n}"]`).value || n), last = k === on.length - 1 && !runner, f = last ? left : Math.min(left, Math.max(.01, (+$(`[data-tpf="${n}"]`).value || 0) / 100)); left = Math.max(0, left - f); return { n, r, f }; }).filter(t => t.f > 0.0001);
+  return { tps, runner, be: !!$("#pxBeTp1")?.checked, left }; }
+function pxPartsUi(){ const box = $("#pxParts"); if (!box) return; box.hidden = px.tpMode !== "part"; $("#pxTpMode").querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === (px.tpMode || "one")));
+  const rrF = $("#pxRR")?.closest(".f"); if (rrF) rrF.style.opacity = px.tpMode === "part" ? .45 : 1; if ($("#pxRR")) $("#pxRR").disabled = px.tpMode === "part";
+  if (px.tpMode !== "part") return; const pc = pxPartCfg(), runner = pc.runner, on = [1, 2, 3].filter(n => n === 1 || $(`[data-tpon="${n}"]`)?.checked);
+  [1, 2, 3].forEach(n => { const f = $(`[data-tpf="${n}"]`), isLast = n === on[on.length - 1] && !runner; f.disabled = isLast || !on.includes(n); if (isLast) f.value = Math.round((pc.tps.find(t => t.n === n)?.f || 0) * 100); $(`[data-tpr="${n}"]`).disabled = !on.includes(n); });
+  const avgR = pc.tps.reduce((q, t) => q + t.r * t.f, 0);
+  $("#pxPartsTxt").innerHTML = `${pc.tps.map(t => `TP${t.n} closes <b>${Math.round(t.f * 100)}%</b> at ${t.r}R`).join(" · ")}${runner ? ` · runner <b>${Math.round(pc.left * 100)}%</b>` : ""}. If every TP hits: <b>+${avgR.toFixed(2)}R</b>${runner ? " plus the runner" : ""}.`; }
 function pxOpen(dir, ov){
   if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; }
   // "Set stop and target on the chart first": the first click shows a position you can drag, the second places it.
@@ -4259,16 +4277,20 @@ function pxOpen(dir, ov){
   if (lv.tgt != null && (lv.tgt - c.c) * dir <= 0){ toast(dir > 0 ? "A buy's target must be above the price" : "A sell's target must be below the price"); return; } pxRecord();
   const riskPct = Math.max(.01, +$("#pxRisk").value || 1), riskAmt = px.bal * riskPct / 100;
   const ins = INSTR[px.sym] || null, lots = ins?.contract ? riskAmt / (dist * ins.contract) : null, spread = Math.max(0, +$("#pxSpread").value || 0);
-  px.pos.push({ id: Date.now() + Math.random(), dir, entry: c.c, stop: lv.stop, tgt: lv.tgt ?? null, risk: dist, riskAmt, lots, costR: spread / dist, key: c.d + " " + c.t, i: px.idx - 1 });
+  const tps = lv.tps ? lv.tps.map((t, k) => ({ n: k + 1, p: t.p, f: t.f, hit: false })) : null;
+  if (tps && tps.some(t => (t.p - c.c) * dir <= 0)){ toast(dir > 0 ? "A buy's take-profits must be above the price" : "A sell's take-profits must be below the price"); px.hist?.pop(); return; }
+  px.pos.push({ id: Date.now() + Math.random(), dir, entry: c.c, stop: lv.stop, tgt: tps ? (lv.runner ? null : tps[tps.length - 1].p) : lv.tgt ?? null, tps, runner: !!lv.runner, beTp1: !!lv.be, size: 1, realR: 0, realPnl: 0, risk: dist, riskAmt, lots, costR: spread / dist, key: c.d + " " + c.t, i: px.idx - 1 });
   pxDraw();
 }
-function pxPlace(){ const pl = px.plan; if (!pl) return; px.plan = null; pxOpen(pl.dir, { stop: pl.stop, tgt: pl.tgt }); if (px.plan == null) toast(`${pl.dir > 0 ? "Buy" : "Sell"} placed`); }
+function pxPlace(){ const pl = px.plan; if (!pl) return; px.plan = null; pxOpen(pl.dir, { stop: pl.stop, tgt: pl.tgt, tps: pl.tps, runner: pl.runner, be: pl.be }); if (px.plan == null) toast(`${pl.dir > 0 ? "Buy" : "Sell"} placed`); }
 function pxPlanBar(){ const bar = $("#pxPlanBar"); if (!bar) return; const pl = px.plan, c = pxNow();
   if (!pl || !c){ bar.hidden = true; return; } const risk = Math.abs(c.c - pl.stop), rr = pl.tgt != null && risk ? Math.abs(pl.tgt - c.c) / risk : null, riskAmt = px.bal * Math.max(.01, +$("#pxRisk").value || 1) / 100, ins = INSTR[px.sym];
-  bar.hidden = false; bar.innerHTML = `<span class="px-plan-t ${pl.dir > 0 ? "pos" : "neg"}"><b>${pl.dir > 0 ? "Planned buy" : "Planned sell"}</b> · drag the red and green lines on the chart</span><span class="hint">Stop ${pxPrice(pl.stop)} · ${pl.tgt != null ? `Target ${pxPrice(pl.tgt)} · <b>R:R 1 : ${rr.toFixed(2)}</b>` : "No target"} · risking ${money(riskAmt, false)}${ins?.contract && risk ? ` · ${(riskAmt / (risk * ins.contract)).toFixed(2)} lots` : ""}</span>
-    <span class="actions">${pl.tgt == null ? `<button type="button" class="btn small" id="pxPlanTp">+ Add target</button>` : `<button type="button" class="btn small" id="pxPlanNoTp">Remove target</button>`}<button type="button" class="btn small" id="pxPlanFlip">⇅ Flip</button><button type="button" class="btn small" id="pxPlanX">Cancel</button><button type="button" class="btn small ${pl.dir > 0 ? "px-buy" : "px-sell"}" id="pxPlanGo">Place ${pl.dir > 0 ? "buy" : "sell"}</button></span>`;
+  const tpTxt = pl.tps ? pl.tps.map((t, k) => `TP${k + 1} ${pxPrice(t.p)} (${Math.round(t.f * 100)}% · ${risk ? (Math.abs(t.p - c.c) / risk).toFixed(2) : "?"}R)`).join(" · ") + (pl.runner ? " · runner" : "") : null;
+  bar.hidden = false; bar.innerHTML = `<span class="px-plan-t ${pl.dir > 0 ? "pos" : "neg"}"><b>${pl.dir > 0 ? "Planned buy" : "Planned sell"}</b> · drag the red and green lines on the chart</span><span class="hint">Stop ${pxPrice(pl.stop)} · ${tpTxt ? tpTxt : pl.tgt != null ? `Target ${pxPrice(pl.tgt)} · <b>R:R 1 : ${rr.toFixed(2)}</b>` : "No target"} · risking ${money(riskAmt, false)}${ins?.contract && risk ? ` · ${(riskAmt / (risk * ins.contract)).toFixed(2)} lots` : ""}</span>
+    <span class="actions">${pl.tps ? "" : pl.tgt == null ? `<button type="button" class="btn small" id="pxPlanTp">+ Add target</button>` : `<button type="button" class="btn small" id="pxPlanNoTp">Remove target</button>`}<button type="button" class="btn small" id="pxPlanFlip">⇅ Flip</button><button type="button" class="btn small" id="pxPlanX">Cancel</button><button type="button" class="btn small ${pl.dir > 0 ? "px-buy" : "px-sell"}" id="pxPlanGo">Place ${pl.dir > 0 ? "buy" : "sell"}</button></span>`;
   $("#pxPlanGo").onclick = pxPlace; $("#pxPlanX").onclick = () => { px.plan = null; pxDraw(); };
-  $("#pxPlanFlip").onclick = () => { const r_ = Math.abs(c.c - pl.stop), t_ = pl.tgt != null ? Math.abs(pl.tgt - c.c) : null; pl.dir *= -1; pl.stop = c.c - pl.dir * r_; pl.tgt = t_ != null ? c.c + pl.dir * t_ : null; pxDraw(); };
+  $("#pxPlanFlip").onclick = () => { const r_ = Math.abs(c.c - pl.stop), t_ = pl.tgt != null ? Math.abs(pl.tgt - c.c) : null; pl.dir *= -1; pl.stop = c.c - pl.dir * r_; pl.tgt = t_ != null ? c.c + pl.dir * t_ : null;
+    if (pl.tps) pl.tps.forEach(t => { t.p = c.c + pl.dir * Math.abs(t.p - c.c); }); pxDraw(); };
   if ($("#pxPlanTp")) $("#pxPlanTp").onclick = () => { pl.tgt = c.c + pl.dir * Math.abs(c.c - pl.stop) * 2; pxDraw(); };
   if ($("#pxPlanNoTp")) $("#pxPlanNoTp").onclick = () => { pl.tgt = null; pxDraw(); }; }
 // Drawings: levels, trend lines, zones and time lines. Points are stored by candle time so they survive timeframe changes.
@@ -4286,8 +4308,10 @@ function pxLineEdit(i, quiet){ const box = $("#pxLineEd"); if (!box) return; px.
   box.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { pxRecord(); px.lines[i].col = b.dataset.c; box.querySelectorAll("[data-c]").forEach(z => z.classList.toggle("on", z === b)); pxDraw(); });
   $("#pxLeDel").onclick = () => { pxRecord(); px.lines.splice(i, 1); pxLineEdit(null); };
   $("#pxLeOk").onclick = () => pxLineEdit(null); if (!quiet) pxDraw(); }
+// One drawing per click of a tool, like TradingView: the tool switches off once the drawing is placed.
+function pxToolOff(){ px.tool = null; px.pending = null; document.querySelectorAll("#pxTools [data-tool]").forEach(b => b.setAttribute("aria-pressed", "false")); $("#pxChart")?.classList.remove("drawing"); }
 function pxSetTool(t){ px.tool = px.tool === t ? null : t; px.pending = null; document.querySelectorAll("#pxTools [data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === px.tool))); $("#pxChart")?.classList.toggle("drawing", !!px.tool);
-  if (px.tool) toast(px.tool === "h" || px.tool === "v" ? `Click the chart to add a ${PX_TOOLS[px.tool].toLowerCase()}. Keep clicking to add more. Esc when done.` : `Drag on the chart (or click two points) to draw a ${PX_TOOLS[px.tool].toLowerCase()}. Esc when done.`, 3500); }
+  if (px.tool) toast(px.tool === "h" || px.tool === "v" ? `Click the chart to add a ${PX_TOOLS[px.tool].toLowerCase()}` : `Drag on the chart (or click two points) to draw a ${PX_TOOLS[px.tool].toLowerCase()}`, 2500); }
 function pxStop(){ if (px.timer){ clearInterval(px.timer); px.timer = null; } const b = $("#pxPlay"); if (b) b.textContent = "▶ Play"; }
 function pxPlay(){ if (px.timer){ pxStop(); return; } px.timer = setInterval(() => { if (!$("#pxChart")){ pxStop(); return; } pxStep(1); }, +$("#pxSpeed").value || 350); $("#pxPlay").textContent = "⏸ Pause"; }
 function pxDraw(){
@@ -4297,8 +4321,8 @@ function pxDraw(){
   const end = px.idx - Math.round(px.pan), lo0 = Math.max(0, end - nShow), vis = px.cs.slice(lo0, end), n = Math.max(nShow, vis.length), bw = cw / (n + Math.max(6, Math.round(n * .2))), c = pxNow();
   if ($("#pxLatest")) $("#pxLatest").hidden = px.pan < 1;
   let hi = Math.max(...vis.map(k => k.h)), lo = Math.min(...vis.map(k => k.l));
-  px.pos.forEach(p => { [p.entry, p.stop, p.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } }); });
-  if (px.plan) [px.plan.stop, px.plan.tgt].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } });
+  px.pos.forEach(p => { [p.entry, p.stop, p.tgt, ...(p.tps || []).map(t => t.p)].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } }); });
+  if (px.plan) [px.plan.stop, px.plan.tgt, ...(px.plan.tps || []).map(t => t.p)].forEach(v => { if (v != null){ hi = Math.max(hi, v); lo = Math.min(lo, v); } });
   if (px.preview){ const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? 0 : +$("#pxRR").value;
     if (dist_ > 0){ const cc = c.c, d_ = px.preview; [cc - d_ * dist_, cc + d_ * dist_ * rr_].forEach(v => { hi = Math.max(hi, v); lo = Math.min(lo, v); }); } }
   const pad = (hi - lo) * .06 || 1; hi += pad; lo -= pad;
@@ -4326,11 +4350,12 @@ function pxDraw(){
     return out; };
   // Draggable stop/target lines (open trades and a planned trade), like TradingView's position tool.
   const dragL = (v, key, cls_, label) => v == null ? "" : `<g class="px-dl" data-drag="${key}"><line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls_}"/><rect x="${cw}" y="${(y(v) - 9).toFixed(1)}" width="${R}" height="18" class="${cls_}-tag"/><text x="${cw + 4}" y="${(y(v) + 4).toFixed(1)}" class="px-tagt">${esc(label)}</text><line x1="0" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-ln-hit ns"/></g>`;
-  const planB = px.plan ? (() => { const pl = px.plan, x0 = X(vis.length - 1) + bw / 2; return `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.stop)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.stop) - y(c.c)).toFixed(1)}" class="px-rr-sl"/>` + (pl.tgt != null ? `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.tgt)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.tgt) - y(c.c)).toFixed(1)}" class="px-rr-tp"/>` : ""); })() : "";
-  const planL = px.plan ? dragL(px.plan.tgt, "plan:tgt", "px-tp", "TP " + pxPrice(px.plan.tgt)) + dragL(px.plan.stop, "plan:stop", "px-sl", "SL " + pxPrice(px.plan.stop)) : "";
-  const posDrag = px.pos.map(p => dragL(p.tgt, `pos:${p.id}:tgt`, "px-tp", "TP " + pxPrice(p.tgt)) + dragL(p.stop, `pos:${p.id}:stop`, "px-sl", (p.stop === p.entry ? "BE " : "SL ") + pxPrice(p.stop))).join("");
-  const boxes = planB + px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0; return rrBox(p.entry, p.stop, p.tgt, p.dir, iE >= 0 ? X(iE) - bw / 2 : 0, false); }).join("")
-    + (px.preview && px.pan < 1 ? (() => { const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = $("#pxRR").value === "" ? null : +$("#pxRR").value;
+  const farTp = o => o.tps?.length ? o.tps.reduce((m, t) => Math.abs(t.p - c.c) > Math.abs(m - c.c) ? t.p : m, o.tps[0].p) : o.tgt;
+  const planB = px.plan ? (() => { const pl = { ...px.plan, tgt: farTp(px.plan) }, x0 = X(vis.length - 1) + bw / 2; return `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.stop)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.stop) - y(c.c)).toFixed(1)}" class="px-rr-sl"/>` + (pl.tgt != null ? `<rect x="${x0.toFixed(1)}" y="${Math.min(y(c.c), y(pl.tgt)).toFixed(1)}" width="${(cw - x0).toFixed(1)}" height="${Math.abs(y(pl.tgt) - y(c.c)).toFixed(1)}" class="px-rr-tp"/>` : ""); })() : "";
+  const planL = px.plan ? (px.plan.tps ? px.plan.tps.map((t, k) => dragL(t.p, `plan:tp:${k}`, "px-tp", `TP${k + 1} ` + pxPrice(t.p))).join("") : dragL(px.plan.tgt, "plan:tgt", "px-tp", "TP " + pxPrice(px.plan.tgt))) + dragL(px.plan.stop, "plan:stop", "px-sl", "SL " + pxPrice(px.plan.stop)) : "";
+  const posDrag = px.pos.map(p => (p.tps ? p.tps.map((t, k) => t.hit ? "" : dragL(t.p, `pos:${p.id}:tp:${k}`, "px-tp", `TP${t.n} ` + pxPrice(t.p))).join("") : dragL(p.tgt, `pos:${p.id}:tgt`, "px-tp", "TP " + pxPrice(p.tgt))) + dragL(p.stop, `pos:${p.id}:stop`, "px-sl", (p.stop === p.entry ? "BE " : "SL ") + pxPrice(p.stop))).join("");
+  const boxes = planB + px.pos.map(p => { const iE = pxIdxOf(p.key) - lo0, ft = p.tps ? p.tps.reduce((m, t) => Math.abs(t.p - p.entry) > Math.abs(m - p.entry) ? t.p : m, p.tps[0].p) : p.tgt; return rrBox(p.entry, p.stop, ft, p.dir, iE >= 0 ? X(iE) - bw / 2 : 0, false); }).join("")
+    + (px.preview && px.pan < 1 ? (() => { const atr_ = px.atr[px.idx - 1] || 0, sv_ = +$("#pxStopV").value, dist_ = $("#pxStopT").value === "atr" ? atr_ * (sv_ || 1.5) : sv_, rr_ = px.tpMode === "part" ? Math.max(...(pxPartCfg()?.tps || [{ r: 1 }]).map(t => t.r)) : $("#pxRR").value === "" ? null : +$("#pxRR").value;
         if (!(dist_ > 0)) return ""; const d_ = px.preview; hi = hi; return rrBox(c.c, c.c - d_ * dist_, rr_ > 0 ? c.c + d_ * dist_ * rr_ : null, d_, X(vis.length - 1) + bw / 2, true); })() : "");
   // Your drawings: drag to move, drag a dot to reshape, click to edit or delete.
   px.lines = px.lines.map(pxNorm); px.view.lo0 = lo0; px.view.bwS = bw; px.view.W = W; px.view.cw = cw; px.view.Hs = H;
@@ -4351,8 +4376,8 @@ function pxDraw(){
     if (t_){ const up = prev ? c.c >= prev.c : true; t_.className = "px-tick num " + (up ? "up" : "dn"); t_.textContent = `${up ? "▲" : "▼"} ${pxPrice(c.c)}`; } }
   $("#pxPrev").textContent = dist > 0 ? `Buy: stop ${pxPrice(c.c - dist)}${rr > 0 ? `, target ${pxPrice(c.c + dist * rr)}` : ""} · Sell: stop ${pxPrice(c.c + dist)}${rr > 0 ? `, target ${pxPrice(c.c - dist * rr)}` : ""}${ins?.contract ? ` · ${(px.bal * (+$("#pxRisk").value || 1) / 100 / (dist * ins.contract)).toFixed(2)} lots` : ""}` : "";
   // Open positions, editable.
-  $("#pxPos").innerHTML = px.pos.length ? `<div class="tbl-wrap"><table class="px-tbl"><thead><tr><th>Open</th><th class="r">Entry</th><th class="r">Stop</th><th class="r">Target</th><th class="r">Now</th><th></th></tr></thead><tbody>${px.pos.map(p => { const Rn = (c.c - p.entry) * p.dir / p.risk - p.costR;
-    return `<tr><td>${p.dir > 0 ? "Buy" : "Sell"}${p.lots ? ` ${p.lots.toFixed(2)} lots` : ""}</td><td class="r">${pxPrice(p.entry)}</td><td class="r"><input class="ctl px-ed" type="number" step="any" data-ed="stop" data-id="${p.id}" value="${pxPrice(p.stop)}" aria-label="Stop"></td><td class="r"><input class="ctl px-ed" type="number" step="any" data-ed="tgt" data-id="${p.id}" value="${p.tgt == null ? "" : pxPrice(p.tgt)}" aria-label="Target"></td>
+  $("#pxPos").innerHTML = px.pos.length ? `<div class="tbl-wrap"><table class="px-tbl"><thead><tr><th>Open</th><th class="r">Entry</th><th class="r">Stop</th><th class="r">Target</th><th class="r">Now</th><th></th></tr></thead><tbody>${px.pos.map(p => { const Rn = (p.realR || 0) + ((c.c - p.entry) * p.dir / p.risk - p.costR) * (p.size ?? 1);
+    return `<tr><td>${p.dir > 0 ? "Buy" : "Sell"}${p.lots ? ` ${p.lots.toFixed(2)} lots` : ""}</td><td class="r">${pxPrice(p.entry)}</td><td class="r"><input class="ctl px-ed" type="number" step="any" data-ed="stop" data-id="${p.id}" value="${pxPrice(p.stop)}" aria-label="Stop"></td><td class="r">${p.tps ? `<span class="px-tps">${p.tps.map(t => `<span class="${t.hit ? "hit" : ""}">TP${t.n} ${pxPrice(t.p)} · ${Math.round(t.f * 100)}%${t.hit ? " ✓" : ""}</span>`).join("")}${p.runner ? `<span>Runner ${Math.round((p.size ?? 0) * 100)}%</span>` : ""}</span>` : `<input class="ctl px-ed" type="number" step="any" data-ed="tgt" data-id="${p.id}" value="${p.tgt == null ? "" : pxPrice(p.tgt)}" aria-label="Target">`}</td>
       <td class="r ${Rn >= 0 ? "pos" : "neg"}">${Rn >= 0 ? "+" : ""}${Rn.toFixed(2)}R · ${money(Rn * p.riskAmt)}</td><td><button type="button" class="btn small" data-be="${p.id}">Breakeven</button> <button type="button" class="btn small" data-cl="${p.id}">Close</button></td></tr>`; }).join("")}</tbody></table></div>` : "";
   $("#pxPos").querySelectorAll("[data-cl]").forEach(b => b.onclick = () => { const p = px.pos.find(q => String(q.id) === b.dataset.cl); if (p){ pxRecord(); pxClose(p, pxNow().c, "Closed by you"); pxDraw(); } });
   $("#pxPos").querySelectorAll("[data-be]").forEach(b => b.onclick = () => { const p = px.pos.find(q => String(q.id) === b.dataset.be); if (p){ pxRecord(); p.stop = p.entry; pxDraw(); } });
@@ -4367,7 +4392,7 @@ function pxEdit(inp, c){ { const p = px.pos.find(q => String(q.id) === inp.datas
 function pxStatsDraw(){
   // Results so far.
   const d = px.done, w = d.filter(x => x.R > 0), gw = w.reduce((q, x) => q + x.R, 0), gl = -d.filter(x => x.R <= 0).reduce((q, x) => q + x.R, 0), net = Math.abs(gw - gl) < 0.005 ? 0 : gw - gl, k = (l, v, cl = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${cl}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
-  const cNow = pxNow(), flt = cNow ? px.pos.reduce((q, p) => q + ((cNow.c - p.entry) * p.dir / p.risk - p.costR) * p.riskAmt, 0) : 0, equity = px.bal + flt;
+  const cNow = pxNow(), flt = cNow ? px.pos.reduce((q, p) => q + ((cNow.c - p.entry) * p.dir / p.risk - p.costR) * (p.size ?? 1) * p.riskAmt, 0) : 0, equity = px.bal + flt;
   const st_ = pxStreak(), chg = equity - px.start, eq = [px.start]; d.forEach(x => eq.push(eq[eq.length - 1] + x.pnl));
   const spark = eq.length > 1 ? (() => { const W = 160, H = 34, lo = Math.min(...eq), hi = Math.max(...eq), X = i => i / (eq.length - 1) * W, Y = v => H - 2 - (v - lo) / (hi - lo || 1) * (H - 4);
     return `<svg viewBox="0 0 ${W} ${H}" class="px-spark" aria-hidden="true"><path d="M${eq.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" L")}" fill="none" stroke="${chg >= 0 ? "#089981" : "#F23645"}" stroke-width="2" stroke-linejoin="round"/></svg>`; })() : "";
@@ -4422,14 +4447,16 @@ function bindPractice(){
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
   $("#pxBuy").onclick = () => { px.preview = 0; pxOpen(1); }; $("#pxSell").onclick = () => { px.preview = 0; pxOpen(-1); };
-  try { $("#pxPlanMode").checked = localStorage.getItem("tel-px-plan") === "1"; } catch {}
+  try { $("#pxPlanMode").checked = localStorage.getItem("tel-px-plan") === "1"; px.tpMode = localStorage.getItem("tel-px-tpm") || "one"; } catch {}
+  $("#pxTpMode").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { px.tpMode = b.dataset.m; try { localStorage.setItem("tel-px-tpm", px.tpMode); } catch {} if (px.plan){ const d = px.plan.dir; px.plan = { dir: d, ...pxLevels(d) }; } pxPartsUi(); pxDraw(); });
+  $("#pxParts").addEventListener("input", () => { pxPartsUi(); if (px.plan){ const d = px.plan.dir, st = px.plan.stop; px.plan = { dir: d, ...pxLevels(d), stop: st }; pxDraw(); } }); pxPartsUi();
   $("#pxPlanMode").onchange = e => { try { localStorage.setItem("tel-px-plan", e.target.checked ? "1" : "0"); } catch {} if (!e.target.checked && px.plan){ px.plan = null; pxDraw(); } };
   // Hover (or focus) Buy or Sell to see the stop and target box before you place it.
   [["#pxBuy", 1], ["#pxSell", -1]].forEach(([s, d]) => { const b = $(s); b.addEventListener("pointerenter", () => { px.preview = d; pxDraw(); }); b.addEventListener("focus", () => { px.preview = d; pxDraw(); });
     b.addEventListener("pointerleave", () => { if (px.preview){ px.preview = 0; pxDraw(); } }); b.addEventListener("blur", () => { if (px.preview){ px.preview = 0; pxDraw(); } }); });
   $("#pxTfs").querySelectorAll("[data-ptf]").forEach(b => b.onclick = () => pxSetTf(+b.dataset.ptf));
-  $("#pxBox").querySelectorAll(".px-quick button").forEach(b => b.onclick = () => { const inp = $("#" + b.closest(".px-quick").dataset.for); inp.value = b.dataset.v; inp.dispatchEvent(new Event("input")); pxQuickMark(); });
-  const pxQuickMark = () => $("#pxBox").querySelectorAll(".px-quick").forEach(q => { const v = $("#" + q.dataset.for).value; q.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === v || (b.dataset.v !== "" && v !== "" && +b.dataset.v === +v))); });
+  $("#pxBox").querySelectorAll(".px-quick[data-for] button").forEach(b => b.onclick = () => { const inp = $("#" + b.closest(".px-quick").dataset.for); inp.value = b.dataset.v; inp.dispatchEvent(new Event("input")); pxQuickMark(); });
+  const pxQuickMark = () => $("#pxBox").querySelectorAll(".px-quick[data-for]").forEach(q => { const v = $("#" + q.dataset.for).value; q.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === v || (b.dataset.v !== "" && v !== "" && +b.dataset.v === +v))); });
   ["pxRisk", "pxRR"].forEach(id => $("#" + id).addEventListener("input", pxQuickMark)); pxQuickMark();
   ["pxStopT", "pxStopV", "pxRR", "pxRisk"].forEach(id => $("#" + id).oninput = () => { if (px.cs.length && !$("#pxLive").hidden) pxDraw(); });
   $("#pxStopT").onchange = e => { $("#pxStopV").value = e.target.value === "atr" ? 1.5 : +(px.atr[px.idx - 1] * 1.5 || 1).toPrecision(3); pxDraw(); };
@@ -4446,19 +4473,19 @@ function bindPractice(){
     ch.addEventListener("pointerdown", e => { if (e.button > 0 || !px.view || !px.cs.length) return;
       // Drawing a new shape.
       if (px.tool){ e.preventDefault(); const q = at(e);
-        if (px.pending != null && px.lines[px.pending]){ px.lines[px.pending].b = pxEnc(q.abs, q.p); const i = px.pending; px.pending = null; pxLineEdit(i); return; }
+        if (px.pending != null && px.lines[px.pending]){ px.lines[px.pending].b = pxEnc(q.abs, q.p); const i = px.pending; px.pending = null; pxToolOff(); pxLineEdit(i); return; }
         pxRecord(); const t = px.tool, sh = { type: t, a: t === "h" ? { p: q.p } : pxEnc(q.abs, q.p), col: t === "r" ? "#F4B53F" : PX_COLS[0] };
         if (t === "t" || t === "r") sh.b = { ...sh.a }; px.lines.push(sh); const i = px.lines.length - 1; px.lineSel = i; pxDraw();
-        if (t === "h" || t === "v"){ pxLineEdit(i); return; }
+        if (t === "h" || t === "v"){ pxToolOff(); pxLineEdit(i); return; }
         let moved = false; follow(e, ev => { const q2 = at(ev); if (!moved && Math.hypot(q2.sx - q.sx, q2.sy - q.sy) < 6) return; moved = true; px.lines[i].b = pxEnc(q2.abs, q2.p); pxDraw(); },
-          () => { if (!moved){ px.pending = i; toast("Now click where it should end"); } else pxLineEdit(i); }); return; }
+          () => { if (!moved){ px.pending = i; toast("Now click where it should end"); } else { pxToolOff(); pxLineEdit(i); } }); return; }
       // Dragging a stop or target line.
-      const dl = e.target.closest && e.target.closest("[data-drag]"); if (dl){ e.preventDefault(); const [kind, a1, a2] = dl.dataset.drag.split(":"); let rec = false;
-        follow(e, ev => { const q = at(ev), c = pxNow(); let obj, fld;
-            if (kind === "plan"){ obj = px.plan; fld = a1; } else { obj = px.pos.find(p => String(p.id) === a1); fld = a2; if (obj && !rec){ rec = true; pxRecord(); } }
+      const dl = e.target.closest && e.target.closest("[data-drag]"); if (dl){ e.preventDefault(); const parts = dl.dataset.drag.split(":"), kind = parts[0]; let rec = false;
+        follow(e, ev => { const q = at(ev), c = pxNow(); let obj, fld, ti;
+            if (kind === "plan"){ obj = px.plan; fld = parts[1]; ti = parts[2]; } else { obj = px.pos.find(p => String(p.id) === parts[1]); fld = parts[2]; ti = parts[3]; if (obj && !rec){ rec = true; pxRecord(); } }
             if (!obj) return; const d = obj.dir, v = q.p;
-            if (fld === "stop" && (v - c.c) * d >= 0) return; if (fld === "tgt" && (v - c.c) * d <= 0) return;
-            obj[fld] = v; pxDraw(); }, () => {}); return; }
+            if (fld === "stop" && (v - c.c) * d >= 0) return; if ((fld === "tgt" || fld === "tp") && (v - c.c) * d <= 0) return;
+            if (fld === "tp"){ obj.tps[+ti].p = v; if (!obj.runner) obj.tgt = obj.tps[obj.tps.length - 1].p; } else obj[fld] = v; pxDraw(); }, () => {}); return; }
       // Moving or reshaping an existing drawing.
       const g_ = e.target.closest && e.target.closest("[data-li]"); if (g_){ e.preventDefault(); const i = +g_.dataset.li, L = px.lines[i], hnd = e.target.dataset?.h, q0 = at(e), a0 = L.a ? { ...L.a } : null, b0 = L.b ? { ...L.b } : null; let moved = false;
         follow(e, ev => { const q = at(ev); if (!moved && Math.hypot(q.sx - q0.sx, q.sy - q0.sy) < 4) return; if (!moved){ moved = true; pxRecord(); } const dI = q.abs - q0.abs, dP = q.p - q0.p;
@@ -4682,17 +4709,17 @@ function btAllowed(key){
 }
 function btHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return h.toString(36); }
 function eliteTaster(host, sc){
-  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab", ...(hasTier("pro") ? ["Strategy tester"] : [])];
+  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab"];
   const head = host.querySelector(".pro-head");
   if (head) head.outerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span></div>
-    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>${hasTier("pro") ? `, plus <b>${PRO_BT.week} strategy backtests a week</b> with your Pro plan` : ""}. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
+    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
   host.querySelectorAll("section.panel").forEach(sec => {
     const h = sec.querySelector(".panel-head h2")?.textContent.trim() || "";
     if (keep.includes(h)) return;
     let teaser = "";
     if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
     else if (h === "Backtesting Studio") teaser = "See the range of results your own trades could produce over the next 100 trades, and your real risk of breaching a drawdown limit.";
-    else if (h === "Strategy tester") teaser = "Write your own entry, stop and target rules and test them on months of real candles, with a full report by day, hour and direction. Pro includes 5 tests a week. Elite is unlimited.";
+    else if (h === "🎯 Practice trading") teaser = "Go back to any day and trade it candle by candle with the future hidden: drawing tools, partial take-profits, undo and saved sessions.";
     else if (h === "What if…") teaser = "Replay your real trades with a different stop, target or risk size and see what you'd have made.";
     else if (h === "Risk-to-reward simulator") teaser = "Test any win rate and R:R before you trade it.";
     else if (h === "Planned vs actual") teaser = "Compare where you planned to enter, stop and take profit with what you actually did.";
@@ -4781,14 +4808,6 @@ function renderElite(){
       <div class="fgrid sim-in"><div class="f"><label>Next trades</label><input id="mcN" type="number" value="100"></div><div class="f"><label>Risk per trade (%)</label><input id="mcRisk" type="number" step="any" value="${esc(a.risk ?? 1)}" ${mcR ? "" : `disabled title="Needs 10 trades with a starting stop"`}></div>
         <div class="f"><label>Breach level (−%)</label><input id="mcDD" type="number" step="any" value="${esc(a.rules?.maxPct ?? 10)}"></div><div class="f"><label>Target (+%)</label><input id="mcT" type="number" step="any" value="${esc(a.rules?.targetPct ?? 10)}"></div></div>
       <button type="button" class="btn small primary" id="mcRun" ${mcOk ? "" : "disabled"}>Run Monte Carlo</button><div id="mcOut"></div></section>
-    <section class="panel" id="btBox"><div class="panel-head"><h2>Strategy tester</h2><span class="label">Your rules · historical candles</span></div>
-      <p class="hint" style="margin:0">Test a strategy on real price history before you risk money. Load a candles file (a few months of 1-minute or 5-minute candles works best), set your rules and run it.</p>
-      <div class="lock-mini"><div class="actions"><label class="btn small bt-file">📂 Choose candles file<input id="btFile" type="file" accept=".csv,.txt" hidden></label><button type="button" class="btn small" id="btUseReplay">Use Trade Replay's candles</button><button type="button" class="btn small" id="btHow">📘 How to get candles</button></div><span id="btData"><span class="hint">No candles loaded yet.</span></span></div>
-      <div class="lib-row" data-lib="bt"></div>
-      <div class="fgrid"><div class="f"><label for="btSaved">Your strategies</label><select id="btSaved" class="ctl"></select></div><div class="f"><label for="btName">Strategy name</label><input id="btName" class="ctl" maxlength="40" placeholder="e.g. London ORB"></div></div>
-      <div id="btRules"></div>
-      <div class="actions"><button type="button" class="btn primary" id="btRun">▶ Run backtest</button><button type="button" class="btn" id="btOpt">⚙ Optimise</button><button type="button" class="btn" id="btSave">Save strategy</button><button type="button" class="btn danger" id="btDel" hidden>Delete</button></div>
-      <div id="btOut"></div></section>
     <section class="panel" id="rrBox"><div class="panel-head"><h2>Risk-to-reward simulator</h2><span class="label">Any strategy · live</span></div>
       <p class="hint" style="margin:0">See what a strategy could do to your account before you trade it. Set a win rate and how big your wins are compared with your losses, and it plays out 1,000 possible futures to show the best, worst and most likely results. Drag the sliders and everything updates as you go.</p>
       <details class="rr-how"><summary>How it works and how to read it</summary>
@@ -4837,7 +4856,7 @@ function renderElite(){
         <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
-          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: click to add, keep clicking for more">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button>
+          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: then click the chart">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button>
           <span class="px-tfs" id="pxTfs" role="group" aria-label="Timeframe">${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" data-ptf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</span><span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
         <div class="px-hud" id="pxHud"></div>
         <div class="px-lined" id="pxLineEd" hidden></div><div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div><div class="px-float"><button type="button" class="btn small" id="pxAutoY" hidden title="Fit the price scale to the candles again (or double-click the chart)">⤢ Auto scale</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button></div></div>
@@ -4846,6 +4865,13 @@ function renderElite(){
             <div class="f"><label for="pxStopT">Stop loss</label><select id="pxStopT" class="ctl"><option value="atr">× ATR(14)</option><option value="pts">Price distance</option></select></div>
             <div class="f"><label for="pxStopV">Stop size</label><input id="pxStopV" class="ctl" type="number" step="any" value="1.5"></div>
             <div class="f"><label for="pxRR">Target (R, empty for none)</label><input id="pxRR" class="ctl" type="number" step="any" value="2"><div class="px-quick" data-for="pxRR">${[["1", "1R"], ["2", "2R"], ["3", "3R"], ["", "None"]].map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join("")}</div></div>
+            <div class="f px-tpmode"><label>Take profit</label><div class="px-quick" id="pxTpMode"><button type="button" data-m="one">One target</button><button type="button" data-m="part">Partials (TP1 · TP2 · TP3)</button></div></div>
+            <div class="px-parts" id="pxParts" hidden>
+              ${[[1, 1, 50, true], [2, 2, 25, true], [3, 3, 25, false]].map(([n, r, f, on]) => `<div class="px-part"><label class="check"><input type="checkbox" data-tpon="${n}" ${on ? "checked" : ""} ${n === 1 ? "disabled" : ""}><span><b>TP${n}</b></span></label><label>at <input class="ctl" type="number" step="any" min="0.1" data-tpr="${n}" value="${r}"> R</label><label>close <input class="ctl" type="number" step="1" min="1" max="100" data-tpf="${n}" value="${f}"> %</label></div>`).join("")}
+              <label class="check"><input type="checkbox" id="pxRunner"><span>Leave a runner (whatever's left has no target, so it rides until your stop or you close it)</span></label>
+              <label class="check"><input type="checkbox" id="pxBeTp1" checked><span>Move stop to breakeven when TP1 hits</span></label>
+              <p class="hint" id="pxPartsTxt"></p>
+            </div>
             <div class="f"><label for="pxSpread">Spread (price)</label><input id="pxSpread" class="ctl" type="number" step="any" value="0"></div></div>
           <label class="check px-planm"><input type="checkbox" id="pxPlanMode"><span>Set stop and target on the chart before placing (drag them like TradingView)</span></label>
           <div class="px-planbar" id="pxPlanBar" hidden></div>
@@ -4914,8 +4940,8 @@ function renderElite(){
   $("#rpOut").onclick = () => rpZoom(1.35); $("#rpIn").onclick = () => rpZoom(1 / 1.35); $("#rpFitB").onclick = rpFit;
   $("#rpLbl").onclick = e => { replay.labels = replay.labels === false; e.currentTarget.setAttribute("aria-pressed", String(replay.labels !== false)); drawReplay(); };
   $("#rpLbl").setAttribute("aria-pressed", String(replay.labels !== false));
-  $("#rpHow").onclick = openCandleGuide; $("#btHow").onclick = openCandleGuide;
-  bindStrategyTester(); bindPractice();
+  $("#rpHow").onclick = openCandleGuide;
+  bindPractice();
   $("#rpSave").onclick = () => saveReplay();
   renderSavedReplays();
   $("#rpShift").onchange = e => { replay.shift = e.target.value === "auto" ? "auto" : (+e.target.value || 0); if (!replay.base?.length) return; const last = replay.shownKey; replay.candles = resample(rpSource(), replay.tf); if (replay.started) replay.atKey = last; drawReplay(); };
