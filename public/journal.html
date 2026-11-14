@@ -4204,6 +4204,21 @@ function pxRestore(s){
   else if (!s.partial && px.partial && px.full){ px.cs[px.partial.j] = px.full; }
   if (s.partial){ px.full = s.full; px.cs[s.partial.j] = s.j; } px.partial = s.partial;
   Object.assign(px, { idx: s.idx, pos: s.pos, done: s.done, bal: s.bal, peak: s.peak, dd: s.dd, badges: s.badges, lines: s.lines }); px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; px.lineSel = null; pxLineEdit(null, true); pxTfMark(); pxDraw(); }
+// Go back one candle, any time (even after reopening a saved session): the last candle is hidden again,
+// trades placed on it are removed, and anything it closed or took profit on is reopened.
+function pxBackCandle(){
+  if (!px.cs.length || px.idx <= 2){ toast("You're at the start of the file"); return; } pxStop(); px.plan = null; pxRecord();
+  let curKey;
+  if (px.partial){ curKey = pxKey(px.cs[px.partial.j]); px.cs[px.partial.j] = px.full; px.partial = null; px.idx = px.idx - 1; }
+  else { curKey = pxKey(px.cs[px.idx - 1]); px.idx--; }
+  const undoTps = p => { (p.tps || []).forEach(t => { if (t.hit && t.at && t.at >= curKey){ t.hit = false; p.size = (p.size || 0) + (t.f || 0); p.realR -= t.R || 0; p.realPnl -= t.pnl || 0; px.bal -= t.pnl || 0; delete t.at; } });
+    if (p.beAt && p.beAt >= curKey){ p.stop = p.beFrom; delete p.beAt; delete p.beFrom; } };
+  // Reopen trades that closed on that candle.
+  const back = px.done.filter(d => d.exitKey && d.exitKey >= curKey); px.done = px.done.filter(d => !(d.exitKey && d.exitKey >= curKey));
+  back.forEach(d => { px.bal -= (d.pnl || 0) - (d.realPnl || 0); const { exit, exitKey, R, pnl, why, ...p } = d; if (p.tps && !(p.size > 0)) p.size = 0; px.pos.push(p); });
+  // Trades placed on that candle never happened.
+  px.pos = px.pos.filter(p => !(p.key >= curKey)); px.pos.forEach(undoTps);
+  px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; pxDraw(); }
 function pxRecord(){ pxDirty(); px.hist ||= []; px.hist.push(pxSnap()); if (px.hist.length > 1500) px.hist.shift(); px.redo = []; pxUndoUi(); }
 function pxUndo(){ pxDirty(); if (!px.hist?.length){ toast("Nothing to undo. This is where the session started."); return; } pxStop(); (px.redo ||= []).push(pxSnap()); pxRestore(px.hist.pop()); pxUndoUi(); }
 function pxRedo(){ pxDirty(); if (!px.redo?.length){ toast("Nothing to redo"); return; } pxStop(); (px.hist ||= []).push(pxSnap()); pxRestore(px.redo.pop()); pxUndoUi(); }
@@ -4221,8 +4236,8 @@ function pxStep(n = 1){
       // Stop is checked first: if a candle touches both, it counts as the stop (the cautious assumption).
       if (hitS){ pxClose(p, p.dir > 0 ? Math.min(p.stop, c.o) : Math.max(p.stop, c.o), p.stop === p.entry ? "Breakeven" : "Stop"); return; }
       if (p.tps){ for (const t of p.tps){ if (t.hit || !reach(t.p)) continue; t.hit = true; const f = Math.min(t.f, p.size), R = ((t.p - p.entry) * p.dir / p.risk - p.costR) * f, pnl = R * p.riskAmt;
-          p.size = Math.max(0, p.size - f); p.realR += R; p.realPnl += pnl; px.bal += pnl; px.peak = Math.max(px.peak, px.bal);
-          if (t.n === 1 && p.beTp1 && (p.stop - p.entry) * p.dir < 0) p.stop = p.entry;
+          p.size = Math.max(0, p.size - f); p.realR += R; p.realPnl += pnl; px.bal += pnl; px.peak = Math.max(px.peak, px.bal); Object.assign(t, { at: pxKey(c), R, pnl, f });
+          if (t.n === 1 && p.beTp1 && (p.stop - p.entry) * p.dir < 0){ p.beFrom = p.stop; p.beAt = pxKey(c); p.stop = p.entry; }
           if (p.size <= 1e-6){ pxClose(p, t.p, "Target"); break; } pxFx(R, pnl, "TP" + t.n); }
         return; }
       if (p.tgt != null && reach(p.tgt)) pxClose(p, p.tgt, "Target"); });
@@ -4443,7 +4458,7 @@ function bindPractice(){
   $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
   pxSessionsRender();
   $("#pxDate").onchange = pxTimes; $("#pxTf").addEventListener("change", pxTimes);
-  $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxNext10").onclick = () => pxStep(10);
+  $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxBackC").onclick = pxBackCandle; $("#pxNext10").onclick = () => pxStep(10);
   $("#pxSpeed").onchange = () => { if (px.timer){ pxStop(); pxPlay(); } };
   $("#pxIn").onclick = () => { px.n = Math.max(20, Math.round(px.n / 1.4)); pxDraw(); }; $("#pxOut").onclick = () => { px.n = Math.min(400, Math.round(px.n * 1.4)); pxDraw(); };
   $("#pxBuy").onclick = () => { px.preview = 0; pxOpen(1); }; $("#pxSell").onclick = () => { px.preview = 0; pxOpen(-1); };
@@ -4519,7 +4534,7 @@ function bindPractice(){
     else if (mod && k === "z"){ e.preventDefault(); pxUndo(); }
     else if ((k === "delete" || k === "backspace") && px.lineSel != null){ e.preventDefault(); pxRecord(); px.lines.splice(px.lineSel, 1); pxLineEdit(null); }
     else if (k === "escape"){ if (px.tool) pxSetTool(px.tool); else if (px.lineSel != null) pxLineEdit(null); } });
-  $("#pxChart").onkeydown = e => { if (e.ctrlKey || e.metaKey || e.key === "Delete" || e.key === "Escape") return; if (e.key === "Backspace"){ e.preventDefault(); if (px.lineSel == null) pxUndo(); return; } if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
+  $("#pxChart").onkeydown = e => { if (e.ctrlKey || e.metaKey || e.key === "Delete" || e.key === "Escape") return; if (e.key === "Backspace"){ e.preventDefault(); if (px.lineSel == null) pxBackCandle(); return; } if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
   $("#pxSave").onclick = () => pxSaveSession(false);
   $("#pxNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36); if (await saveNote(id, { kind: "note", title: `Practice session · ${px.sym || "candles"} · ${fmtDate(localToday())}`, body: pxReport(), tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
   $("#pxCsv").onclick = () => { const rows = [["opened", "side", "entry", "stop", "target", "closed", "exit", "reason", "r", "pnl"], ...px.done.map(x => [x.key, x.dir > 0 ? "buy" : "sell", x.entry, x.stop, x.tgt ?? "", x.exitKey, x.exit, x.why, x.R.toFixed(3), x.pnl.toFixed(2)])];
@@ -4853,7 +4868,7 @@ function renderElite(){
         <div class="actions"><button type="button" class="btn primary" id="pxGo">Start session here</button></div>
       </div>
       <div id="pxLive" hidden>
-        <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
+        <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxBackC" title="Back one candle (Backspace). Works any time, even after you come back to a saved session.">◀ 1 candle</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
           <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: then click the chart">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button>
