@@ -823,7 +823,7 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .risknote.high{background:var(--warn-bg);border-color:var(--warn-line)}
 .risknote.high .rule{color:var(--warn);font-weight:600}
 .px-chart{background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;margin:8px 0;min-height:200px;outline:none;cursor:crosshair}.px-chart:focus-visible{outline:2px solid var(--accent)}
-.px-chart svg{display:block}.px-grid{stroke:var(--line-2);stroke-width:1;opacity:.6}.px-ax{fill:var(--muted);font-size:10.5px;font-family:inherit}
+.px-chart svg{display:block}.px-grid{stroke:var(--line-2);stroke-width:1;opacity:.6}.px-ax{fill:var(--muted);font-size:10.5px;font-family:inherit}.px-ax.day{fill:var(--ink);font-weight:700}.px-vgrid{stroke:var(--line-2);stroke-width:1;opacity:.35}.px-vgrid.day{opacity:.7}
 .px-up{stroke:#089981}.px-dn{stroke:#F23645}.px-upf{fill:#089981}.px-dnf{fill:#F23645}
 .px-en{stroke:var(--muted);stroke-dasharray:4 3}.px-sl{stroke:#F23645;stroke-dasharray:6 3}.px-tp{stroke:#089981;stroke-dasharray:6 3}.px-last{stroke:var(--accent);stroke-dasharray:2 3;opacity:.8}
 .px-en-tag{fill:var(--muted)}.px-sl-tag{fill:#F23645}.px-tp-tag{fill:#089981}.px-last-tag{fill:var(--accent)}.px-tagt{fill:#fff;font-size:10.5px;font-weight:700;font-family:inherit}
@@ -4202,7 +4202,7 @@ function pxSetTf(tf){
   const jStart = pxLB(px.bkeys, ks[j]), jEnd = j + 1 < ks.length ? pxLB(px.bkeys, ks[j + 1]) - 1 : px.base.length - 1;
   px.tf = tf; px.cs = cs; px.ckeys = ks; px.partial = null;
   if (bEnd < jEnd){ const part = px.base.slice(jStart, bEnd + 1); px.full = cs[j]; px.cs = cs.slice(); px.cs[j] = { d: cs[j].d, t: cs[j].t, o: part[0].o, h: Math.max(...part.map(c => c.h)), l: Math.min(...part.map(c => c.l)), c: part[part.length - 1].c }; px.partial = { j, bEnd, jEnd }; }
-  px.idx = j + 1; px.atr = atrArr(px.cs); px.pan = 0;
+  px.idx = j + 1; px.atr = atrArr(px.cs); px.pan = 0; px.yMan = null;
   if ($("#pxTf")) $("#pxTf").value = String(tf); pxTfMark(); pxDraw();
 }
 const pxTfMark = () => document.querySelectorAll("#pxTfs [data-ptf]").forEach(b => b.classList.toggle("on", +b.dataset.ptf === px.tf));
@@ -4230,7 +4230,7 @@ function pxBackCandle(quiet){
   if (!quiet){ px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; pxDraw(); } return true; }
 // Jump to a day and time in the same session. Going forward plays every candle in between (so open trades still hit their stops and targets);
 // going back rewinds candle by candle, reopening anything that closed on the way.
-function pxGoTo(key){ if (!px.cs.length) return; const ks = px.ckeys || px.cs.map(pxKey); let i = pxLB(ks, key); if (i >= ks.length) i = ks.length - 1; const target = i + 1;
+function pxGoTo(key){ if (!px.cs.length) return; px.yMan = null; const ks = px.ckeys || px.cs.map(pxKey); let i = pxLB(ks, key); if (i >= ks.length) i = ks.length - 1; const target = i + 1;
   if (target === px.idx){ toast("You're already there"); return; } pxStop(); px.plan = null;
   if (target > px.idx){ const open = px.pos.length; pxStep(target - px.idx); toast(open ? "Jumped ahead. Your open trades were played through every candle on the way." : "Jumped ahead"); }
   else { pxRecord(); while (px.idx > target && pxBackCandle(true)); px.atr = atrArr(px.cs); px.pan = 0; px.lastEq = null; pxDraw(); toast("Jumped back"); }
@@ -4350,8 +4350,11 @@ function pxLineEdit(i, quiet){ const box = $("#pxLineEd"); if (!box) return; px.
 // One drawing per click of a tool, like TradingView: the tool switches off once the drawing is placed.
 // Crosshair with the date/time and price under the cursor, like TradingView. Times past the last candle are projected.
 const PX_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], PX_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function pxTimeAt(abs){ const last = px.idx - 1, k = Math.min(abs, last), c = px.cs[Math.max(0, k)]; if (!c) return "";
-  const d = new Date(c.d + "T" + c.t + ":00Z"); if (abs > last) d.setUTCMinutes(d.getUTCMinutes() + (abs - last) * px.tf);
+// The time of a chart slot: the real candle's time, or past the last candle, projected forward skipping weekends.
+function pxDateAt(abs){ if (abs < 0) return null; const last = px.idx - 1, c = px.cs[Math.min(abs, last)]; if (!c) return null; const d = new Date(c.d + "T" + c.t + ":00Z");
+  for (let s = last; s < abs; s++){ d.setUTCMinutes(d.getUTCMinutes() + px.tf); const wd = d.getUTCDay(); if (wd === 6) d.setUTCDate(d.getUTCDate() + 2); else if (wd === 0) d.setUTCDate(d.getUTCDate() + 1); if (wd === 6 || wd === 0) d.setUTCHours(0, 0, 0, 0); }
+  return d; }
+function pxTimeAt(abs){ const d = pxDateAt(abs); if (!d) return "";
   const p2 = n => String(n).padStart(2, "0"); return `${PX_DOW[d.getUTCDay()]} ${d.getUTCDate()} ${PX_MON[d.getUTCMonth()]} '${String(d.getUTCFullYear()).slice(2)}  ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; }
 function pxCross(q){ const g = document.getElementById("pxXh"); if (!g) return; const V = px.view;
   if (!q || !V || q.sy < 0 || q.sy > V.H || q.sx < 0 || q.sx > V.cw){ g.setAttribute("visibility", "hidden"); return; }
@@ -4413,7 +4416,15 @@ function pxDraw(){
   const y = v => (hi - v) / (hi - lo) * (H - B), X = i => (i + .5) * bw;
   const step = (() => { const raw = (hi - lo) / 6, m = 10 ** Math.floor(Math.log10(raw)), f = raw / m; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * m; })();
   let g = ""; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){ g += `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="px-grid"/><text x="${cw + 6}" y="${(y(v) + 4).toFixed(1)}" class="px-ax">${pxPrice(v)}</text>`; }
-  const tl = Math.max(1, Math.ceil(vis.length / Math.max(2, Math.floor(cw / 120)))); let tx = ""; vis.forEach((k, i) => { if (i % tl === 0) tx += `<text x="${X(i).toFixed(1)}" y="${H - 6}" class="px-ax" text-anchor="middle">${i === 0 || vis[i - tl]?.d !== k.d ? k.d.slice(5).replace("-", "/") + " " : ""}${k.t}</text>`; });
+  // Time axis like TradingView: round times spaced so they never overlap, and the date (e.g. "Wed 4 Nov") where a new day starts.
+  // Past the last candle the times are projected the same way the crosshair does it, so the axis and crosshair always agree.
+  let tx = ""; { const stepM = [1, 5, 15, 30, 60, 120, 240, 360, 720, 1440, 2880, 10080].find(m => m / Math.max(1, px.tf) * bw >= 84) || 10080, slots = Math.floor(cw / bw);
+    let lastX = -1e9, prevD = null;
+    for (let i = 0; i < slots; i++){ const abs = lo0 + i, dt = pxDateAt(abs); if (!dt) continue; const mins = dt.getUTCHours() * 60 + dt.getUTCMinutes(), dKey = dt.toISOString().slice(0, 10), newDay = prevD !== null && dKey !== prevD; prevD = dKey;
+      const on = stepM >= 1440 ? newDay : (mins % stepM === 0 || newDay); if (!on) continue; const x = X(i);
+      const lab = newDay || (stepM >= 1440) ? `${PX_DOW[dt.getUTCDay()]} ${dt.getUTCDate()} ${PX_MON[dt.getUTCMonth()]}` : `${String(dt.getUTCHours()).padStart(2, "0")}:${String(dt.getUTCMinutes()).padStart(2, "0")}`;
+      const w_ = lab.length * 6.2; if (x - lastX < w_ + 18 || x < w_ / 2 || x > cw - w_ / 2) continue; lastX = x;
+      tx += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="0" y2="${H - B}" class="px-vgrid${newDay ? " day" : ""}"/><text x="${x.toFixed(1)}" y="${H - 6}" class="px-ax${newDay ? " day" : ""}" text-anchor="middle">${lab}</text>`; } }
   const bars = vis.map((k, i) => { const up = k.c >= k.o, x = X(i), w = Math.max(1, bw * .62), t = y(Math.max(k.o, k.c)), b = y(Math.min(k.o, k.c));
     return `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y(k.h).toFixed(1)}" y2="${y(k.l).toFixed(1)}" class="${up ? "px-up" : "px-dn"}"/><rect x="${(x - w / 2).toFixed(1)}" y="${t.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, b - t).toFixed(1)}" class="${up ? "px-upf" : "px-dnf"}"/>`; }).join("");
   const hline = (v, cls_, label) => v == null ? "" : `<line x1="0" x2="${cw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls_}"/><rect x="${cw}" y="${(y(v) - 9).toFixed(1)}" width="${R}" height="18" class="${cls_}-tag"/><text x="${cw + 4}" y="${(y(v) + 4).toFixed(1)}" class="px-tagt">${esc(label)}</text>`;
