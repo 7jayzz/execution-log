@@ -2949,7 +2949,7 @@ function openRules(){
       <div class="f"><label for="rg-da">Max daily loss (${esc(a.ccy || S().ccy || "")})</label><input id="rg-da" type="number" step="any" value="${v_("dailyAmt")}" placeholder="e.g. 200"></div>
       <div class="f"><label for="rg-wk">Max weekly loss (%)</label><input id="rg-wk" type="number" step="any" value="${v_("weekPct")}" placeholder="4"></div>
     </div>
-    <div class="f"><label>Days I trade</label><div class="daychips" id="rg-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${days.includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div><span class="hint">Forex, gold and indices are closed on Saturday and Sunday. Only tick the weekend if you trade crypto.</span></div>
+    <div class="f"><label>Days I trade</label><div class="daychips" id="rg-days">${[1, 2, 3, 4, 5].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${days.includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
     <div class="f"><label for="rg-sym">Only these instruments <span class="opt">(${esc(t("optional"))})</span></label><input id="rg-sym" value="${esc((r.symbols || []).join(", "))}" placeholder="e.g. XAUUSD, NAS100, GBPUSD"></div>
     <label class="check"><input type="checkbox" id="rg-stop" ${r.needStop ? "checked" : ""}><span>Every trade must have a stop loss</span></label>
     <h3 class="rg-h">Account limits</h3>
@@ -2998,7 +2998,7 @@ function openRules(){
     if (tpl && tplFresh) tpl.confirmed = localToday();
     const rules = { ...r, on: $("#rg-on").checked,
       maxTrades: pos("rg-mt"), maxLosses: pos("rg-ml"), maxRiskPct: pos("rg-mr"), cooldown: pos("rg-cd"), hFrom: v("rg-hf") || "", hTo: v("rg-ht") || "", dailyAmt: pos("rg-da"), weekPct: pos("rg-wk"),
-      days: dsel.length === 7 ? [] : dsel.sort(), symbols: v("rg-sym").split(/[,\s]+/).map(z => z.trim().toUpperCase()).filter(Boolean).slice(0, 30), needStop: $("#rg-stop").checked,
+      days: dsel.length >= 5 ? [] : dsel.sort(), symbols: v("rg-sym").split(/[,\s]+/).map(z => z.trim().toUpperCase()).filter(Boolean).slice(0, 30), needStop: $("#rg-stop").checked,
       targetPct: num(v("rg-target")), minDays: num(v("rg-days2")), dailyPct: num(v("rg-daily")), dailyBase: v("rg-dbase"), maxPct: num(v("rg-max")), ddType: v("rg-ddt"),
       endDate: /^\d{4}-\d{2}-\d{2}$/.test(v("rg-end")) ? v("rg-end") : "", consistencyPct: num(v("rg-cons")), template: tpl || null };
     const list = accountsList().map(x => x.id === a.id ? { ...x, rules } : x);
@@ -3889,7 +3889,7 @@ function btForm(r){
     ${time_("btFrom", r.from, "Trade from")}${time_("btTo", r.to, "Trade until")}
     ${num_("btMax", r.maxDay, 1, "Max trades per day")}
     ${num_("btRisk", r.risk, "any", "Risk per trade (%)")}${num_("btStart", r.start, "any", "Starting balance")}
-    <div class="f bt-check"><label>Days to trade</label><div class="daychips" id="btDays">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${(r.days || [1, 2, 3, 4, 5]).includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
+    <div class="f bt-check"><label>Days to trade</label><div class="daychips" id="btDays">${[1, 2, 3, 4, 5].map(d => `<label class="chip"><input type="checkbox" value="${d}" ${(r.days || [1, 2, 3, 4, 5]).includes(d) ? "checked" : ""}><span>${BT_DOW[d]}</span></label>`).join("")}</div></div>
     <label class="check bt-check"><input type="checkbox" id="btClose" ${r.closeEnd ? "checked" : ""}><span>Close open trades at the end of the session</span></label>
     <label class="check bt-check" id="btOppW" ${r.signal === "orb" ? "hidden" : ""}><input type="checkbox" id="btOpp" ${r.exitOpp ? "checked" : ""}><span>Also close a trade early if the opposite signal appears</span></label></div>
     <details class="bt-more" ${r.entry !== "close" || r.spread || r.slip || r.comm || r.beR || r.trailStart || r.partR || r.maxBars ? "open" : ""}><summary><b>Entries, costs and trade management</b> <span class="hint">· make results match real trading</span></summary>
