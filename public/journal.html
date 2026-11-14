@@ -4825,7 +4825,8 @@ function openCandleGuide(){
 /* ---------- Elite taster (Basic and Pro) ---------- */
 // The coach and replay stay usable with a small allowance; everything else becomes a short preview with one real number.
 // Weekly allowances on Basic and Pro. Elite is unlimited.
-const FREE_LIM = { basic: { replays: 2, practice: 1 }, pro: { replays: 5, practice: 3 } };
+// Counted per login (across all of a trader's accounts), not per trading account.
+const FREE_LIM = { basic: { replays: 1, practice: 1 }, pro: { replays: 2, practice: 3 } };
 const freeLim = k => hasTier("elite") ? Infinity : (FREE_LIM[tier()] || FREE_LIM.basic)[k];
 const nextFree = used => new Date(Math.min(...used.map(r => r.at)) + 7 * 864e5).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -6984,8 +6985,8 @@ async function deleteEverything(){
   if (state.mode !== "live"){ ["tel-range","tel-chart","tel-acct","tel-dismiss"].forEach(k => { try { localStorage.removeItem(k); } catch {} }); enterDemo(); setView("dashboard"); toast(t("dDeleted")); return; }
   try {
     const allShots = state.trades.flatMap(shotsOf);
-    for (const x of [...state.trades, ...(state.notes || []), ...(state.coachChats || []), ...(state.replays || []), ...(state.days || [])]) await col.doc(x.id).delete();
-    if (state.usage && Object.keys(state.usage).length) await col.doc("usage").delete().catch(() => {});
+    for (const x of [...state.trades, ...(state.notes || []), ...(state.coachChats || []), ...(state.replays || []), ...(state.practice || []), ...(state.days || [])]) await col.doc(x.id).delete();
+    // The weekly allowance record stays, so clearing the journal doesn't reset free replays and practice sessions.
     deleteShots(allShots);
     await col.doc("settings").delete();
     ["tel-range","tel-chart","tel-acct","tel-dismiss","tel-tut"].forEach(k => { try { localStorage.removeItem(k); } catch {} });
