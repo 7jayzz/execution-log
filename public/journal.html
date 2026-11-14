@@ -553,6 +553,7 @@ details.adv[open] summary{margin-bottom:10px}
 .cg-tips{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2);font-size:13.5px;line-height:1.55}.cg-tips ul{margin:6px 0 0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px}
 .sto-bar{height:10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}.sto-bar i{display:block;height:100%;border-radius:999px}
 .rp-saved{margin-top:14px;display:flex;flex-direction:column;gap:8px}.rs-item{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--surface-2)}.rs-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 260px}.rs-main p{margin:4px 0 0;font-size:13.5px;line-height:1.5}
+.rs-lesson{flex:1 1 100%;border-radius:10px;padding:10px 12px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));border-left:3px solid var(--accent)}.rs-lesson.empty{background:transparent;border-style:dashed;border-left-style:solid}.rs-lhead{display:flex;align-items:center;justify-content:space-between;gap:8px}.rs-lt{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}.rs-ledit{border:0;background:none;color:var(--accent);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 4px}.rs-ledit:hover{text-decoration:underline}.rs-lesson p{margin:6px 0 0;font-size:14px;line-height:1.55;white-space:pre-wrap}.rs-lesson p.hint{font-size:13px}.rs-lesson textarea{width:100%;margin-top:8px;box-sizing:border-box;font:inherit;font-size:14px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--ink);padding:8px 10px;resize:vertical}.rs-lbtns{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 .shot-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.shot-opt{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:8px;cursor:pointer;font:inherit;color:var(--ink)}.shot-opt:hover{border-color:var(--accent)}.shot-opt img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;background:var(--surface)}.shot-opt>span{display:flex;flex-direction:column;gap:2px;font-size:13px}
 .dl-chips{display:inline-flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto}.dl-chip{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}.dl-chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .bt-build{grid-column:1/-1;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
@@ -4723,7 +4724,7 @@ function saveReplay(done){
   const prev = state.replays.find(r => r.tradeId === x.id);
   const close = showDrawer(`<form class="drawer" id="rsForm" novalidate><div class="panel-head"><h2>${done === true ? "Trade finished. Save this replay?" : "Save this replay"}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <p class="hint" style="margin:0">${esc(x.symbol)} ${x.side === "short" ? "sell" : "buy"} · ${esc(fmtDate(x.date))} ${esc(x.timeIn || "")}. It saves the candles, timeframe and where you are, so you can pick it up later on any device.</p>
-    <div class="f"><label for="rsNote">What did you learn from this trade? <span class="opt">(optional)</span></label><textarea id="rsNote" rows="4" maxlength="2000" placeholder="e.g. Entered too early. Should have waited for the retest.">${esc(prev?.note || "")}</textarea></div>
+    <div class="f"><label for="rsNote">💡 Lesson learnt <span class="opt">(optional)</span></label><textarea id="rsNote" rows="4" maxlength="2000" placeholder="e.g. Entered too early. Should have waited for the retest.">${esc(prev?.note || "")}</textarea></div>
     <div class="drawer-foot"><button type="button" class="btn" data-close>${done === true ? "Not now" : esc(t("cancel"))}</button><button type="submit" class="btn primary">Save replay</button></div></form>`);
   $("#rsForm").onsubmit = async e => { e.preventDefault();
     if (!await storeReplay(x, replayRec(x, $("#rsNote").value.trim()))) return;
@@ -4748,11 +4749,29 @@ function renderSavedReplays(){
   const list = [...state.replays].sort((p, q) => (q.saved || 0) - (p.saved || 0));
   if (!list.length){ host.innerHTML = ""; return; }
   host.innerHTML = `<div class="rp-saved"><div class="panel-head"><h2 style="font-size:15px">Saved replays</h2><span class="label">${list.length} saved</span></div>
-    ${list.map(r => `<div class="rs-item" data-id="${esc(r.id)}"><div class="rs-main"><b>${esc(r.label || "Replay")}</b><span class="hint">Saved ${esc(fmtDate(new Date(r.saved || 0).toISOString().slice(0, 10)))}${r.tf ? ` · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"}` : ""}</span>${r.note ? `<p>${esc(r.note)}</p>` : ""}</div>
+    ${list.map(r => `<div class="rs-item" data-id="${esc(r.id)}"><div class="rs-main"><b>${esc(r.label || "Replay")}</b><span class="hint">Saved ${esc(fmtDate(new Date(r.saved || 0).toISOString().slice(0, 10)))}${r.tf ? ` · ${r.tf < 60 ? r.tf + "m" : r.tf / 60 + "h"}` : ""}</span></div>
+      <div class="rs-lesson${r.note ? "" : " empty"}"><div class="rs-lhead"><span class="rs-lt">💡 Lesson learnt</span><button type="button" class="rs-ledit" data-rsedit>${r.note ? "Edit" : "+ Add"}</button></div>${r.note ? `<p>${esc(r.note)}</p>` : `<p class="hint">What did this trade teach you? Add it so you don't repeat it.</p>`}</div>
       <div class="actions"><button type="button" class="btn small primary" data-rsopen>Open</button><button type="button" class="btn small" data-rsdel>Delete</button></div></div>`).join("")}</div>`;
   host.querySelectorAll(".rs-item").forEach(el => { const id = el.dataset.id;
     el.querySelector("[data-rsopen]").onclick = () => openSavedReplay(id);
+    el.querySelector("[data-rsedit]").onclick = () => editLesson(el, id);
     el.querySelector("[data-rsdel]").onclick = e => { const b = e.currentTarget; if (b.dataset.sure){ deleteSavedReplay(id); return; } b.dataset.sure = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { if (b.isConnected){ delete b.dataset.sure; b.textContent = "Delete"; } }, 3000); }; });
+}
+
+// Write or change the lesson on a saved replay, right on its card.
+function editLesson(el, id){
+  const r = state.replays.find(v => v.id === id), box = el.querySelector(".rs-lesson"); if (!r || !box) return;
+  box.classList.remove("empty");
+  box.innerHTML = `<div class="rs-lhead"><span class="rs-lt">💡 Lesson learnt</span></div>
+    <textarea rows="3" maxlength="2000" aria-label="Lesson learnt" placeholder="e.g. Entered before the retest. Wait for the candle to close next time.">${esc(r.note || "")}</textarea>
+    <div class="rs-lbtns"><button type="button" class="btn small" data-lcancel>Cancel</button><button type="button" class="btn small primary" data-lsave>Save lesson</button></div>`;
+  const ta = box.querySelector("textarea"); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  box.querySelector("[data-lcancel]").onclick = renderSavedReplays;
+  box.querySelector("[data-lsave]").onclick = async () => {
+    const note = ta.value.trim(), { id: _id, ...rec } = { ...r, note };
+    if (state.mode === "live" && !state.readOnly){ try { await col.doc(id).set(rec); } catch (err){ handleWriteError(err); return; } }
+    state.replays = state.replays.map(v => v.id === id ? { ...v, note } : v); renderSavedReplays(); toast(note ? "Lesson saved" : "Lesson removed"); };
+  ta.onkeydown = e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) box.querySelector("[data-lsave]").click(); if (e.key === "Escape") renderSavedReplays(); };
 }
 
 /* ---------- Guide: getting candles for Trade Replay ---------- */
