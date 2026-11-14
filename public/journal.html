@@ -4313,7 +4313,6 @@ function pxPartsUi(){ const box = $("#pxParts"); if (!box) return; box.hidden = 
   const avgR = pc.tps.reduce((q, t) => q + t.r * t.f, 0);
   $("#pxPartsTxt").innerHTML = `${pc.tps.map(t => `TP${t.n} closes <b>${Math.round(t.f * 100)}%</b> at ${t.r}R`).join(" · ")}${runner ? ` · runner <b>${Math.round(pc.left * 100)}%</b>` : ""}. If every TP hits: <b>+${avgR.toFixed(2)}R</b>${runner ? " plus the runner" : ""}.`; }
 function pxOpen(dir, ov){
-  if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; }
   // "Set stop and target on the chart first": the first click shows a position you can drag, the second places it.
   if (!ov && $("#pxPlanMode")?.checked){ if (px.plan && px.plan.dir === dir){ pxPlace(); return; } const lv = pxLevels(dir); if (!lv){ toast("Set a stop size first"); return; } px.plan = { dir, ...lv }; px.preview = 0; pxDraw(); return; }
   const c = pxNow(), lv = ov || pxLevels(dir); if (!lv){ toast("Set a stop size first"); return; } const dist = Math.abs(c.c - lv.stop);
@@ -4556,7 +4555,7 @@ function bindPractice(){
   $("#pxFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; const cs = parseCandles(await readText(f)), sy = symFromName(f.name); pxLoad(cs, sy, f.name); e.target.value = ""; if (cs.length) libToast(await candleLib.save(sy, f.name, cs)); };
   $("#pxUseRp").onclick = () => { if (replay.base?.length) pxLoad(replay.base, replay.fileSym, "Trade Replay's candles"); else if (btState.base?.length) pxLoad(btState.base, btState.sym, "Strategy tester's candles"); else toast("Load a candles file in Trade Replay or the strategy tester first, or choose one here"); };
   $("#pxHow").onclick = openCandleGuide;
-  $("#pxGo").onclick = () => { if (!hasTier("elite")){ toast("Practice trading is part of Elite."); return; } if (!$("#pxDate").value){ toast("Pick a start date"); return; } pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
+  $("#pxGo").onclick = () => { if (!$("#pxDate").value){ toast("Pick a start date"); return; } if (!pxAllowed()) return; pxStart(`${$("#pxDate").value} ${$("#pxTime").value || "00:00"}`); };
   pxSessionsRender();
   $("#pxDate").onchange = pxTimes; $("#pxTf").addEventListener("change", pxTimes);
   $("#pxPlay").onclick = pxPlay; $("#pxNext").onclick = () => pxStep(1); $("#pxBackC").onclick = () => pxBackCandle(); $("#pxNext10").onclick = () => pxStep(10);
@@ -4825,7 +4824,28 @@ function openCandleGuide(){
 
 /* ---------- Elite taster (Basic and Pro) ---------- */
 // The coach and replay stay usable with a small allowance; everything else becomes a short preview with one real number.
-const FREE_REPLAYS_WEEK = 1;
+// Weekly allowances on Basic and Pro. Elite is unlimited.
+const FREE_LIM = { basic: { replays: 2, practice: 1 }, pro: { replays: 5, practice: 3 } };
+const freeLim = k => hasTier("elite") ? Infinity : (FREE_LIM[tier()] || FREE_LIM.basic)[k];
+const nextFree = used => new Date(Math.min(...used.map(r => r.at)) + 7 * 864e5).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+// Practice sessions: starting a new one uses one; continuing a saved session doesn't.
+function pxAllowed(){
+  if (hasTier("elite")) return true;
+  const weekAgo = Date.now() - 7 * 864e5, used = (state.usage?.practice || []).filter(r => r.at > weekAgo), lim = freeLim("practice");
+  if (used.length < lim){
+    const rec = { ...(state.usage || {}), practice: [...used, { at: Date.now() }] }; state.usage = rec;
+    if (state.mode === "live" && !state.readOnly) col.doc("usage").set(rec).catch(() => {});
+    pxShowLeft(); return true;
+  }
+  toast(`You've used this week's ${plural(lim, "practice session", "practice sessions")} on ${TIER_NAME[tier()]}. Your next one unlocks on ${nextFree(used)}. You can still continue a saved session. Elite is unlimited.`, 7000);
+  return false;
+}
+function pxShowLeft(){
+  const lbl = $("#pxBox .panel-head .label"); if (!lbl || hasTier("elite")) return;
+  const used = (state.usage?.practice || []).filter(r => r.at > Date.now() - 7 * 864e5).length, lim = freeLim("practice");
+  lbl.textContent = `${TIER_NAME[tier()]}: ${Math.max(0, lim - used)} of ${plural(lim, "session", "sessions")} left this week`;
+}
 // Strategy tester on Pro: a weekly allowance and smaller limits. Elite is unlimited. Basic doesn't get it.
 const PRO_BT = { week: 5, conds: 3, saved: 2, days: 30 };
 const btLim = () => hasTier("elite") ? { week: Infinity, conds: 8, saved: 10, days: Infinity } : PRO_BT;
@@ -4850,10 +4870,10 @@ function btAllowed(key){
 }
 function btHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return h.toString(36); }
 function eliteTaster(host, sc){
-  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab"];
+  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab", "🎯 Practice trading"];
   const head = host.querySelector(".pro-head");
   if (head) head.outerHTML = `<div class="pro-head"><h2 class="pro-h">Elite tools</h2><span class="tier-pill elite">Elite</span></div>
-    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> You get <b>3 free AI coach replies a month</b> and <b>${FREE_REPLAYS_WEEK} free trade replay a week</b>. Elite unlocks everything below, every day.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
+    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> Each week you get <b>${plural(freeLim("replays"), "trade replay", "trade replays")}</b> and <b>${plural(freeLim("practice"), "practice session", "practice sessions")}</b>, plus <b>3 free AI coach replies a month</b>. Elite makes them unlimited and unlocks everything below.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
   host.querySelectorAll("section.panel").forEach(sec => {
     const h = sec.querySelector(".panel-head h2")?.textContent.trim() || "";
     if (keep.includes(h)) return;
@@ -4872,9 +4892,9 @@ function eliteTaster(host, sc){
   });
   // Put the two free tools together at the top.
   const secs = [...host.querySelectorAll("section.panel")], find = t => secs.find(x => x.querySelector(".panel-head h2")?.textContent.trim() === t);
-  const chats = find("Saved coach chats"), rp = find("▶ Trade Replay Lab"); if (chats && rp) chats.after(rp);
+  const chats = find("Saved coach chats"), rp = find("▶ Trade Replay Lab"), pr = find("🎯 Practice trading"); if (chats && rp) chats.after(rp); if (rp && pr) rp.after(pr);
   bindUpgrade(host);
-  showCoachLeft(); btShowLeft();
+  showCoachLeft(); btShowLeft(); pxShowLeft();
 }
 async function showCoachLeft(u){
   const lbl = document.querySelector("#elitePage .panel-head h2")?.closest("section")?.querySelector(".panel-head .label"); if (!lbl) return;
@@ -4882,18 +4902,18 @@ async function showCoachLeft(u){
   if (u.period === "month") lbl.textContent = `${u.left} of ${u.limit} free replies left this month`;
 }
 window.addEventListener("tel-coach-usage", e => showCoachLeft(e.detail));
-// Weekly free replay on Basic/Pro. Watching the same trade again doesn't use another one.
+// Weekly free replays on Basic/Pro. Watching the same trade again doesn't use another one.
 function replayAllowed(){
   if (hasTier("elite") || !replay.trade) return true;
   const weekAgo = Date.now() - 7 * 864e5, used = (state.usage?.replays || []).filter(r => r.at > weekAgo);
   if (used.some(r => r.trade === replay.trade.id)) return true;
-  if (used.length < FREE_REPLAYS_WEEK){
+  if (used.length < freeLim("replays")){
     const rec = { ...(state.usage || {}), replays: [...used, { trade: replay.trade.id, at: Date.now() }] }; state.usage = rec;
     if (state.mode === "live" && !state.readOnly) col.doc("usage").set(rec).catch(() => {});
     return true;
   }
-  const next = new Date(Math.min(...used.map(r => r.at)) + 7 * 864e5).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-  const host = $("#rpChart"); if (host) host.innerHTML = `<div class="rp-ready"><span class="tier-pill elite">Elite</span><b>You've used this week's free replay</b><span class="hint">Your next free replay unlocks on ${esc(next)}. You can still rewatch the trade you already replayed.</span><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Unlimited replays with Elite" : "Preview plans"}</button></div>`;
+  const next = nextFree(used);
+  const host = $("#rpChart"); if (host) host.innerHTML = `<div class="rp-ready"><span class="tier-pill elite">Elite</span><b>You've used this week's ${plural(freeLim("replays"), "free replay", "free replays")}</b><span class="hint">Your next one unlocks on ${esc(next)}. You can still rewatch trades you've already replayed this week.</span><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Unlimited replays with Elite" : "Preview plans"}</button></div>`;
   if (host) bindUpgrade(host);
   return false;
 }
