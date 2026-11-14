@@ -60,5 +60,5 @@ export default function AppShell({ user, subscription }) {
     } catch {}
   };
 
-  return ready ? <iframe ref={frame} src="/journal.html" title="The Execution Log" className="app-frame" onLoad={onLoad} /> : null;
+  return ready ? <iframe ref={frame} src="/journal.html" title="The Execution Log" className="app-frame" allow="fullscreen; clipboard-write" allowFullScreen onLoad={onLoad} /> : null;
 }
