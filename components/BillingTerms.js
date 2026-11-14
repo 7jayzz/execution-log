@@ -11,7 +11,7 @@ export default function BillingTerms() {
           {d > 0 && <li><span>Every plan, monthly or annual, starts with a <b>{d}-day free trial</b>.</span></li>}
           <li><span>You add a card to start, but <b>you aren't charged until the trial ends</b>.</span></li>
           <li><span>Cancel before the trial ends and <b>you pay nothing</b>.</span></li>
-          <li><span><b>One free trial per person and per card.</b> If you've subscribed before, or your card has already had a free trial, your plan starts straight away.</span></li>
+          <li><span><b>One free trial per person and per card.</b> Not available on prepaid cards. If you've subscribed before, your card has already had a free trial, or you pay with a prepaid card, your plan starts straight away.</span></li>
         </ul>
       </div>
       <div className="terms-card">

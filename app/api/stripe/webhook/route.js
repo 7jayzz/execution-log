@@ -46,6 +46,7 @@ async function saveSubscription(admin, sub) {
 
 // One free trial per card. Stripe gives a card the same fingerprint whatever email or account it's used with,
 // so a second trial on a card that has already had one is ended straight away and the plan is charged as normal.
+// Prepaid cards (the throwaway kind) don't get a trial either: anyone can buy a new one for each trial.
 async function enforceOneTrial(stripe, admin, sub) {
   if (sub.status !== "trialing") return;
   const pmId = typeof sub.default_payment_method === "string" ? sub.default_payment_method : sub.default_payment_method?.id;
@@ -54,6 +55,15 @@ async function enforceOneTrial(stripe, admin, sub) {
   const fp = pm.card?.fingerprint;
   if (!fp) return;
   const userId = sub.metadata?.user_id || null;
+  if (pm.card?.funding === "prepaid") {
+    const ended = await stripe.subscriptions.update(sub.id, {
+      trial_end: "now",
+      proration_behavior: "none",
+      metadata: { ...sub.metadata, trial_blocked: "prepaid_card" },
+    });
+    await saveSubscription(admin, ended);
+    return;
+  }
   const { data: seen } = await admin.from("trial_cards").select("user_id, stripe_subscription_id").eq("fingerprint", fp).maybeSingle();
   if (seen && seen.stripe_subscription_id !== sub.id && seen.user_id !== userId) {
     const ended = await stripe.subscriptions.update(sub.id, {

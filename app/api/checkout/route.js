@@ -68,7 +68,7 @@ async function startCheckout(request) {
           payment_method_types: ["card"],
           custom_text: {
             submit: {
-              message: `Free trials are limited to one per person and per card. If this card has already been used for a free trial, your plan starts today and you'll be charged now. Otherwise you won't be charged until your ${TRIAL_DAYS}-day trial ends.`,
+              message: `Free trials are limited to one per person and per card, and aren't available on prepaid cards. If this card is prepaid or has already been used for a free trial, your plan starts today and you'll be charged now. Otherwise you won't be charged until your ${TRIAL_DAYS}-day trial ends.`,
             },
           },
         }

@@ -35,7 +35,7 @@ export default function Terms() {
       <ul>
         <li>New subscribers get a {d}-day free trial. You need to add a card to start it.</li>
         <li>You won't be charged during the trial. If you don't cancel before it ends, your plan starts and you're charged for your first billing period.</li>
-        <li>Free trials are limited to one per person and one per payment card. If you or your card have had a trial before, your plan starts straight away and you'll be charged at checkout.</li>
+        <li>Free trials are limited to one per person and one per payment card, and aren't available on prepaid cards. If you or your card have had a trial before, or you pay with a prepaid card, your plan starts straight away and you'll be charged at checkout.</li>
         <li>You can cancel during the trial at no cost from Settings → Subscription &amp; billing.</li>
       </ul>
 
