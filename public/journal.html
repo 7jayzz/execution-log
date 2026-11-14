@@ -844,7 +844,11 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-planm{margin:8px 0 4px;font-size:13px}
 .px-tpmode,.px-parts{grid-column:1/-1}.px-parts{border:1px solid var(--line-2);border-radius:12px;padding:10px 12px;margin:6px 0;display:grid;gap:8px;font-size:13px}.px-part{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.px-part label{display:flex;gap:6px;align-items:center}.px-part input.ctl{width:76px;padding:4px 8px}.px-part input:disabled{opacity:.6}
 .px-tps{display:flex;flex-direction:column;gap:2px;font-size:12px;text-align:right}.px-tps .hit{color:var(--win);text-decoration:line-through;opacity:.8}.px-planbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px}.px-planbar .actions{margin-inline-start:auto}.px-planbar .px-buy,.px-planbar .px-sell{color:#fff;border:0}
-.px-dl{cursor:ns-resize}.px-strong{stroke-width:2;stroke-dasharray:none}.px-dl.hit{opacity:.45}.px-dl.hit .px-strong{stroke-dasharray:4 4}
+.px-dl{cursor:ns-resize}
+.px-menu{position:absolute;z-index:6;min-width:250px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.px-menu button{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13.5px;text-align:left;padding:8px 10px;border-radius:8px;cursor:pointer}
+.px-menu button:hover,.px-menu button:focus-visible{background:var(--surface-2);outline:none}.px-menu .ic{width:18px;text-align:center;opacity:.8}.px-menu kbd{margin-inline-start:auto;font:inherit;font-size:11.5px;color:var(--muted)}
+.px-menu button.danger{color:var(--loss)}.px-menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}.px-strong{stroke-width:2;stroke-dasharray:none}.px-dl.hit{opacity:.45}.px-dl.hit .px-strong{stroke-dasharray:4 4}
 .px-chip-bg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}.px-chip-t{fill:#fff;font-size:11.5px;font-weight:800;font-family:inherit;pointer-events:none}
 .px-sess{margin:8px 0;border:1px solid var(--line-2);border-radius:12px;padding:8px 12px}.px-sess summary{cursor:pointer}.px-sess-list{display:grid;gap:6px;margin-top:8px}.px-sess-row{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:var(--surface-2)}.px-sess-row.on{outline:1px solid var(--accent)}.px-sess-row>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.px-sess-row input{width:240px}
 .px-saved{margin-inline-start:6px}
@@ -4325,6 +4329,27 @@ function pxLineEdit(i, quiet){ const box = $("#pxLineEd"); if (!box) return; px.
   $("#pxLeDel").onclick = () => { pxRecord(); px.lines.splice(i, 1); pxLineEdit(null); };
   $("#pxLeOk").onclick = () => pxLineEdit(null); if (!quiet) pxDraw(); }
 // One drawing per click of a tool, like TradingView: the tool switches off once the drawing is placed.
+// Reset the chart view: latest candle, default zoom, auto price scale (like TradingView's Alt+R).
+function pxResetView(){ px.pan = 0; px.yMan = null; px.n = 90; pxDraw(); }
+// Right-click (or long-press) menu on the practice chart, like TradingView.
+function pxMenu(e, price){ pxMenuClose(); const stage = $("#pxChart")?.closest(".px-stage"); if (!stage) return; const r = stage.getBoundingClientRect(), nd = px.lines.length;
+  const m = document.createElement("div"); m.className = "px-menu"; m.id = "pxMenu"; m.setAttribute("role", "menu");
+  const items = [["reset", "↺", "Reset chart view", "Alt+R"], ["sep"], ["level", "—", `Add level at ${pxPrice(price)}`], ["copy", "⧉", `Copy price ${pxPrice(price)}`], ["sep"],
+    ["buy", "▲", `Buy at market (${pxPrice(pxNow()?.c ?? price)})`], ["sell", "▼", `Sell at market (${pxPrice(pxNow()?.c ?? price)})`], ["sep"],
+    ["back", "◀", "Back 1 candle", "Backspace"], ["undo", "↶", "Undo", "Ctrl+Z"], ...(nd ? [["sep"], ["clear", "🗑", `Remove ${nd} drawing${nd === 1 ? "" : "s"}`]] : [])];
+  m.innerHTML = items.map(it => it[0] === "sep" ? `<hr>` : `<button type="button" role="menuitem" data-act="${it[0]}" class="${it[0] === "clear" ? "danger" : ""}"><span class="ic">${it[1]}</span><span>${esc(it[2])}</span>${it[3] ? `<kbd>${it[3]}</kbd>` : ""}</button>`).join("");
+  stage.appendChild(m); const mw = m.offsetWidth, mh = m.offsetHeight;
+  m.style.left = Math.max(4, Math.min(r.width - mw - 4, e.clientX - r.left)) + "px"; m.style.top = Math.max(4, Math.min(r.height - mh - 4, e.clientY - r.top)) + "px";
+  m.querySelectorAll("[data-act]").forEach(b => b.onclick = () => { const a = b.dataset.act; pxMenuClose();
+    if (a === "reset") pxResetView(); else if (a === "level"){ pxRecord(); px.lines.push({ type: "h", a: { p: price } }); pxLineEdit(px.lines.length - 1); }
+    else if (a === "copy"){ try { navigator.clipboard.writeText(pxPrice(price)); toast("Price copied"); } catch { toast(pxPrice(price)); } }
+    else if (a === "buy") pxOpen(1); else if (a === "sell") pxOpen(-1); else if (a === "back") pxBackCandle(); else if (a === "undo") pxUndo();
+    else if (a === "clear"){ pxRecord(); px.lines = []; pxLineEdit(null); toast("Drawings removed. Undo brings them back."); } });
+  m.querySelector("button")?.focus();
+  setTimeout(() => { document.addEventListener("pointerdown", pxMenuAway, true); document.addEventListener("keydown", pxMenuKey, true); window.addEventListener("scroll", pxMenuClose, { once: true, passive: true }); }); }
+const pxMenuAway = e => { if (!e.target.closest || !e.target.closest("#pxMenu")) pxMenuClose(); };
+const pxMenuKey = e => { if (e.key === "Escape"){ e.preventDefault(); pxMenuClose(); } };
+function pxMenuClose(){ $("#pxMenu")?.remove(); document.removeEventListener("pointerdown", pxMenuAway, true); document.removeEventListener("keydown", pxMenuKey, true); }
 function pxToolOff(){ px.tool = null; px.pending = null; document.querySelectorAll("#pxTools [data-tool]").forEach(b => b.setAttribute("aria-pressed", "false")); $("#pxChart")?.classList.remove("drawing"); }
 function pxSetTool(t){ px.tool = px.tool === t ? null : t; px.pending = null; document.querySelectorAll("#pxTools [data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === px.tool))); $("#pxChart")?.classList.toggle("drawing", !!px.tool);
   if (px.tool) toast(px.tool === "h" || px.tool === "v" ? `Click the chart to add a ${PX_TOOLS[px.tool].toLowerCase()}` : `Drag on the chart (or click two points) to draw a ${PX_TOOLS[px.tool].toLowerCase()}`, 2500); }
@@ -4493,7 +4518,7 @@ function bindPractice(){
   $("#pxStopT").onchange = e => { $("#pxStopV").value = e.target.value === "atr" ? 1.5 : +(px.atr[px.idx - 1] * 1.5 || 1).toPrecision(3); pxDraw(); };
   $("#pxTools").querySelectorAll("[data-tool]").forEach(b => b.onclick = () => pxSetTool(b.dataset.tool));
   $("#pxClearL").onclick = () => { if (!px.lines.length) return; pxRecord(); px.lines = []; pxLineEdit(null); toast("Drawings cleared. Undo brings them back."); };
-  $("#pxUndo").onclick = pxUndo; $("#pxRedo").onclick = pxRedo;
+  $("#pxUndo").onclick = pxUndo; $("#pxRedo").onclick = pxRedo; $("#pxResetV").onclick = pxResetView;
   // Drag (mouse or finger) to scroll back through history, wheel or +/− to zoom, like MT5.
   { const ch = $("#pxChart"); let drag = null;
     // Where a pointer is on the chart, in candles and price.
@@ -4537,6 +4562,9 @@ function bindPractice(){
       else if (drag.mode === "xscale"){ px.n = Math.max(20, Math.min(400, Math.round(drag.n * Math.exp(-dx * .006)))); }
       else { px.pan = drag.pan + dx / (px.view.bw || 6); if (!drag.touch && (px.yMan || Math.abs(dy) > 3)) px.yMan = { mid: drag.y0.mid + dy * drag.ppx, span: drag.y0.span }; }
       pxDraw(); });
+    ch.addEventListener("contextmenu", e => { if (!px.view || !px.cs.length) return; e.preventDefault(); pxMenu(e, at(e).p); });
+    { let lp = null; ch.addEventListener("touchstart", e => { if (e.touches.length !== 1) return; const t0 = e.touches[0]; lp = setTimeout(() => { lp = null; pxMenu({ clientX: t0.clientX, clientY: t0.clientY }, at({ clientX: t0.clientX, clientY: t0.clientY }).p); }, 600); }, { passive: true });
+      ["touchmove", "touchend", "touchcancel"].forEach(ev => ch.addEventListener(ev, () => { if (lp){ clearTimeout(lp); lp = null; } }, { passive: true })); }
     ch.addEventListener("dblclick", e => { if (px.tool || (e.target.closest && e.target.closest("[data-li]"))) return; px.yMan = null; pxDraw(); });
     const end = () => { if (drag?.moved){ ch.classList.remove("grabbing"); px.justDragged = Date.now(); } drag = null; };
     ch.addEventListener("pointerup", end); ch.addEventListener("pointercancel", end);
@@ -4549,7 +4577,8 @@ function bindPractice(){
     if (mod && (k === "y" || (k === "z" && e.shiftKey))){ e.preventDefault(); pxRedo(); }
     else if (mod && k === "z"){ e.preventDefault(); pxUndo(); }
     else if ((k === "delete" || k === "backspace") && px.lineSel != null){ e.preventDefault(); pxRecord(); px.lines.splice(px.lineSel, 1); pxLineEdit(null); }
-    else if (k === "escape"){ if (px.tool) pxSetTool(px.tool); else if (px.lineSel != null) pxLineEdit(null); } });
+    else if (k === "escape"){ if (px.tool) pxSetTool(px.tool); else if (px.lineSel != null) pxLineEdit(null); }
+    else if (e.altKey && (k === "r" || e.code === "KeyR")){ e.preventDefault(); pxResetView(); } });
   $("#pxChart").onkeydown = e => { if (e.ctrlKey || e.metaKey || e.key === "Delete" || e.key === "Escape") return; if (e.key === "Backspace"){ e.preventDefault(); if (px.lineSel == null) pxBackCandle(); return; } if (e.key === "ArrowLeft"){ e.preventDefault(); px.pan = (px.pan || 0) + 5; pxDraw(); } else if (e.key === "ArrowRight" && px.pan >= 1){ e.preventDefault(); px.pan = Math.max(0, px.pan - 5); pxDraw(); } else if (e.key === "ArrowRight"){ e.preventDefault(); pxStep(1); } else if (e.key === " "){ e.preventDefault(); pxPlay(); } };
   $("#pxSave").onclick = () => pxSaveSession(false);
   $("#pxNote").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36); if (await saveNote(id, { kind: "note", title: `Practice session · ${px.sym || "candles"} · ${fmtDate(localToday())}`, body: pxReport(), tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
@@ -4887,7 +4916,7 @@ function renderElite(){
         <div class="actions px-ctl"><button type="button" class="btn small" id="pxPlay">▶ Play</button><button type="button" class="btn small" id="pxUndo" title="Undo (Ctrl/Cmd+Z): steps back a candle, a trade or a drawing" disabled>↶ Undo</button><button type="button" class="btn small" id="pxRedo" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>↷ Redo</button><button type="button" class="btn small" id="pxBackC" title="Back one candle (Backspace). Works any time, even after you come back to a saved session.">◀ 1 candle</button><button type="button" class="btn small" id="pxNext" title="Next candle (→ key when the chart is selected)">Next candle ▶</button><button type="button" class="btn small" id="pxNext10">+10 ▶▶</button>
           <select id="pxSpeed" class="ctl" aria-label="Speed"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
           <button type="button" class="btn small" id="pxOut" aria-label="Zoom out">−</button><button type="button" class="btn small" id="pxIn" aria-label="Zoom in">+</button>
-          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: then click the chart">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button>
+          <span class="px-tools" id="pxTools" role="group" aria-label="Drawing tools"><button type="button" data-tool="h" aria-pressed="false" title="Level: then click the chart">— Level</button><button type="button" data-tool="t" aria-pressed="false" title="Trend line: drag from one point to another">╱ Trend</button><button type="button" data-tool="r" aria-pressed="false" title="Zone: drag a box over an area">▭ Zone</button><button type="button" data-tool="v" aria-pressed="false" title="Time line: click a candle">│ Time</button></span><button type="button" class="btn small" id="pxClearL">Clear drawings</button><button type="button" class="btn small" id="pxResetV" title="Reset chart view (Alt+R). Right-click the chart for more.">↺ Reset view</button>
           <span class="px-tfs" id="pxTfs" role="group" aria-label="Timeframe">${[1, 5, 15, 30, 60, 240].map(m => `<button type="button" data-ptf="${m}">${m < 60 ? m + "m" : m / 60 + "h"}</button>`).join("")}</span><span class="px-tick num" id="pxTick"></span><span class="hint" id="pxPosTxt"></span></div>
         <div class="px-hud" id="pxHud"></div>
         <div class="px-lined" id="pxLineEd" hidden></div><div class="px-stage"><div id="pxChart" class="px-chart" tabindex="0" aria-label="Practice chart. Drag to scroll back, scroll to zoom. Right arrow for the next candle, space to play or pause."></div><div id="pxFx" class="px-fx" aria-live="polite"></div><div class="px-float"><button type="button" class="btn small" id="pxAutoY" hidden title="Fit the price scale to the candles again (or double-click the chart)">⤢ Auto scale</button><button type="button" class="btn small" id="pxLatest" hidden>⏩ Back to now</button></div></div>
