@@ -21,6 +21,9 @@ async function saveSubscription(admin, sub) {
     console.warn("Webhook: no user for customer", sub.customer);
     return;
   }
+  // Free access set by hand (the owner): Stripe never changes it.
+  const { data: cur } = await admin.from("subscriptions").select("comped").eq("user_id", userId).maybeSingle();
+  if (cur?.comped) { console.log("Webhook: comped account, skipping", userId); return; }
   const item = sub.items?.data?.[0];
   // Keep the price → plan list up to date (used for screenshot storage limits in the database).
   const plan = planForPrice(item?.price?.id) || item?.price?.product?.metadata?.plan;

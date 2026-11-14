@@ -6231,6 +6231,9 @@ function renderSetBilling(body){
         <div class="ms"><span class="label">${esc(endLbl)}</span><span class="v">${esc(when)}</span></div>
       </div>
       <div class="set-list">${setRow(t("hsManage"), t("hsManageD"), `<button type="button" class="btn small primary" id="hsBill">${esc(t("hsManage"))}</button>`)}</div></section>`;
+    if (sb.comped){ body.querySelector(".bill-grid").innerHTML = `<div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">${esc({ basic: "Basic", pro: "Pro", elite: "Elite" }[sb.plan] || "—")}</span></div>
+        <div class="ms"><span class="label">${esc(t("hsStatus"))}</span><span class="v">Free access</span></div><div class="ms"><span class="label">Billing</span><span class="v">Never charged</span></div>`;
+      body.querySelector(".set-list").remove(); return; }
     $("#hsBill").onclick = () => HOST.manageBilling();
     return;
   }

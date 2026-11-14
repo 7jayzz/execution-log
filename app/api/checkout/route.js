@@ -32,6 +32,8 @@ async function startCheckout(request) {
 
   const admin = createAdminClient();
   const { data: existing } = await admin.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle();
+  // Free access accounts already have everything; never start a paid plan on top.
+  if (existing?.comped) return NextResponse.redirect(`${SITE_URL}/dashboard`, { status: 303 });
   if (isActive(existing)) return switchPlan(existing, plan, interval, price);
 
   const stripe = getStripe();
