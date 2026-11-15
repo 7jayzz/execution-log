@@ -37,7 +37,7 @@ export default function Privacy() {
       <p>We use trusted providers ("processors") who only handle data on our instructions:</p>
       <ul>
         <li><strong>Supabase</strong>: database, file storage and login. Our database is hosted in London.</li>
-        <li><strong>Vercel</strong>: website hosting.</li>
+        <li><strong>Vercel</strong>: website hosting, and anonymous visitor counts (which pages are visited and where visitors came from). This uses no cookies and doesn't identify you.</li>
         <li><strong>Stripe</strong>: payments and subscriptions.</li>
         <li><strong>Resend</strong>: sending account emails.</li>
         <li><strong>Twilio</strong>: sending phone verification codes, if phone verification is in use.</li>
@@ -72,7 +72,7 @@ export default function Privacy() {
       <p>Email <Email /> to use any of these rights. We'll reply within one month. If you're unhappy with how we've handled your data, you can complain to the Information Commissioner's Office at <a className="link" href="https://ico.org.uk" rel="noopener">ico.org.uk</a>. We'd appreciate the chance to sort it out first.</p>
 
       <h2>Cookies</h2>
-      <p>We only use cookies and similar storage that are needed to keep you signed in and remember your settings. No advertising or tracking cookies. See our <Link className="link" href="/cookies">cookie policy</Link>.</p>
+      <p>We only use cookies and similar storage that are needed to keep you signed in and remember your settings. No advertising or tracking cookies. Our visitor counts are cookieless. See our <Link className="link" href="/cookies">cookie policy</Link>.</p>
 
       <h2>Children</h2>
       <p>The Execution Log is for adults. We don't knowingly collect data from anyone under 18.</p>

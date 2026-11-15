@@ -15,7 +15,7 @@ export default function Cookies() {
       <p>These are all "strictly necessary" for the service you've asked for, so the law doesn't require us to ask for consent first.</p>
 
       <h2>What we don't use</h2>
-      <p>No advertising cookies, no social media tracking pixels, and no third-party analytics that follow you around the web. If we ever add analytics, we'll update this page and ask for your consent where the law requires it.</p>
+      <p>No advertising cookies, no social media tracking pixels, and no third-party analytics that follow you around the web. We count visits with Vercel Web Analytics, which sets no cookies, stores nothing on your device and doesn't identify you or follow you to other sites. It only tells us which pages are visited and where visitors came from.</p>
 
       <h2>Controlling cookies</h2>
       <p>You can clear or block cookies in your browser settings. If you block the sign-in cookies, you won't be able to stay logged in.</p>
