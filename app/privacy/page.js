@@ -19,7 +19,7 @@ export default function Privacy() {
         <li><strong>Billing details:</strong> your plan, payment status and billing history. Card payments are handled by Stripe. We never see or store your full card number. Stripe tells us a card "fingerprint" (a code that identifies a card without revealing its number) so we can limit free trials to one per card.</li>
         <li><strong>Phone number:</strong> only if we ask you to verify one, to prevent duplicate free-trial accounts.</li>
         <li><strong>Notification settings:</strong> if you turn on push notifications, your browser gives us a technical address to send them to.</li>
-        <li><strong>AI coach messages (Elite):</strong> the questions you ask and the journal figures needed to answer them.</li>
+        <li><strong>AI coach messages:</strong> the questions you ask and the journal figures needed to answer them.</li>
         <li><strong>Technical data:</strong> IP address, browser type and log records needed to keep you signed in, keep the service secure and fix problems.</li>
       </ul>
 
@@ -41,7 +41,7 @@ export default function Privacy() {
         <li><strong>Stripe</strong>: payments and subscriptions.</li>
         <li><strong>Resend</strong>: sending account emails.</li>
         <li><strong>Twilio</strong>: sending phone verification codes, if phone verification is in use.</li>
-        <li><strong>Anthropic</strong>: powering the AI coach on the Elite plan. Only what's needed to answer your question is sent.</li>
+        <li><strong>Anthropic</strong>: powering the AI coach. Only what's needed to answer your question is sent.</li>
         <li><strong>Your browser's push service</strong> (for example Apple or Google): delivering notifications you've turned on.</li>
       </ul>
       <p>We may also share data if the law requires it, or to protect our rights and users' safety.</p>

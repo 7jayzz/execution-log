@@ -57,7 +57,7 @@ export default function PhoneVerify() {
     setStep("done"); router.refresh();
   }
 
-  if (step === "done") return <div className="box good" id="verify">Your number is verified. Pick a plan below to start your free trial.</div>;
+  if (step === "done") return <div className="box good" id="verify">Your number is verified. Start your free trial below.</div>;
   return (
     <section className="verify-card" id="verify" aria-labelledby="verify-title">
       <div>

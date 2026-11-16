@@ -25,7 +25,7 @@ async function startCheckout(request) {
   if (!user) return NextResponse.redirect(`${SITE_URL}/login?next=/pricing`, { status: 303 });
 
   const form = await request.formData();
-  const plan = String(form.get("plan") || "");
+  const plan = "elite"; // One plan, everything included.
   const interval = String(form.get("interval") || "month") === "year" ? "year" : "month";
   const price = priceIdFor(plan, interval);
   if (!price) return NextResponse.redirect(`${SITE_URL}/pricing?error=plan`, { status: 303 });

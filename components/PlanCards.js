@@ -16,15 +16,14 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
     <input type="radio" name="billing" id="bill-y" className="bill-in" />
     <div className="bill-switch" role="group" aria-label="Billing period">
       <label htmlFor="bill-m">Monthly</label>
-      <label htmlFor="bill-y">Annual <span className="bill-save">2 months free</span></label>
+      <label htmlFor="bill-y">Annual <span className="bill-save">Save 25%</span></label>
     </div>
-    <div className="plans">
+    <div className="plans one">
       {PLANS.map((p, idx) => {
-        const curIdx = PLANS.findIndex((q) => q.id === current);
-        const cta = current ? (idx > curIdx ? `Upgrade to ${p.name}` : `Switch to ${p.name}`) : trial && TRIAL_DAYS ? `Start ${TRIAL_DAYS}-day free trial` : `Choose ${p.name}`;
+        const cta = current ? "Switch billing" : trial && TRIAL_DAYS ? `Start ${TRIAL_DAYS}-day free trial` : "Start my plan";
         return (
           <div key={p.id} className={`plan${p.best ? " best" : ""}`}>
-            {p.best && <span className="badge">Recommended</span>}
+            <span className="badge">Everything included</span>
             <span className="label">{p.name}</span>
             <div className="pm">
               <div className="price">{p.price}<small> / month</small></div>
@@ -55,7 +54,6 @@ export default function PlanCards({ mode = "signup", trial = true, current = nul
                 Cancel before then and you pay nothing.
               </p>
             )}
-            {idx > 0 && <span className="plus">Everything in {PLANS[idx - 1].name}, plus:</span>}
             {FEATURE_GROUPS[p.id].map((g) => (
               <details className="fgroup" key={g.title}>
                 <summary>

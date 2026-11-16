@@ -10,21 +10,17 @@ export const dynamic = "force-dynamic";
 // Long replies can take a while; don't let the platform cut the request off early.
 export const maxDuration = 60;
 
-// AI Trading Coach. Elite gets a daily allowance; Basic and Pro get a few free replies a month as a taster.
-const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT || 30);
+// AI Trading Coach. The plan includes a monthly allowance; older Basic and Pro subscriptions keep a few free replies a month.
+const MONTHLY_LIMIT = Number(process.env.AI_MONTHLY_LIMIT || 100);
 const FREE_MONTHLY = Number(process.env.AI_FREE_MONTHLY || 3);
 
 // How many coach replies this user has used, and how many they're allowed, for their plan.
 async function usage(admin, userId, elite) {
   const now = new Date(), day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
-  if (elite) {
-    const { data } = await admin.from("ai_usage").select("count").eq("user_id", userId).eq("day", day).maybeSingle();
-    return { period: "day", used: data?.count || 0, limit: DAILY_LIMIT, day };
-  }
   const { data } = await admin.from("ai_usage").select("count").eq("user_id", userId).gte("day", month + "-01").lte("day", month + "-31");
   const used = (data || []).reduce((q, r) => q + (r.count || 0), 0);
   const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
-  return { period: "month", used, limit: FREE_MONTHLY, day, resets: next };
+  return { period: "month", used, limit: elite ? MONTHLY_LIMIT : FREE_MONTHLY, day, resets: next, elite };
 }
 
 async function who() {
@@ -52,10 +48,10 @@ export async function POST(request) {
   const imgs = Array.isArray(images) ? images.slice(0, 3).filter((m) => m && /^image\/(jpeg|png|webp)$/.test(m.media_type) && typeof m.data === "string" && m.data.length < 2_000_000) : [];
   if (imgs.length && !elite) return NextResponse.json({ code: "upgrade", message: "Screenshot reviews are part of Elite" }, { status: 403 });
 
-  // Allowance: daily on Elite, monthly free replies on other plans.
+  // Allowance: monthly, resetting on the 1st.
   const admin = createAdminClient(), u = await usage(admin, user.id, elite), day = u.day;
   if (u.used >= u.limit) return elite
-    ? NextResponse.json({ code: "rate_limited", message: "Daily AI limit reached" }, { status: 429 })
+    ? NextResponse.json({ code: "rate_limited", message: "Monthly AI limit reached", used: u.used, limit: u.limit, resets: u.resets }, { status: 429 })
     : NextResponse.json({ code: "upgrade", message: "Free coach replies used up", used: u.used, limit: u.limit, resets: u.resets }, { status: 403 });
   const { data: row } = await admin.from("ai_usage").select("count").eq("user_id", user.id).eq("day", day).maybeSingle();
   await admin.from("ai_usage").upsert({ user_id: user.id, day, count: (row?.count || 0) + 1 }, { onConflict: "user_id,day" });

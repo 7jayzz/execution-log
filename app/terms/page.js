@@ -28,7 +28,7 @@ export default function Terms() {
       </ul>
 
       <h2>5. Plans, prices and payment</h2>
-      <p>Our plans and prices are shown on our <Link className="link" href="/pricing">pricing page</Link>. Prices are in pounds sterling and include any VAT that applies. You can pay monthly or yearly. Paying yearly costs the same as 10 months.</p>
+      <p>Our plan and prices are shown on our <Link className="link" href="/pricing">pricing page</Link>. Prices are in pounds sterling and include any VAT that applies. You can pay monthly or yearly. Paying yearly costs the same as 10 months.</p>
       <p>Payments are taken by our payment provider, Stripe. Your subscription renews automatically at the end of each billing period, at the price shown when you subscribed, until you cancel. If we ever change the price of your plan, we'll email you at least 30 days before the new price applies, and you can cancel before then.</p>
 
       <h2>6. Free trial</h2>
@@ -39,9 +39,9 @@ export default function Terms() {
         <li>You can cancel during the trial at no cost from Settings → Subscription &amp; billing.</li>
       </ul>
 
-      <h2>7. Changing your plan</h2>
-      <p>Upgrades start straight away. You're charged the difference for the rest of your current billing period. Downgrades, and switching from yearly to monthly, take effect at your next renewal date, and you keep your current plan until then.</p>
-      <p>Some features depend on your plan, for example the number of trading accounts. If you downgrade, your data is kept, but features outside your new plan may become read-only or unavailable.</p>
+      <h2>7. Switching between monthly and yearly</h2>
+      <p>There is one plan, and it includes every feature. Switching from monthly to yearly starts straight away, and you're charged the difference for the rest of your current billing period. Switching from yearly to monthly takes effect at your next renewal date, and you keep yearly billing until then.</p>
+      <p>If you subscribed to an older plan, it keeps working at the price you signed up at until you cancel or change it.</p>
 
       <h2>8. Cancelling</h2>
       <p>You can cancel any time from Settings → Subscription &amp; billing. Your plan stays active until the end of the period you've paid for, then it stops renewing. Refunds are covered in our <Link className="link" href="/refunds">refund policy</Link>, which includes your legal right to cancel within 14 days.</p>

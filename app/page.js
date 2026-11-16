@@ -5,7 +5,7 @@ import BillingTerms from "@/components/BillingTerms";
 import { FOUNDER } from "@/lib/site";
 import { StickyPlansBar } from "@/components/PlanExtras";
 import PlanCards from "@/components/PlanCards";
-import CompareTable from "@/components/CompareTable";
+import { PRICE_FROM } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { TRIAL_DAYS } from "@/lib/plans";
 
@@ -117,17 +117,16 @@ export default async function Home({ searchParams }) {
           </div>
         </section>
         <section className="section" id="pricing">
-          <h2 className="h2">Pick your plan</h2>
-          <p className="sub">Every plan starts with a {TRIAL_DAYS}-day free trial. Every feature listed works today.</p>
+          <h2 className="h2">One price. <em>Everything included.</em></h2>
+          <p className="sub">{TRIAL_DAYS ? `Try it free for ${TRIAL_DAYS} days. ` : ""}No tiers and no locked features. Every feature listed works today.</p>
           <PlanCards mode={user ? "checkout" : "signup"} />
           <BillingTerms />
-          <CompareTable />
         </section>
         <section className="band">
           <h2 className="h2">Your next 100 trades deserve a record.</h2>
           <Link href={user ? "/dashboard" : "/signup"} className="btn primary big">{user ? "Open my dashboard" : "Start your journal"}</Link>
         </section>
-        <StickyPlansBar from="£12.99" trialDays={TRIAL_DAYS} />
+        <StickyPlansBar from={PRICE_FROM} trialDays={TRIAL_DAYS} />
         <SiteFooter />
       </div>
     </div>
