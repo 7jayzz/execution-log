@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { pushSecrets, sendToUser, unsubToken } from "@/lib/push";
 import { sendReminderEmail } from "@/lib/email";
 import { SITE_URL } from "@/lib/site";
-import { ACTIVE_STATUSES } from "@/lib/subscription";
 import { askClaude } from "@/lib/claude";
 
 export const runtime = "nodejs";
@@ -97,15 +96,12 @@ export async function POST(request) {
       }
     } catch (e) { console.error("Push reminders failed for a user", e?.message || e); }
   }
-  // Email reminders: the same reminders, for people who turned email on. One email per run, only while they're subscribed.
+  // Email reminders: the same reminders, for people who turned email on (free and Elite). One email per run.
   if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
     const { data: eRows } = await admin.from("journal_docs").select("user_id").eq("id", "settings").eq("data->notify->>email", "true").limit(10000);
     const eUsers = [...new Set((eRows || []).map((r) => r.user_id))];
     if (eUsers.length) {
-      const { data: subRows } = await admin.from("subscriptions").select("user_id,status").in("user_id", eUsers);
-      const paying = new Set((subRows || []).filter((r) => ACTIVE_STATUSES.includes(r.status)).map((r) => r.user_id));
       for (const uid of eUsers) {
-        if (!paying.has(uid)) continue;
         try {
           const due = await remindersFor(admin, uid, "email");
           const items = [];

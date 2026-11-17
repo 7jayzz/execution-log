@@ -28,7 +28,7 @@ async function who() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ code: "not_granted", message: "Log in first" }, { status: 401 }) };
   const sub = await getSubscription(supabase, user.id);
-  if (!isActive(sub)) return { error: NextResponse.json({ code: "upgrade", message: "Start a plan to use the AI coach" }, { status: 403 }) };
+  if (!isActive(sub)) return { error: NextResponse.json({ code: "upgrade", message: "The AI coach is part of Elite" }, { status: 403 }) };
   return { user, elite: planForPrice(sub.price_id) === "elite" };
 }
 

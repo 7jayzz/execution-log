@@ -28,7 +28,7 @@ export default function Terms() {
       </ul>
 
       <h2>5. Plans, prices and payment</h2>
-      <p>Our plan and prices are shown on our <Link className="link" href="/pricing">pricing page</Link>. Prices are in pounds sterling and include any VAT that applies. You can pay monthly or yearly. Paying yearly costs the same as 10 months.</p>
+      <p>Our plans and prices are shown on our <Link className="link" href="/pricing">pricing page</Link>. Prices are in pounds sterling and include any VAT that applies. You can pay monthly or yearly. Paying yearly costs the same as 10 months.</p>
       <p>Payments are taken by our payment provider, Stripe. Your subscription renews automatically at the end of each billing period, at the price shown when you subscribed, until you cancel. If we ever change the price of your plan, we'll email you at least 30 days before the new price applies, and you can cancel before then.</p>
 
       <h2>6. Free trial</h2>
@@ -39,8 +39,8 @@ export default function Terms() {
         <li>You can cancel during the trial at no cost from Settings → Subscription &amp; billing.</li>
       </ul>
 
-      <h2>7. Switching between monthly and yearly</h2>
-      <p>There is one plan, and it includes every feature. Switching from monthly to yearly starts straight away, and you're charged the difference for the rest of your current billing period. Switching from yearly to monthly takes effect at your next renewal date, and you keep yearly billing until then.</p>
+      <h2>7. Free plan, Elite and switching billing</h2>
+      <p>The free plan is free forever and has the limits shown on our pricing page, for example the number of trades you can add each month. Elite includes every feature. Switching from monthly to yearly Elite starts straight away, and you're charged the difference for the rest of your current billing period. Switching from yearly to monthly takes effect at your next renewal date. If you cancel Elite, you keep it until the end of the period you've paid for, then move to the free plan; your data is kept, but features outside the free plan become unavailable.</p>
       <p>If you subscribed to an older plan, it keeps working at the price you signed up at until you cancel or change it.</p>
 
       <h2>8. Cancelling</h2>

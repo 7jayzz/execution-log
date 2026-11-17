@@ -33,7 +33,7 @@ export function StickyPlansBar({ from = "£19.99", trialDays = 7 }) {
   return (
     <>
       <div className={`sticky-plans ${show ? "on" : ""}`} aria-hidden={!show}>
-        <span><b>From {from}/month</b>{trialDays > 0 ? ` · ${trialDays}-day free trial` : ""}</span>
+        <span><b>Free forever</b> · Elite {from}/month</span>
         <button type="button" className="btn primary small" onClick={go} tabIndex={show ? 0 : -1}>View plans</button>
       </div>
       <div className="sticky-plans-space" aria-hidden="true" />

@@ -475,8 +475,8 @@ details.adv[open] summary{margin-bottom:10px}
 .fc-pro{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer}
 @media (max-width:700px){.focus .fc-grid{grid-template-columns:1fr}}
 [hidden]{display:none!important}
-/* One plan, everything included: no tier labels anywhere. */
-.tier-pill,.nav-tier,.tier-chip{display:none!important}.push-test{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:4px 0 6px}
+/* Tier labels are hidden; free users see one chip that links to the upgrade. */
+.tier-pill,.nav-tier,.tier-chip:not(.basic){display:none!important}.push-test{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:4px 0 6px}
 .soon-tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle}
 .tier-chip{align-self:flex-start;margin-top:8px;border:1px dashed var(--line-2);background:transparent;border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
 .tier-chip.pro{color:#7AA2FF;border-color:#7AA2FF66}.tier-chip.elite{color:#C792FF;border-color:#C792FF66}
@@ -526,9 +526,7 @@ details.adv[open] summary{margin-bottom:10px}
 .ann-stage{position:relative;flex:1;display:grid;place-items:center;overflow:auto}.ann-stage canvas{max-width:100%;max-height:calc(100dvh - 120px);border-radius:8px;cursor:crosshair;touch-action:none;background:#111}
 .ann-text{position:absolute;z-index:2;border:1px solid var(--accent);background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 8px}.ann-msg{color:#cfd5e4}
 .pro-fan{width:100%;height:auto;display:block;touch-action:pan-y}
-.fan-wrap{position:relative}.fan-tip[hidden]{display:none!important}
-/* One plan, everything included: no tier labels anywhere. */
-.tier-pill,.nav-tier,.tier-chip{display:none!important}.fan-hit{cursor:crosshair}
+.fan-wrap{position:relative}.fan-tip[hidden]{display:none!important}.fan-hit{cursor:crosshair}
 .fan-tip{position:absolute;top:6px;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:2px;box-shadow:0 6px 18px rgba(0,0,0,.18);min-width:190px;z-index:2}
 .rr-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 4px}
 .rr-presets .chip{border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
@@ -855,8 +853,6 @@ body.is-out .app,body.is-out #drawerHost,body.is-out #tutHost,body.is-out #light
 .px-tps{display:flex;flex-direction:column;gap:2px;font-size:12px;text-align:right}.px-tps .hit{color:var(--win);text-decoration:line-through;opacity:.8}.px-planbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:13px}.px-planbar .actions{margin-inline-start:auto}.px-planbar .px-buy,.px-planbar .px-sell{color:#fff;border:0}
 .px-dl{cursor:ns-resize}
 .px-lined[hidden],.px-planbar[hidden],.px-parts[hidden]{display:none!important}
-/* One plan, everything included: no tier labels anywhere. */
-.tier-pill,.nav-tier,.tier-chip{display:none!important}
 .px-xh{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1;opacity:.8}.px-xh-tag{fill:#2a2f3a}.px-xh-t{fill:#fff;font-size:11px;font-weight:700;font-family:inherit}
 body.px-fs{overflow:hidden}#pxBox.px-full{position:fixed;inset:0;z-index:60;margin:0;border-radius:0;overflow:auto;background:var(--bg,var(--surface));padding:14px 18px}
 #pxBox.px-full .px-sess,#pxBox.px-full .lib-row,#pxBox.px-full>.hint{display:none}
@@ -2685,14 +2681,16 @@ function renderPsych(){
 }
 
 /* ---------- Plans: Basic / Pro / Elite ---------- */
-const TIERS = ["basic", "pro", "elite"], TIER_NAME = { basic: "Basic", pro: "Pro", elite: "The Execution Log" };
+const TIERS = ["basic", "pro", "elite"], TIER_NAME = { basic: "Free", pro: "Elite", elite: "Elite" };
+// Free plan: signed in with no active subscription (the journal treats it as the lowest tier, with its own limits).
+const isFree = () => HOSTED && !HOST.subscription?.plan, FREE_TRADES = 50;
 const tier = () => HOSTED ? (TIERS.includes(HOST.subscription?.plan) ? HOST.subscription.plan : "basic") : (TIERS.includes(ls.get("tel-tier")) ? ls.get("tel-tier") : "elite");
 const hasTier = need => TIERS.indexOf(tier()) >= TIERS.indexOf(need);
 function setPreviewTier(tk){ ls.set("tel-tier", tk); render(); renderSettings(); toast(`Previewing ${TIER_NAME[tk]}`); }
-const goUpgrade = () => { if (HOSTED) HOST.manageBilling(); else { state.setTab = "billing"; setView("settings"); } };
+const goUpgrade = () => { if (HOSTED){ if (isFree()) window.location.href = "/pricing"; else HOST.manageBilling(); } else { state.setTab = "billing"; setView("settings"); } };
 const lockCard = (need, what) => `<div class="lock-card-pro"><span class="tier-pill ${need}">${TIER_NAME[need]}</span><h3>${esc(what)}</h3><p class="hint">This is part of the ${TIER_NAME[need]} plan.</p><button type="button" class="btn primary" data-upgrade>${HOSTED ? "Upgrade" : "Preview plans"}</button></div>`;
 const bindUpgrade = root => root.querySelectorAll("[data-upgrade]").forEach(b => b.onclick = goUpgrade);
-function renderTierChip(){ const c = $("#tierChip"); if (!c) return; const k = tier(); c.className = `tier-chip ${k}`; c.textContent = HOSTED ? TIER_NAME[k] : `${TIER_NAME[k]} preview`; c.onclick = () => { state.setTab = "billing"; setView("settings"); }; }
+function renderTierChip(){ const c = $("#tierChip"); if (!c) return; const k = tier(); c.className = `tier-chip ${k}`; c.textContent = HOSTED ? (isFree() ? "Free · Upgrade" : TIER_NAME[k]) : `${TIER_NAME[k]} preview`; c.onclick = () => { state.setTab = "billing"; setView("settings"); }; }
 
 /* ---------- Pro maths ---------- */
 const SESSIONS = [["Asia", 0, 7], ["London", 7, 12], ["London–New York", 12, 16], ["New York", 16, 21], ["Late", 21, 24]];
@@ -4660,6 +4658,7 @@ function bindPractice(){
   if (window.ResizeObserver){ const ro = new ResizeObserver(() => { if (!$("#pxLive")?.hidden) pxDraw(); }); ro.observe($("#pxBox")); }
 }
 // Local test hook only (never on the live site).
+if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telPlan = { isFree: () => isFree(), tier: () => tier(), freeCount: () => freeTradesThisMonth(), save: (i, r) => saveTrade(i, r), acctLimit: () => ACCT_LIMIT(), view: v => setView(v), state: () => state };
 if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telBt = { parseCandles, resample, runBacktest, btSeries, btDefaults, btState, condAt, cleanConds, optParams, px, get settings(){ return state.settings; } };
 function btApply(cs, sym, label){ btState.base = cs; btState.sym = sym || null; const days = new Set(cs.map(c => c.d)).size;
   if ($("#btData")) $("#btData").innerHTML = `<span class="hint">${esc(label || btState.sym || "Candles")} · ${cs.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"} · ${baseTf(cs)}-minute</span>`; }
@@ -4877,15 +4876,17 @@ function btAllowed(key){
 }
 function btHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return h.toString(36); }
 function eliteTaster(host, sc){
-  const keep = ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab", "🎯 Practice trading"];
+  const keep = isFree() ? ["▶ Trade Replay Lab", "🎯 Practice trading"] : ["✦ AI Trading Coach", "Saved coach chats", "▶ Trade Replay Lab", "🎯 Practice trading"];
   const head = host.querySelector(".pro-head");
   if (head) head.outerHTML = `<div class="pro-head"><h2 class="pro-h">Tools</h2><span class="tier-pill elite">Elite</span></div>
-    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> Each week you get <b>${plural(freeLim("replays"), "trade replay", "trade replays")}</b> and <b>${plural(freeLim("practice"), "practice session", "practice sessions")}</b>, plus <b>3 free AI coach replies a month</b>. Elite makes them unlimited and unlocks everything below.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
+    <div class="trial-bar"><p><b>Try Elite on your ${esc(TIER_NAME[tier()])} plan.</b> Each week you get <b>${plural(freeLim("replays"), "trade replay", "trade replays")}</b> and <b>${plural(freeLim("practice"), "practice session", "practice sessions")}</b>${isFree() ? "" : ", plus <b>3 free AI coach replies a month</b>"}. Elite makes them unlimited and unlocks everything below.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button></div>`;
   host.querySelectorAll("section.panel").forEach(sec => {
     const h = sec.querySelector(".panel-head h2")?.textContent.trim() || "";
     if (keep.includes(h)) return;
     let teaser = "";
-    if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
+    if (h === "✦ AI Trading Coach") teaser = "A coach that reads your whole journal and answers questions about your trading: what to fix, your best setups, your worst habits. 100 replies a month on Elite.";
+    else if (h === "Saved coach chats") teaser = "Keep your best coach conversations to come back to.";
+    else if (h === "Execution Score") teaser = sc.n ? `Your average Execution Score is <b class="${scoreCls(sc.avgSc)}">${sc.avgSc}</b>/100 across ${sc.n} trades.${sc.loS.n && sc.hiS.n ? ` Elite shows which habits cost you points, and what your low-score trades are really costing you.` : ""}` : "Every trade scored 0–100 on how well you followed your process.";
     else if (h === "Backtesting Studio") teaser = "See the range of results your own trades could produce over the next 100 trades, and your real risk of breaching a drawdown limit.";
     else if (h === "🎯 Practice trading") teaser = "Go back to any day and trade it candle by candle with the future hidden: drawing tools, partial take-profits, undo and saved sessions.";
     else if (h === "What if…") teaser = "Replay your real trades with a different stop, target or risk size and see what you'd have made.";
@@ -5917,12 +5918,12 @@ function openAccounts(){
   $("#addAcct").onclick = () => { close(); openAccount(null); };
 }
 
-const ACCT_LIMIT = () => tier() === "basic" ? 2 : Infinity;
+const ACCT_LIMIT = () => isFree() ? 1 : tier() === "basic" ? 2 : Infinity;
 function openAccount(acct){
   const isNew = !acct, base = S();
   if (isNew && realAccounts().length >= ACCT_LIMIT()){
     const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>${esc(t("addAcct"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-      <div class="set-note">${esc(t("acctLimit"))}</div>
+      <div class="set-note">${esc(isFree() ? "The free plan includes 1 trading account. Upgrade to Elite for unlimited accounts." : t("acctLimit"))}</div>
       <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="upgradeBtn">${esc(t("seePlans"))}</button></div></div></div>`);
     $("#upgradeBtn").onclick = () => { close(); goUpgrade(); };
     return;
@@ -6253,14 +6254,18 @@ function renderSetBilling(body){
     const endLbl = st_ === "trialing" ? t("hsTrialEnds") : sb.cancel_at_period_end || st_ === "canceled" ? t("hsEnds") : t("hsRenews");
     body.innerHTML = `<section class="panel"><div class="panel-head"><h2>${esc(t("hsPlan"))}</h2></div>
       <div class="bill-grid">
-        <div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">${esc({ basic: "Basic (old plan)", pro: "Pro (old plan)", elite: "The Execution Log" }[sb.plan] || "—")}</span></div>
+        <div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">${esc({ basic: "Basic (old plan)", pro: "Pro (old plan)", elite: "Elite" }[sb.plan] || "—")}</span></div>
         <div class="ms"><span class="label">${esc(t("hsStatus"))}</span><span class="v">${esc(t("st_" + st_) || st_)}</span></div>
         <div class="ms"><span class="label">${esc(endLbl)}</span><span class="v">${esc(when)}</span></div>
       </div>
       <div class="set-list">${setRow(t("hsManage"), t("hsManageD"), `<button type="button" class="btn small primary" id="hsBill">${esc(t("hsManage"))}</button>`)}</div></section>`;
-    if (sb.comped){ body.querySelector(".bill-grid").innerHTML = `<div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">${esc({ basic: "Basic (old plan)", pro: "Pro (old plan)", elite: "The Execution Log" }[sb.plan] || "—")}</span></div>
+    if (sb.comped){ body.querySelector(".bill-grid").innerHTML = `<div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">${esc({ basic: "Basic (old plan)", pro: "Pro (old plan)", elite: "Elite" }[sb.plan] || "—")}</span></div>
         <div class="ms"><span class="label">${esc(t("hsStatus"))}</span><span class="v">Free access</span></div><div class="ms"><span class="label">Billing</span><span class="v">Never charged</span></div>`;
       body.querySelector(".set-list").remove(); return; }
+    if (isFree()){ body.querySelector(".bill-grid").innerHTML = `<div class="ms"><span class="label">${esc(t("billPlan"))}</span><span class="v">Free</span></div>
+        <div class="ms"><span class="label">Trades this month</span><span class="v num">${freeTradesThisMonth()} / ${FREE_TRADES}</span></div><div class="ms"><span class="label">Billing</span><span class="v">Never charged</span></div>`;
+      body.querySelector(".set-list").innerHTML = setRow("Upgrade to Elite", "Unlimited trades and accounts, advanced analytics, prop-firm tools, unlimited Replay and Practice, and the AI coach. £19.99 a month, with a 7-day free trial.", `<button type="button" class="btn small primary" id="hsBill">Upgrade</button>`);
+      $("#hsBill").onclick = () => { window.location.href = "/pricing"; }; return; }
     $("#hsBill").onclick = () => HOST.manageBilling();
     return;
   }
@@ -7257,10 +7262,21 @@ async function saveCfg(patch){
   if (state.mode !== "live"){ state.settings = s; render(); return true; }
   try { await col.doc("settings").set(s); return true; } catch(e){ handleWriteError(e); return false; }
 }
+// Free plan: up to 50 new trades a month (by when they were added). Example trades don't count.
+function freeTradesThisMonth(){
+  const now = new Date(), start = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  return state.trades.filter(z => !z.example && (z.created ? z.created >= start : String(z.date || "").slice(0, 7) === now.toISOString().slice(0, 7))).length;
+}
+function freeCapHit(){
+  if (freeCapHit.shown) return; freeCapHit.shown = true; setTimeout(() => { freeCapHit.shown = false; }, 4000);
+  toast(`You've added ${FREE_TRADES} trades this month, the free plan's limit. Upgrade to Elite for unlimited trades.`);
+  setTimeout(goUpgrade, 1800);
+}
 async function saveTrade(id, rec){
   if (state.mode !== "live"){ const i = state.trades.findIndex(t=>t.id===id);
     if (i>=0) state.trades[i] = {id,...rec}; else state.trades.push({id,...rec}); render(); return true; }
   if (state.readOnly){ toast(t("readOnlyView")); return false; }
+  if (isFree() && !rec.example && !state.trades.some(z => z.id === id) && freeTradesThisMonth() >= FREE_TRADES){ freeCapHit(); return false; }
   try { await col.doc(id).set(rec); return true; } catch(e){ handleWriteError(e); return false; }
 }
 async function removeTrade(id){

@@ -60,12 +60,12 @@ export default async function Home({ searchParams }) {
                 <Link href="/dashboard" className="btn primary big">Open my dashboard</Link>
               ) : (
                 <>
-                  <Link href="/signup" className="btn primary big">Start your journal</Link>
+                  <Link href="/signup" className="btn primary big">Start free</Link>
                   <Link href="/login" className="btn big">Log in</Link>
                 </>
               )}
             </div>
-            {!user && TRIAL_DAYS > 0 && <span className="trial-note">{TRIAL_DAYS}-day free trial. Cancel any time.</span>}
+            {!user && <span className="trial-note">Free forever. No card needed.</span>}
           </div>
           <Preview />
         </section>
@@ -117,14 +117,14 @@ export default async function Home({ searchParams }) {
           </div>
         </section>
         <section className="section" id="pricing">
-          <h2 className="h2">One price. <em>Everything included.</em></h2>
-          <p className="sub">{TRIAL_DAYS ? `Try it free for ${TRIAL_DAYS} days. ` : ""}No tiers and no locked features. Every feature listed works today.</p>
-          <PlanCards mode={user ? "checkout" : "signup"} />
+          <h2 className="h2">Start free. <em>Go Elite</em> when you're ready.</h2>
+          <p className="sub">The journal is free forever, with no card needed. Elite unlocks everything{TRIAL_DAYS ? `, with a ${TRIAL_DAYS}-day free trial` : ""}. Every feature listed works today.</p>
+          <PlanCards mode={user ? "checkout" : "signup"} signedIn={!!user} />
           <BillingTerms />
         </section>
         <section className="band">
           <h2 className="h2">Your next 100 trades deserve a record.</h2>
-          <Link href={user ? "/dashboard" : "/signup"} className="btn primary big">{user ? "Open my dashboard" : "Start your journal"}</Link>
+          <Link href={user ? "/dashboard" : "/signup"} className="btn primary big">{user ? "Open my dashboard" : "Start free"}</Link>
         </section>
         <StickyPlansBar from={PRICE_FROM} trialDays={TRIAL_DAYS} />
         <SiteFooter />

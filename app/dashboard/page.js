@@ -19,7 +19,7 @@ export default async function Dashboard({ searchParams }) {
       sub = await getSubscription(supabase, user.id);
     }
   }
-  if (!isActive(sub)) redirect("/pricing");
+  // No active subscription: the free plan. The journal limits what it shows.
 
   return (
     <AppShell
