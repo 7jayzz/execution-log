@@ -39,8 +39,9 @@ export default function Terms() {
         <li>You can cancel during the trial at no cost from Settings → Subscription &amp; billing.</li>
       </ul>
 
-      <h2>7. Free plan, Elite and switching billing</h2>
-      <p>The free plan is free forever and has the limits shown on our pricing page, for example the number of trades you can add each month. Elite includes every feature. Switching from monthly to yearly Elite starts straight away, and you're charged the difference for the rest of your current billing period. Switching from yearly to monthly takes effect at your next renewal date. If you cancel Elite, you keep it until the end of the period you've paid for, then move to the free plan; your data is kept, but features outside the free plan become unavailable.</p>
+      <h2>7. Changing your plan</h2>
+      <p>Upgrades, including moving from Basic to Elite or from monthly to yearly, start straight away, and you're charged the difference for the rest of your current billing period. Downgrades, including moving from Elite to Basic or from yearly to monthly, take effect at your next renewal date, and you keep your current plan until then.</p>
+      <p>Some features depend on your plan, for example the number of trading accounts. If you downgrade, your data is kept, but features outside your new plan may become read-only or unavailable.</p>
       <p>If you subscribed to an older plan, it keeps working at the price you signed up at until you cancel or change it.</p>
 
       <h2>8. Cancelling</h2>

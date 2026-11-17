@@ -27,23 +27,22 @@ export default async function Pricing({ searchParams }) {
       <div className="site" style={{ gap: 40 }}>
         <SiteNav user={user} />
         <section className="section">
-          <h1 className="h1" style={{ fontSize: "clamp(44px,7vw,80px)" }}>{active ? <>Your <em>plan</em></> : <>Start free. <em>Go Elite</em> when you're ready.</>}</h1>
+          <h1 className="h1" style={{ fontSize: "clamp(44px,7vw,80px)" }}>{active ? <>Change your <em>plan</em></> : <>Pick your <em>plan</em></>}</h1>
           <p className="sub">
             {active
-              ? "You have every feature. Use Manage billing to switch to annual and save, change your card or cancel."
+              ? "Upgrade to Elite any time from this page and it starts straight away. Use Manage billing to switch to annual, change your card or cancel."
               : user
-              ? trial && TRIAL_DAYS ? `You're on the free plan. Try Elite free for ${TRIAL_DAYS} days to unlock everything. You won't be charged until the trial ends, and you can cancel any time.` : "You're on the free plan. Upgrade to Elite to unlock everything."
-              : `The journal is free forever. Elite unlocks everything${TRIAL_DAYS ? `, with a ${TRIAL_DAYS}-day free trial` : ""}. Every feature listed works today.`}
+              ? trial && TRIAL_DAYS ? `Your journal is ready. Start your ${TRIAL_DAYS}-day free trial to open it. You won't be charged until the trial ends, and you can cancel any time.` : "Choose a plan to open your journal."
+              : `${TRIAL_DAYS ? `Try either plan free for ${TRIAL_DAYS} days. ` : ""}Every feature listed works today.`}
           </p>
-          {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Start whenever you're ready.</div>}
+          {searchParams?.checkout === "cancelled" && <div className="box info">Checkout was cancelled. Pick a plan when you're ready.</div>}
           {searchParams?.error === "upgrade" && <div className="box bad">Your card was declined, so your plan hasn't changed. Update your card in Manage billing and try again.</div>}
           {searchParams?.error === "checkout" && <div className="box bad">Checkout couldn't start just now. Please try again in a moment.{typeof searchParams?.ref === "string" && searchParams.ref ? <span style={{ display: "block", marginTop: 6, fontSize: 12, opacity: 0.75 }}>Reference: {searchParams.ref.slice(0, 60)}</span> : null}</div>}
           {searchParams?.error === "phone" && <div className="box bad">Please verify your mobile number to start your free trial.</div>}
           {needPhone && <PhoneVerify />}
-          {searchParams?.error === "plan" && <div className="box bad">That price isn't available. Please try again below.</div>}
-          {user && !active && <div className="ctas"><Link href="/dashboard" className="btn big">Open my free journal</Link></div>}
-          {active && <div className="ctas"><Link href="/dashboard" className="btn primary big">Open my dashboard</Link><a href="/api/billing-portal" className="btn big">Manage billing</a></div>}
-          <PlanCards mode={user ? "checkout" : "signup"} trial={trial && !active} current={current} locked={needPhone} signedIn={!!user} />
+          {searchParams?.error === "plan" && <div className="box bad">That plan isn't available. Please pick one of the plans below.</div>}
+                    {active && <div className="ctas"><Link href="/dashboard" className="btn primary big">Open my dashboard</Link><a href="/api/billing-portal" className="btn big">Manage billing</a></div>}
+          <PlanCards mode={user ? "checkout" : "signup"} trial={trial && !active} current={current} locked={needPhone} />
           <BillingTerms />
           <p className="hint">Payments are handled securely by Stripe.</p>
         </section>
