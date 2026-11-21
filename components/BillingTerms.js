@@ -18,7 +18,7 @@ export default function BillingTerms() {
         <h3>Monthly or annual?</h3>
         <ul className="ticks">
           <li><span><b>Monthly:</b> charged every month from the day your trial ends. Cancel any time.</span></li>
-          <li><span><b>Annual:</b> one payment a year, saving about 25%. Basic is £99 instead of £131.88, and Elite is £219 instead of £299.88.</span></li>
+          <li><span><b>Annual:</b> one payment a year. Basic is £129.90 instead of £155.88 (save £25.98), and Elite is £219 instead of £299.88 (save £80.88).</span></li>
           <li><span>If you cancel, you keep access until the end of the period you've already paid for.</span></li>
         </ul>
       </div>

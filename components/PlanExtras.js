@@ -15,7 +15,7 @@ export function OpenOnDesktop() {
 
 // Small bar fixed to the bottom of phone screens. Hidden while the plan cards are on screen,
 // so it never covers the prices or the checkout buttons.
-export function StickyPlansBar({ from = "£10.99", trialDays = 7 }) {
+export function StickyPlansBar({ from = "£12.99", trialDays = 7 }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const plans = document.querySelector(".plans");
