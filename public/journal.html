@@ -252,6 +252,13 @@ details.adv[open] summary{margin-bottom:10px}
 .acct-list{display:flex;flex-direction:column;gap:10px}
 .acct-row{display:flex;align-items:stretch;border:1px solid var(--line-2);border-radius:11px;background:var(--surface-2);overflow:hidden}
 .acct-row.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.acct-row.arch .acct-main{opacity:.72}
+.acct-arch{margin-top:6px;border-top:1px solid var(--line-2);padding-top:10px}
+.acct-arch>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);list-style:none;display:flex;justify-content:space-between;align-items:center;padding:4px 2px}
+.acct-arch>summary::-webkit-details-marker{display:none}
+.acct-arch>summary::after{content:"Show";font-weight:500}
+.acct-arch[open]>summary::after{content:"Hide"}
+.acct-arch .acct-list{margin-top:8px}
 .acct-main{flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;background:transparent;border:0;text-align:left}
 .acct-main .nm{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .acct-main .meta{font-size:12px;color:var(--muted)}
@@ -1208,7 +1215,9 @@ const accountsList = () => { const c = state.settings; if (!c) return [];
   if (Array.isArray(c.accounts)) return c.accounts;
   if (c.balance) return [{ id:"main", name:"Main account", type:"Personal", balance:c.balance, ccy:c.ccy, risk:c.risk, rates:c.rates }];
   return []; };
-const activeAcct = () => { const l = accountsList(); return l.find(a => a.id === state.activeId) || l[0] || null; };
+const activeAcct = () => { const l = accountsList(); return l.find(a => a.id === state.activeId) || l.find(a => !a.archived) || l[0] || null; };
+// Archived accounts (old challenges, breached or paid-out accounts) keep their trades but sit out of the way and don't count towards the plan's account limit.
+const liveAccounts = () => accountsList().filter(a => !a.archived);
 const S = () => activeAcct() || DEFAULT_SETTINGS;
 const acctOf = t => t.accountId || accountsList()[0]?.id;
 const isOpen = t => t && t.status === "open";
@@ -1255,7 +1264,7 @@ const sampleTrades = (acctId = activeAcct()?.id || "main", rows = SAMPLE_ROWS, a
 /* ---------- Example account ---------- */
 // A separate, clearly labelled account full of made-up trades. It never mixes with real accounts and can be removed in one tap.
 const isDemo = a => !!(a && a.demo);
-const realAccounts = () => accountsList().filter(a => !a.demo);
+const realAccounts = () => accountsList().filter(a => !a.demo && !a.archived);
 const demoAcct = () => accountsList().find(a => a.demo);
 const isoDow = d => new Date(d + "T12:00:00Z").getUTCDay();
 function demoRows(rows){ // move the example dates so the latest one is today (or the last weekday), so goals show this week's progress
@@ -1618,12 +1627,15 @@ function renderBanner(){
   let html = "";
   if (state.mode === "demo") html = `<div class="banner"><span><b>${esc(t("previewB"))}</b> ${esc(t("previewT"))}</span></div>`;
   else if (state.mode === "live" && isDemo(act)) html = `<div class="banner"><span><b>${esc(t("demoBanT"))}</b> ${esc(t("demoBanP"))}</span><span class="actions">${realAccounts().length ? `<button class="btn small primary" id="demoBack">${esc(t("demoBack"))}</button>` : `<button class="btn small primary" id="demoSetup">${esc(t("demoSetup"))}</button>`}<button class="btn small" id="demoDel">${esc(t("demoRemove"))}</button></span></div>`;
+  else if (state.mode === "live" && act?.archived) html = `<div class="banner"><span><b>Archived account.</b> You're looking back at ${esc(act.name)}. Its trades and stats are kept here.</span><span class="actions"><button class="btn small primary" id="archRestore">Restore</button>${liveAccounts().length ? `<button class="btn small" id="archBack">Back to my accounts</button>` : ""}</span></div>`;
   else if (state.mode === "loading" && state.slow) html = `<div class="banner"><span><b>${esc(t("slowB"))}</b> ${esc(t("slowT"))}</span></div>`;
   else if (state.mode === "live" && accountsList().length && (!profile() || (!HOSTED && !hasLock())) && ls.get("tel-profban") !== "1") html = `<div class="banner"><span><b>${esc(t("profBannerT"))}</b> ${esc(t("profBannerP"))}</span><span class="actions"><button class="btn small primary" id="profGo">${esc(t("profBannerBtn"))}</button><button class="iconbtn" id="profX" aria-label="${esc(t("close"))}">✕</button></span></div>`;
   else if (state.mode === "live" && hasEx) html = `<div class="banner"><span>${esc(t("exT"))}</span><button class="btn small" id="clearEx">${esc(t("clearEx"))}</button></div>`;
   $("#banner").innerHTML = html;
   const b = $("#clearEx"); if (b) b.onclick = clearExamples;
   const db = $("#demoBack"); if (db) db.onclick = () => { const r = realAccounts()[0]; if (r){ setActive(r.id); toast(t("switched", { name: r.name })); } };
+  const arR = $("#archRestore"); if (arR) arR.onclick = () => restoreAccount(act);
+  const arBk = $("#archBack"); if (arBk) arBk.onclick = () => { const r = liveAccounts()[0]; if (r){ setActive(r.id); toast(t("switched", { name: r.name })); } };
   const ds = $("#demoSetup"); if (ds) ds.onclick = () => openAccount(null);
   const dd = $("#demoDel"); if (dd){ let armed = false; dd.onclick = () => { if (!armed){ armed = true; dd.textContent = t("demoRemoveSure"); return; } removeDemo(); }; }
   const pg = $("#profGo"); if (pg) pg.onclick = () => openSignup(false);
@@ -2751,7 +2763,7 @@ function renderProAnalytics(){
     <text x="${L}" y="${H - 6}" class="pb-l">${esc(fmtDate(P[0].date))}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="pb-l">${esc(fmtDate(P[P.length - 1].date))}</text></svg>` : `<p class="hint">${esc(t("breakdownEmpty"))}</p>`;
   const k = (l, v, c = "", sub = "") => `<div class="ms"><span class="label">${esc(l)}</span><span class="v num ${c}">${v}</span>${sub ? `<span class="hint">${esc(sub)}</span>` : ""}</div>`;
   const pct1 = v => v == null ? "—" : Math.round(v * 100) + "%", r2 = v => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2) + "R";
-  const accts = accountsList().map(a => { const s_ = proStats(acctTrades(a)), L_ = ledger(a); return { a, s: s_, end: L_.end, ret: a.balance ? (L_.end - a.balance) / a.balance : 0, dd: ddSeries(a).maxDD }; });
+  const accts = liveAccounts().map(a => { const s_ = proStats(acctTrades(a)), L_ = ledger(a); return { a, s: s_, end: L_.end, ret: a.balance ? (L_.end - a.balance) / a.balance : 0, dd: ddSeries(a).maxDD }; });
   host.innerHTML = `
     <div class="pro-head"><h2 class="pro-h">Deeper analytics</h2><span class="tier-pill pro">Pro</span></div>
     <div class="grid2b">
@@ -4945,7 +4957,7 @@ function renderElite(){
       if (num(x.planStop) != null && num(x.stop) != null && (x.planStop - x.stop) * dir(x) > 0) widened++;
       if (num(x.planTarget) != null){ tgtN++; if ((x.planTarget - x.exit) * dir(x) > 0 && pnl(x) > 0) early++; } });
     return { n: planned.length, slip: slip.length ? slip.reduce((p, q) => p + q, 0) / slip.length : null, widened, early, tgtN }; })();
-  const accts = accountsList(), byCcy = {}; accts.forEach(ac => { const L_ = ledger(ac); (byCcy[ac.ccy] ||= { start: 0, end: 0, n: 0, open: 0 }); byCcy[ac.ccy].start += +ac.balance || 0; byCcy[ac.ccy].end += L_.end; byCcy[ac.ccy].n += acctTrades(ac).length;
+  const accts = liveAccounts(), byCcy = {}; accts.forEach(ac => { const L_ = ledger(ac); (byCcy[ac.ccy] ||= { start: 0, end: 0, n: 0, open: 0 }); byCcy[ac.ccy].start += +ac.balance || 0; byCcy[ac.ccy].end += L_.end; byCcy[ac.ccy].n += acctTrades(ac).length;
     byCcy[ac.ccy].open += openTrades(ac).reduce((q, x) => q + (riskAmt(x) || 0), 0); });
   const breach = (() => { const r = a.rules; if (!r?.on || !num(r.dailyPct)) return null; const days = {}; ts.forEach(x => (days[x.date] ||= []).push(x)); const L_ = ledger(); const out = [];
     Object.entries(days).forEach(([d, arr]) => { const net = arr.reduce((q, x) => q + pnl(x), 0); const first = [...arr].sort((p, q) => (p.created || 0) - (q.created || 0))[0]; const base = r.dailyBase === "start" ? +a.balance : (L_.before[first.id] ?? +a.balance); const lim = base * r.dailyPct / 100;
@@ -5898,24 +5910,51 @@ function openClose(x){
 
 /* ---------- Accounts ---------- */
 function openAccounts(){
-  const list = accountsList(), act = activeAcct();
-  const close = showDrawer(`<div class="drawer">
-    <div class="panel-head"><h2>${esc(t("accounts"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
-    <p class="hint" style="margin:0">${esc(t("acctsHint"))}</p>
-    <div class="acct-list">${list.map(a => { const L = ledger(a), n = acctTrades(a).length, g = (L.end - a.balance) / a.balance;
-      return `<div class="acct-row ${a.id===act?.id?"on":""}">
+  const list = accountsList(), act = activeAcct(), live = list.filter(a => !a.archived), arch = list.filter(a => a.archived);
+  const row = a => { const L = ledger(a), n = acctTrades(a).length, g = (L.end - a.balance) / a.balance;
+      return `<div class="acct-row ${a.id===act?.id?"on":""} ${a.archived?"arch":""}">
         <button type="button" class="acct-main" data-switch="${esc(a.id)}">
-          <span><span class="nm">${esc(a.name)} <span class="pill">${esc(a.demo ? t("demoPill") : typeLabel(a.type||"Personal"))}</span></span>
+          <span><span class="nm">${esc(a.name)} <span class="pill">${esc(a.archived ? "Archived" : a.demo ? t("demoPill") : typeLabel(a.type||"Personal"))}</span></span>
             <span class="meta">${esc(t("started", { v: money(+a.balance,false,a.ccy) }))} · ${esc(tradeCount(n))}</span></span>
           <span><div class="bal">${money(L.end,false,a.ccy)}</div><div class="gr ${cls(g)}">${pct(g)}</div></span>
         </button>
-        <button type="button" class="acct-edit" data-edit="${esc(a.id)}" aria-label="${esc(t("edit"))} ${esc(a.name)}">${esc(t("edit"))}</button></div>`; }).join("")}</div>
+        ${a.archived ? `<button type="button" class="acct-edit" data-restore="${esc(a.id)}" aria-label="Restore ${esc(a.name)}">Restore</button>` : `<button type="button" class="acct-edit" data-edit="${esc(a.id)}" aria-label="${esc(t("edit"))} ${esc(a.name)}">${esc(t("edit"))}</button>`}</div>`; };
+  const close = showDrawer(`<div class="drawer">
+    <div class="panel-head"><h2>${esc(t("accounts"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">${esc(t("acctsHint"))}</p>
+    <div class="acct-list">${live.map(row).join("")}</div>
+    ${arch.length ? `<details class="acct-arch" ${act?.archived ? "open" : ""}><summary>Archived accounts (${arch.length})</summary>
+      <p class="hint" style="margin:4px 0 0">Old challenges and accounts you've finished with. Their trades and stats are kept, and they don't count towards your plan's account limit.</p>
+      <div class="acct-list">${arch.map(row).join("")}</div></details>` : ""}
     <div class="drawer-foot"><div>${demoAcct() ? "" : `<button type="button" class="btn" id="tryDemo">${esc(t("demoAdd"))}</button>`}</div><button type="button" class="btn primary" id="addAcct">${esc(t("addAcct"))}</button></div>
   </div>`);
   const td = $("#tryDemo"); if (td) td.onclick = () => { close(); openDemo(); };
   $("#drawerHost").querySelectorAll("[data-switch]").forEach(b => b.onclick = () => { close(); setActive(b.dataset.switch); toast(t("switched", { name: accountsList().find(a=>a.id===b.dataset.switch)?.name || "" })); });
   $("#drawerHost").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { close(); openAccount(accountsList().find(a=>a.id===b.dataset.edit)); });
+  $("#drawerHost").querySelectorAll("[data-restore]").forEach(b => b.onclick = () => { close(); restoreAccount(accountsList().find(a=>a.id===b.dataset.restore)); });
   $("#addAcct").onclick = () => { close(); openAccount(null); };
+}
+async function archiveAccount(a){
+  const next = accountsList().map(x => x.id === a.id ? { ...x, archived: true, archivedAt: localToday() } : x);
+  if (state.mode !== "live"){ state.settings = { ...state.settings, accounts: next }; }
+  else if (!(await saveCfg({ accounts: next }))) return;
+  const other = next.find(x => !x.archived && x.id !== a.id);
+  if (state.activeId === a.id && other) setActive(other.id); else render();
+  toast(`Archived ${a.name}. Find it under Accounts → Archived.`, 4000);
+}
+async function restoreAccount(a){
+  if (!a) return;
+  if (!a.demo && realAccounts().length >= ACCT_LIMIT()){
+    const close = showDrawer(`<div class="drawer"><div class="panel-head"><h2>Restore account</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+      <div class="set-note">${esc(t("acctLimit"))} Archive another account first, or upgrade.</div>
+      <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="upgradeBtn">${esc(t("seePlans"))}</button></div></div></div>`);
+    $("#upgradeBtn").onclick = () => { close(); goUpgrade(); };
+    return;
+  }
+  const next = accountsList().map(x => x.id === a.id ? (({ archived, archivedAt, ...rest }) => rest)(x) : x);
+  if (state.mode !== "live"){ state.settings = { ...state.settings, accounts: next }; render(); }
+  else if (!(await saveCfg({ accounts: next }))) return;
+  setActive(a.id); toast(`Restored ${a.name}.`);
 }
 
 const ACCT_LIMIT = () => isFree() ? 1 : tier() === "basic" ? 2 : Infinity;
@@ -5929,7 +5968,7 @@ function openAccount(acct){
     return;
   }
   const st = acct || { id: newId("a"), name: "", type: "Personal", balance: "", ccy: base.ccy, risk: 1, rates: defaultRates(base.ccy) };
-  const list = accountsList(), canDelete = !isNew && list.length > 1, nTr = isNew ? 0 : acctTrades(st).length;
+  const list = accountsList(), canDelete = !isNew && list.length > 1, nTr = isNew ? 0 : acctTrades(st).length, canArchive = !isNew && !st.archived && !st.demo && liveAccounts().length > 1;
   const close = showDrawer(`<form class="drawer" id="af" novalidate>
     <div class="panel-head"><h2>${esc(isNew ? t("newAcct") : t("editAcct"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <div class="fgrid">
@@ -5951,6 +5990,7 @@ function openAccount(acct){
     <p class="hint" style="margin:0">${esc(t("convHint"))}</p>
     <div id="rates" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="err" id="aerr" hidden></div>
+    ${canArchive ? `<div class="set-note">Finished with this account (passed, breached or paid out)? <b>Archive</b> it instead of deleting. Its trades and stats are kept, and it stops counting towards your account limit. <button type="button" class="btn small" id="archAcct" style="margin-top:8px">Archive account</button></div>` : ""}
     <div class="drawer-foot"><div>${canDelete ? `<button type="button" class="btn danger" id="delAcct">${esc(t("delAcct"))}</button>` : ""}</div>
       <div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">${esc(isNew ? t("createAcct") : t("saveAcct"))}</button></div></div>
   </form>`);
@@ -5966,6 +6006,7 @@ function openAccount(acct){
     if (!todo.length){ toast(t("noneToApply")); return; }
     for (const x of todo){ const { id, ...rec } = x; if (!(await saveTrade(id, { ...rec, commission: +(rates[groupKey(x.symbol)] * spec(x).lots).toFixed(2) }))) return; }
     toast(t("appliedN", { n: todo.length })); };
+  const arB = $("#archAcct"); if (arB) arB.onclick = () => { close(); archiveAccount(st); };
   if (canDelete){ const b = $("#delAcct"); let armed = false;
     b.onclick = async () => { if (!armed){ armed = true; b.textContent = nTr ? t("tapDelN", { n: nTr }) : t("tapDel"); return; }
       close(); await deleteAccount(st); }; }
@@ -5989,9 +6030,10 @@ async function reconvertTimes(a, key){
   return n; }
 async function deleteAccount(a){
   const rest = accountsList().filter(x => x.id !== a.id), mine = acctTrades(a);
-  if (state.mode !== "live"){ state.trades = state.trades.filter(t => acctOf(t) !== a.id); state.settings = { ...state.settings, accounts: rest }; setActive(rest[0].id); toast(t("acctDeleted")); return; }
+  const nextId = (rest.find(x => !x.archived) || rest[0]).id;
+  if (state.mode !== "live"){ state.trades = state.trades.filter(t => acctOf(t) !== a.id); state.settings = { ...state.settings, accounts: rest }; setActive(nextId); toast(t("acctDeleted")); return; }
   for (const t of mine){ try { await col.doc(t.id).delete(); } catch(e){ handleWriteError(e); return; } }
-  if (await saveCfg({ accounts: rest })){ setActive(rest[0].id); toast(t("acctDeleted")); }
+  if (await saveCfg({ accounts: rest })){ setActive(nextId); toast(t("acctDeleted")); }
 }
 
 /* ---------- Colour / settings ---------- */
@@ -6576,7 +6618,7 @@ function openImportGuide(back){
   const bk = $("#igBack"); if (bk) bk.onclick = () => { close(); openImport(); };
 }
 function openImport(){
-  const accts = accountsList(); if (state.mode === "live" && !accts.length){ toast(t("needAcct")); return; }
+  const accts = accountsList().filter(a => !a.archived || a.id === activeAcct()?.id); if (state.mode === "live" && !accts.length){ toast(t("needAcct")); return; }
   let parsed = null, fromAcct = "";
   const close = showDrawer(`<div class="drawer" id="impD">
     <div class="panel-head"><h2>${esc(t("impH"))}</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
