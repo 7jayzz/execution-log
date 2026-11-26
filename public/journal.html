@@ -544,6 +544,26 @@ details.adv[open] summary{margin-bottom:10px}
 .rr-opts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 8px}
 .rr-edge{margin:6px 0}#mcRisk:disabled{opacity:.45;cursor:not-allowed}.mc-needs{border:1px solid var(--line-2);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:13px}.mc-needs ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.mc-needs li{display:flex;gap:8px;align-items:baseline;line-height:1.5}.mc-ic{font-weight:800;width:14px;flex:none}.mc-needs .ok .mc-ic{color:var(--win)}.mc-needs .no .mc-ic{color:var(--loss)}.mc-needs .opt .mc-ic{color:var(--muted)}.rr-how{margin:8px 0 2px;font-size:13px;line-height:1.55}.rr-how summary{cursor:pointer;font-weight:700;color:var(--accent);width:max-content}.rr-how ul{margin:8px 0;padding-inline-start:20px;display:grid;gap:5px}.rr-warn{margin:6px 0 10px;line-height:1.5}.rr-warn.hi{border-color:var(--loss);background:var(--loss-bg)}
 .coach-out{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-height:70px}
+.pc-shots{display:flex;gap:8px;flex-wrap:wrap}.pc-shots img{width:96px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)}
+.pc-steps{display:flex;flex-direction:column;gap:10px;padding:6px 2px}.pc-step{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.pc-step i{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);flex:none;display:grid;place-items:center;font-style:normal;font-size:11px}
+.pc-step.on{color:var(--ink)}.pc-step.on i{border-color:var(--accent);border-top-color:transparent;animation:pcspin .8s linear infinite}
+.pc-step.done{color:var(--muted);text-decoration:line-through}.pc-step.done i{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+@keyframes pcspin{to{transform:rotate(360deg)}}
+.pc-bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden}.pc-bar b{display:block;height:100%;background:var(--accent);transition:width .5s}
+.pc-verdict{border-radius:12px;padding:14px;border:1px solid var(--line-2);display:flex;gap:12px;align-items:center}
+.pc-verdict .big{font-family:var(--display);font-weight:800;font-size:22px;text-transform:uppercase;line-height:1}
+.pc-verdict.ok{border-color:var(--win);background:var(--win-bg)}.pc-verdict.ok .big{color:var(--win)}
+.pc-verdict.mid{border-color:var(--accent);background:var(--accent-soft)}.pc-verdict.mid .big{color:var(--accent)}
+.pc-verdict.bad{border-color:var(--loss);background:var(--loss-bg)}.pc-verdict.bad .big{color:var(--loss)}
+.pc-conf{margin-left:auto;text-align:right;flex:none}.pc-conf .label{display:block}.pc-conf b{font-family:var(--mono);font-size:26px}
+.pc-rules{display:flex;flex-direction:column;gap:8px}.pc-rule{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:14px;line-height:1.45}.pc-rule .n{color:var(--muted);font-size:13px}
+.pc-ladder{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:12px;overflow:hidden}
+.pc-lv{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}.pc-lv:last-child{border-bottom:0}
+.pc-lv .tag{font:700 11px var(--body);letter-spacing:.6px;text-transform:uppercase;border-radius:6px;padding:3px 6px;text-align:center}
+.pc-lv.sl .tag{background:var(--loss-bg);color:var(--loss)}.pc-lv.en .tag{background:var(--accent-soft);color:var(--accent)}.pc-lv.tp .tag{background:var(--win-bg);color:var(--win)}
+.pc-lv .px{font-family:var(--mono);font-weight:700;font-size:16px}.pc-lv .d{font-size:12px;color:var(--muted);text-align:right}
+.pc-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.pc-kv div{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-2)}.pc-kv .label{display:block}.pc-kv b{font-family:var(--mono);font-size:17px}
 .coach-text{white-space:pre-wrap;line-height:1.6;font-size:14px}
 .ch-list{display:flex;flex-direction:column;gap:8px}
 .ch-item{border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
@@ -3374,7 +3394,7 @@ const COACH_PROMPTS = {
 /* ---------- Saved coach chats ---------- */
 state.coachChats = state.coachChats || [];
 const COACH_LABELS = { last: "Last trade review", week: "Weekly review", month: "Monthly review", plan: "Improvement plan" };
-const chTitle = c => c.ask === "ask" || c.ask === "shot" ? (c.question || (c.ask === "shot" ? "Screenshot review" : "Question")) : (COACH_LABELS[c.ask] || "Coach review");
+const chTitle = c => c.ask === "ask" || c.ask === "shot" || c.ask === "precheck" ? (c.question || (c.ask === "shot" ? "Screenshot review" : "Question")) : (COACH_LABELS[c.ask] || "Coach review");
 async function saveCoachChat({ ask, question, text }){
   const id = "coach" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const a = activeAcct();
@@ -3411,6 +3431,116 @@ function renderCoachHist(){
   });
 }
 // Screenshot review (Elite): pick a trade that has a chart screenshot, and the coach reviews the picture with the trade's numbers.
+
+/* ---------- Beta: Pre-trade check (switched on per account) ---------- */
+const hasBeta = k => HOSTED ? (Array.isArray(HOST?.beta) && HOST.beta.includes(k)) : /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+const STRAT_EXAMPLE = `Daily chart for the trend. 4H for key levels: where price failed to go higher or lower.
+Entry: a full 1H candle body closes beyond the 4H level, in the trend direction. No wick closes.
+Stop: behind the 1H swing structure. Risk 1% per trade.
+Target: only take trades that are at least 1:2. TP1 = next 4H failure level, close 50% there and move stop to breakeven. Runner to the next structure.
+No new entries around red-folder news.`;
+function openStrategy(after){
+  const close = showDrawer(`<form class="drawer" id="stF" novalidate><div class="panel-head"><h2>My strategy</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <p class="hint" style="margin:0">Write your rules in plain English, one per line. The Pre-trade check grades every chart against exactly these rules.</p>
+    <textarea id="stT" class="ctl" rows="12" maxlength="3000" placeholder="${esc(STRAT_EXAMPLE)}">${esc(state.settings?.strategy || "")}</textarea>
+    ${state.settings?.strategy ? "" : `<button type="button" class="btn small" id="stEx">Use the example as a starting point</button>`}
+    <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="submit" class="btn primary">Save strategy</button></div></div></form>`);
+  const ex = $("#stEx"); if (ex) ex.onclick = () => { $("#stT").value = STRAT_EXAMPLE; };
+  $("#stF").onsubmit = async e => { e.preventDefault(); const v = $("#stT").value.trim().slice(0, 3000); if (!v){ toast("Write at least one rule"); return; }
+    close(); if (await saveCfg({ strategy: v })){ toast("Strategy saved"); if (after) after(); } };
+}
+function openPrecheck(){
+  if (!state.settings?.strategy){ toast("Write your strategy first, so the check knows your rules"); openStrategy(() => openPrecheck()); return; }
+  let files = [];
+  const syms = Object.keys(INSTR), setups = SETUPS();
+  const close = showDrawer(`<div class="drawer" id="pcD"><div class="panel-head"><h2>Pre-trade check</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+    <div id="pcBody">
+      <div class="fgrid">
+        <div class="f"><label for="pcSym">Instrument</label><input id="pcSym" list="pcSymL" value="${esc(sorted().slice(-1)[0]?.symbol || "XAUUSD")}" autocomplete="off"><datalist id="pcSymL">${syms.map(k => `<option value="${esc(k)}">`).join("")}</datalist></div>
+        <div class="f"><label for="pcDir">Direction</label><select id="pcDir"><option value="">Let it read the chart</option><option value="buy">Buy</option><option value="sell">Sell</option></select></div>
+        ${setups.length ? `<div class="f full"><label for="pcSetup">Setup <span class="opt">(${esc(t("optional"))})</span></label><select id="pcSetup"><option value="">—</option>${setups.map(x => `<option>${esc(x)}</option>`).join("")}</select><span class="hint">Pulls your real stats for this setup.</span></div>` : ""}
+        <div class="f full"><label for="pcShot">Chart screenshots (up to 3)</label><input id="pcShot" type="file" accept="image/png,image/jpeg,image/webp" multiple><span class="hint">Tip: one higher timeframe and one entry timeframe, with the price axis visible.</span><div class="pc-shots" id="pcThumbs"></div></div>
+        <div class="f full"><label for="pcCtx">Anything else <span class="opt">(${esc(t("optional"))})</span></label><textarea id="pcCtx" class="ctl" rows="2" maxlength="600" placeholder="e.g. NFP at 1:30pm, current price 3567"></textarea></div>
+      </div>
+      <p class="hint" style="margin:8px 0 0">Checked against your saved strategy. <a href="#" id="pcEditS">Edit strategy</a></p>
+      <div class="err" id="pcErr" hidden></div>
+      <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="pcRun">Run check</button></div></div>
+    </div></div>`);
+  $("#pcEditS").onclick = e => { e.preventDefault(); close(); openStrategy(() => openPrecheck()); };
+  $("#pcShot").onchange = e => { files = [...e.target.files].filter(f => /^image\//.test(f.type)).slice(0, 3);
+    $("#pcThumbs").innerHTML = files.map(f => `<img alt="" src="${URL.createObjectURL(f)}">`).join(""); };
+  $("#pcRun").onclick = async () => {
+    const err = $("#pcErr"); if (!files.length){ err.hidden = false; err.textContent = "Add at least one chart screenshot."; return; }
+    const sample = await getSample(); if (!sample){ err.hidden = false; err.textContent = "The AI coach isn't available here."; return; }
+    const sym = $("#pcSym").value.trim().toUpperCase(), dir = $("#pcDir").value, setup = $("#pcSetup")?.value || "", ctx = $("#pcCtx").value.trim();
+    const steps = ["Reading your chart", "Checking it against your rules", "Placing entry, stop and targets", "Sizing the trade from your risk", "Pulling your stats"];
+    $("#pcBody").innerHTML = `<div class="pc-steps" id="pcSteps">${steps.map((x, i) => `<div class="pc-step" data-i="${i}"><i></i>${esc(x)}…</div>`).join("")}</div><div class="pc-bar"><b id="pcPct" style="width:4%"></b></div><p class="hint">Keep this open while it checks. Usually 10–20 seconds.</p>`;
+    let cur = 0; const tick = () => { document.querySelectorAll("#pcSteps .pc-step").forEach((el, i) => { el.className = "pc-step" + (i < cur ? " done" : i === cur ? " on" : ""); if (i < cur) el.querySelector("i").textContent = "✓"; }); const p = $("#pcPct"); if (p) p.style.width = Math.min(92, 8 + cur * 20) + "%"; };
+    tick(); const timer = setInterval(() => { if (cur < steps.length - 2){ cur++; tick(); } }, 2600);
+    const a = S(), bal = ledger().end || +a.balance;
+    const prompt = `You are the Pre-trade check inside The Execution Log, a trading journal. A trader is about to take a trade and has uploaded chart screenshot(s). Judge the setup ONLY against the trader's own written strategy below. Do not add rules of your own and do not give financial advice or predictions.
+TRADER'S STRATEGY:
+${state.settings.strategy}
+
+Instrument: ${sym || "unknown"}. ${dir ? `The trader is looking to ${dir}.` : "Work out the direction their rules point to, if any."} ${ctx ? `Extra context from the trader: ${ctx}` : ""} Today is ${localToday()}.
+
+Reply with ONLY one JSON object, no other text, in this shape:
+{"symbol":"","timeframes":"what timeframes you can see","direction":"buy|sell|none","read":"2 sentences: what the chart shows (trend, structure, the key level)","rules":[{"rule":"short name of one of THEIR rules","status":"pass|fail|unclear","note":"one sentence, what you see"}],"entry":number|null,"stop":number|null,"tp1":number|null,"tp2":number|null,"levelsNote":"how you placed the levels using their method","confidence":0-100,"verdict":"matches|partial|breaks|no_setup","verdictLine":"one short sentence","ifWrong":"what would invalidate it, in their terms","lesson":"one short reminder from their own rules"}
+Rules for you: one entry in "rules" per rule in their strategy that can be judged; use "unclear" when the screenshot can't show it (e.g. news). Only give prices you can actually read from the price axis; otherwise null. British English.`;
+    let res;
+    try { res = await sample(prompt, { images: files, mode: "precheck" }); }
+    catch (e){ clearInterval(timer); $("#pcBody").innerHTML = `<p class="err">${esc(e?.friendly || e?.message || "The check couldn't run just now. Try again.")}</p>`; return; }
+    clearInterval(timer); cur = steps.length; tick();
+    let j = null; try { const m = (res.text || "").match(/\{[\s\S]*\}/); j = m ? JSON.parse(m[0]) : null; } catch {}
+    if (!j){ $("#pcBody").innerHTML = `<p class="err">The check didn't come back in the right format. Try again, ideally with a clearer screenshot.</p><div class="coach-text">${esc(res.text || "")}</div>`; return; }
+    renderPrecheck(j, { sym: j.symbol || sym, setup, bal, a, close });
+  };
+}
+function renderPrecheck(j, { sym, setup, bal, a, close }){
+  const n = v => (typeof v === "number" && isFinite(v)) ? v : (v != null && isFinite(+v) && v !== "" ? +v : null);
+  const entry = n(j.entry), stop = n(j.stop), tp1 = n(j.tp1), tp2 = n(j.tp2);
+  const ins = INSTR[(sym || "").toUpperCase()] || INSTR[symFromName(sym)] || null;
+  const dp = v => { const s = String(v); const d = (s.split(".")[1] || "").length; return Math.min(5, Math.max(ins?.pip && ins.pip < 1 ? String(ins.pip).split(".")[1]?.length || 2 : 2, d)); };
+  const fx = v => v == null ? "—" : (+v).toFixed(dp(v));
+  const risk = entry != null && stop != null ? Math.abs(entry - stop) : null;
+  const rr = tp => risk && tp != null ? Math.abs(tp - entry) / risk : null;
+  const riskAmt = bal * (+a.risk || 1) / 100;
+  const lots = risk && ins ? riskAmt / (risk * ins.contract * rateFor(ins.quote)) : null;
+  const vcls = { matches: "ok", partial: "mid", breaks: "bad", no_setup: "bad" }[j.verdict] || "mid";
+  const vtxt = { matches: "Matches your plan", partial: "Partly matches", breaks: "Breaks your rules", no_setup: "No setup here" }[j.verdict] || "Check it yourself";
+  const ic = s => s === "pass" ? "✅" : s === "fail" ? "❌" : "❔";
+  const rules = Array.isArray(j.rules) ? j.rules : [], fails = rules.filter(x => x.status === "fail").length;
+  const allT = sorted(), symT = allT.filter(x => (x.symbol || "").toUpperCase() === (sym || "").toUpperCase()), setT = setup ? allT.filter(x => x.setup === setup) : [];
+  const st = ts => { if (!ts.length) return null; const s_ = proStats(ts); return { n: s_.n, wr: Math.round(s_.winRate * 100), r: s_.avgR }; };
+  const sS = st(setT), sY = st(symT);
+  const statBox = (lbl, s_) => s_ ? `<div><span class="label">${esc(lbl)}</span><b>${s_.wr}%</b> <span class="hint">win · ${s_.n} trades${s_.r != null ? ` · ${(s_.r >= 0 ? "+" : "") + s_.r.toFixed(2)}R avg` : ""}</span></div>` : "";
+  const ladder = [["sl", "Stop", stop], ["en", "Entry", entry], ["tp", "TP1", tp1], ["tp", "TP2", tp2]].filter(x => x[2] != null);
+  const isSell = j.direction === "sell" || (entry != null && stop != null && stop > entry);
+  if (isSell) ladder.reverse();
+  const html = `<div class="pc-verdict ${vcls}"><div><div class="big">${esc(vtxt)}</div><div class="hint" style="margin-top:4px">${esc(j.verdictLine || "")}</div></div><div class="pc-conf"><span class="label">Confidence</span><b>${Math.max(0, Math.min(100, Math.round(+j.confidence || 0)))}</b></div></div>
+    <p style="margin:0;line-height:1.5"><b>${esc((sym || "").toUpperCase())} · ${esc(j.direction === "none" ? "no trade" : j.direction || "")}</b>${j.timeframes ? ` <span class="hint">· ${esc(j.timeframes)}</span>` : ""}<br>${esc(j.read || "")}</p>
+    <div class="section-title">Your rules${fails ? ` · ${fails} broken` : ""}</div>
+    <div class="pc-rules">${rules.map(x => `<div class="pc-rule"><span>${ic(x.status)}</span><span><b>${esc(x.rule || "")}</b><br><span class="n">${esc(x.note || "")}</span></span></div>`).join("") || `<p class="hint">No rules could be judged from this screenshot.</p>`}</div>
+    ${ladder.length ? `<div class="section-title">Levels, placed your way</div><div class="pc-ladder">${ladder.map(([c, l, v]) => `<div class="pc-lv ${c}"><span class="tag">${l}</span><span class="px">${fx(v)}</span><span class="d">${c === "tp" && rr(v) != null ? `${rr(v).toFixed(2)}R` : c === "sl" && risk ? `${fx(risk)} risk` : ""}</span></div>`).join("")}</div>${j.levelsNote ? `<p class="hint" style="margin:6px 0 0">${esc(j.levelsNote)}</p>` : ""}` : ""}
+    <div class="pc-kv">
+      <div><span class="label">Risk (${esc(String(+a.risk || 1))}%)</span><b>${money(riskAmt, false, a.ccy)}</b></div>
+      <div><span class="label">Lot size</span><b>${lots != null ? (lots >= 1 ? lots.toFixed(2) : lots.toFixed(2)) : "—"}</b>${lots == null ? `<span class="hint">${ins ? "needs entry + stop" : "unknown instrument"}</span>` : ""}</div>
+      <div><span class="label">R:R to TP1</span><b>${rr(tp1) != null ? "1:" + rr(tp1).toFixed(2) : "—"}</b></div>
+    </div>
+    ${sS || sY ? `<div class="section-title">Your real stats</div><div class="pc-kv">${statBox(`Setup: ${setup}`, sS)}${statBox(`All ${(sym || "").toUpperCase()} trades`, sY)}</div>` : ""}
+    ${j.ifWrong ? `<div class="set-note"><b>If it goes wrong:</b> ${esc(j.ifWrong)}</div>` : ""}
+    ${j.lesson ? `<div class="set-note"><b>Your rule:</b> ${esc(j.lesson)}</div>` : ""}
+    <p class="hint" style="margin:0">Checked against your own strategy. Prices are read from your screenshot, so double-check them on the live chart. Not financial advice.</p>
+    <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" id="pcAgain">New check</button><button type="button" class="btn primary" id="pcSave">Save to notes</button></div></div>`;
+  $("#pcBody").innerHTML = html;
+  const text = [`${vtxt} (${Math.round(+j.confidence || 0)}/100): ${j.verdictLine || ""}`, `${(sym || "").toUpperCase()} ${j.direction || ""}${j.timeframes ? " · " + j.timeframes : ""}`, j.read || "", "", "Rules:", ...rules.map(x => `${ic(x.status)} ${x.rule}: ${x.note}`), "",
+    `Entry ${fx(entry)} · Stop ${fx(stop)} · TP1 ${fx(tp1)}${tp2 != null ? " · TP2 " + fx(tp2) : ""}`, `Risk ${money(riskAmt, false, a.ccy)} · Lots ${lots != null ? lots.toFixed(2) : "—"} · R:R ${rr(tp1) != null ? "1:" + rr(tp1).toFixed(2) : "—"}`, j.ifWrong ? `If it goes wrong: ${j.ifWrong}` : ""].filter(x => x !== undefined).join("\n");
+  saveCoachChat({ ask: "precheck", question: `Pre-trade check: ${(sym || "").toUpperCase()} ${j.direction || ""} · ${fmtDate(localToday())}`, text });
+  $("#pcAgain").onclick = () => { close(); openPrecheck(); };
+  $("#pcSave").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36);
+    if (await saveNote(id, { kind: "note", title: `Pre-trade check: ${(sym || "").toUpperCase()} ${j.direction || ""} · ${fmtDate(localToday())}`, body: text, tpl: "", pinned: false, created: now, updated: now }) !== false) toast("Saved to Notes"); };
+}
+
 function pickShotTrade(){
   if (!hasTier("elite")){ const out = $("#coachOut"); if (out){ out.innerHTML = `<p class="hint" style="margin:0 0 10px">Screenshot reviews are part of Elite. Your coach looks at your chart screenshot and tells you what it sees: entry location, stop placement, structure and what to improve.</p><button type="button" class="btn small primary" data-upgrade>${HOSTED ? "Upgrade to Elite" : "Preview plans"}</button>`; bindUpgrade(out); } return; }
   const list = sorted().filter(x => shotsOf(x).length).reverse().slice(0, 40);
@@ -4670,7 +4800,7 @@ function bindPractice(){
   if (window.ResizeObserver){ const ro = new ResizeObserver(() => { if (!$("#pxLive")?.hidden) pxDraw(); }); ro.observe($("#pxBox")); }
 }
 // Local test hook only (never on the live site).
-if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telPlan = { isFree: () => isFree(), tier: () => tier(), freeCount: () => freeTradesThisMonth(), save: (i, r) => saveTrade(i, r), acctLimit: () => ACCT_LIMIT(), view: v => setView(v), state: () => state };
+if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telPlan = { isFree: () => isFree(), tier: () => tier(), freeCount: () => freeTradesThisMonth(), save: (i, r) => saveTrade(i, r), acctLimit: () => ACCT_LIMIT(), view: v => setView(v), state: () => state, precheck: () => openPrecheck(), setSample: fn => { sampleFn = fn; } };
 if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__telBt = { parseCandles, resample, runBacktest, btSeries, btDefaults, btState, condAt, cleanConds, optParams, px, get settings(){ return state.settings; } };
 function btApply(cs, sym, label){ btState.base = cs; btState.sym = sym || null; const days = new Set(cs.map(c => c.d)).size;
   if ($("#btData")) $("#btData").innerHTML = `<span class="hint">${esc(label || btState.sym || "Candles")} · ${cs.length.toLocaleString()} candles · ${days} day${days === 1 ? "" : "s"} · ${baseTf(cs)}-minute</span>`; }
@@ -4969,6 +5099,9 @@ function renderElite(){
   const mcR = rs.length >= 10, mcPct = (() => { let bal = +a.balance || 0; return ts.map(x => { const v = bal > 0 ? pnl(x) / bal : null; bal += pnl(x); return v; }).filter(v => v != null && isFinite(v)); })(), mcOk = mcR || mcPct.length >= 10;
   host.dataset.built = key;
   host.innerHTML = `<div class="pro-head"><h2 class="pro-h">Tools</h2><span class="tier-pill elite">Elite</span><span class="hint">${esc(a.name || "")}</span></div>
+    ${hasBeta("precheck") ? `<section class="panel"><div class="panel-head"><h2>◆ Pre-trade check</h2><span class="label">Beta · only on your account</span></div>
+      <p class="hint" style="margin:0">Before you enter, upload your chart. The AI checks it against <b>your own strategy</b>, places entry, stop and targets your way, sizes the lot from your risk, and shows your real stats for the setup.</p>
+      <div class="actions"><button type="button" class="btn small primary" id="pcOpen">Check a setup</button><button type="button" class="btn small" id="pcStrat">${state.settings?.strategy ? "Edit my strategy" : "Write my strategy"}</button></div></section>` : ""}
     <section class="panel"><div class="panel-head"><h2>✦ AI Trading Coach</h2><span class="label">Reads your journal</span></div>
       <div class="actions" id="coachBtns"><button type="button" class="btn small primary" data-coach="last">Review my last trade</button><button type="button" class="btn small" data-coach="week">Weekly review</button><button type="button" class="btn small" data-coach="month">Monthly review</button><button type="button" class="btn small" data-coach="plan">Improvement plan</button><button type="button" class="btn small" id="coachShot">📷 Review a screenshot</button></div>
       <div class="row-flex"><input class="ctl" id="coachQ" placeholder="Ask about your trading, e.g. Why do I lose on Fridays?" maxlength="300"><button type="button" class="btn small" id="coachAsk">Ask</button></div>
@@ -5073,6 +5206,7 @@ function renderElite(){
     <section class="panel"><div class="panel-head"><h2>Premium reports</h2></div><p class="hint" style="margin:0">Build a PDF with exactly the sections you want, including your challenge status.</p><button type="button" class="btn small primary" id="eliteRep">Build a report</button></section>`;
   host.querySelectorAll("[data-coach]").forEach(b => b.onclick = () => askCoach(b.dataset.coach));
   $("#coachShot").onclick = pickShotTrade;
+  if ($("#pcOpen")){ $("#pcOpen").onclick = () => openPrecheck(); $("#pcStrat").onclick = () => openStrategy(); }
   $("#coachAsk").onclick = () => { const q = $("#coachQ").value.trim(); if (q) askCoach("ask", q); };
   $("#coachQ").onkeydown = e => { if (e.key === "Enter") $("#coachAsk").click(); };
   $("#chQ").oninput = () => renderCoachHist();

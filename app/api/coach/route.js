@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, isActive } from "@/lib/subscription";
 import { planForPrice } from "@/lib/plans";
 import { askClaude, alertCoachDown } from "@/lib/claude";
+import { betaFeatures } from "@/lib/beta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +43,9 @@ export async function POST(request) {
   if (!process.env.ANTHROPIC_API_KEY){ await alertCoachDown(Object.assign(new Error("ANTHROPIC_API_KEY not set"), { status: 401 }), "a trader's coach request"); return NextResponse.json({ code: "unavailable", message: "AI coach not configured" }, { status: 503 }); }
   const w = await who(); if (w.error) return w.error; const { user, elite } = w;
 
-  const { prompt, images } = await request.json().catch(() => ({}));
+  const { prompt, images, mode } = await request.json().catch(() => ({}));
+  // Pre-trade check is in beta: only accounts it has been switched on for can use it.
+  if (mode === "precheck" && !(await betaFeatures(user.id)).includes("precheck")) return NextResponse.json({ code: "not_granted", message: "Pre-trade check isn't available on this account yet" }, { status: 403 });
   if (typeof prompt !== "string" || !prompt.trim() || prompt.length > 80000) return NextResponse.json({ code: "bad_request", message: "Bad prompt" }, { status: 400 });
   // Chart screenshots (Elite): up to 3 images, JPEG/PNG/WebP, sent as base64.
   const imgs = Array.isArray(images) ? images.slice(0, 3).filter((m) => m && /^image\/(jpeg|png|webp)$/.test(m.media_type) && typeof m.data === "string" && m.data.length < 2_000_000) : [];
@@ -60,7 +63,7 @@ export async function POST(request) {
 
   const content = imgs.length ? [...imgs.map((m) => ({ type: "image", source: { type: "base64", media_type: m.media_type, data: m.data } })), { type: "text", text: prompt }] : prompt;
   let out;
-  try { out = await askClaude(content, { maxTokens: 2500, where: "a trader's coach request" }); }
+  try { out = await askClaude(content, { maxTokens: 2500, where: mode === "precheck" ? "a pre-trade check" : "a trader's coach request" }); }
   catch (e) { await refund(); return NextResponse.json({ code: "unavailable", message: "Coach unavailable", ref: e?.name === "TimeoutError" ? "timeout" : `${e?.status ?? ""} ${e?.type ?? ""}`.trim() || "error" }, { status: 502 }); }
   const { text, truncated } = out;
   return NextResponse.json({ text, truncated, left: Math.max(0, u.limit - u.used - 1), limit: u.limit, period: u.period });

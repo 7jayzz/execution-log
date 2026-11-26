@@ -14,7 +14,7 @@ if (typeof window !== "undefined" && !window.__telInstallHooked) {
 const IDLE_MS = 10 * 60 * 1000; // log out after 10 minutes with no activity
 const EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "mousemove", "scroll"];
 
-export default function AppShell({ user, subscription }) {
+export default function AppShell({ user, subscription, beta = [] }) {
   const [ready, setReady] = useState(false);
   const frame = useRef(null);
   const lastActive = useRef(Date.now());
@@ -22,7 +22,7 @@ export default function AppShell({ user, subscription }) {
 
   useEffect(() => {
     const supabase = createClient();
-    host.current = makeHost(supabase, user, subscription);
+    host.current = makeHost(supabase, user, subscription, beta);
     window.__telHost = host.current;
     setReady(true);
 
@@ -48,7 +48,7 @@ export default function AppShell({ user, subscription }) {
       host.current?.dispose();
       delete window.__telHost;
     };
-  }, [user, subscription]);
+  }, [user, subscription, beta]);
 
   // Activity inside the journal also counts.
   const onLoad = () => {

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, isActive, subscriptionSummary } from "@/lib/subscription";
+import { betaFeatures } from "@/lib/beta";
 import AppShell from "./AppShell";
 
 export const metadata = { title: "Dashboard" };
@@ -20,11 +21,13 @@ export default async function Dashboard({ searchParams }) {
     }
   }
   if (!isActive(sub)) redirect("/pricing");
+  const beta = await betaFeatures(user.id);
 
   return (
     <AppShell
       user={{ id: user.id, email: user.email, name: user.user_metadata?.full_name || user.user_metadata?.name || "" }}
       subscription={subscriptionSummary(sub)}
+      beta={beta}
     />
   );
 }
