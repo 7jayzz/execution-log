@@ -545,6 +545,8 @@ details.adv[open] summary{margin-bottom:10px}
 .rr-edge{margin:6px 0}#mcRisk:disabled{opacity:.45;cursor:not-allowed}.mc-needs{border:1px solid var(--line-2);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:13px}.mc-needs ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.mc-needs li{display:flex;gap:8px;align-items:baseline;line-height:1.5}.mc-ic{font-weight:800;width:14px;flex:none}.mc-needs .ok .mc-ic{color:var(--win)}.mc-needs .no .mc-ic{color:var(--loss)}.mc-needs .opt .mc-ic{color:var(--muted)}.rr-how{margin:8px 0 2px;font-size:13px;line-height:1.55}.rr-how summary{cursor:pointer;font-weight:700;color:var(--accent);width:max-content}.rr-how ul{margin:8px 0;padding-inline-start:20px;display:grid;gap:5px}.rr-warn{margin:6px 0 10px;line-height:1.5}.rr-warn.hi{border-color:var(--loss);background:var(--loss-bg)}
 .coach-out{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-height:70px}
 .pc-shots{display:flex;gap:8px;flex-wrap:wrap}.pc-shots img{width:96px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)}
+.pc-prog{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line-2)}.pc-prog img{display:block;width:100%;max-height:220px;object-fit:cover;filter:saturate(.8) brightness(.55)}
+.pc-prog-txt{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;color:#fff}.pc-prog-txt b{font-family:var(--display);font-size:20px;text-transform:uppercase;line-height:1.05}.pc-prog-txt span{font-family:var(--mono);font-weight:700;font-size:26px}
 .pc-steps{display:flex;flex-direction:column;gap:10px;padding:6px 2px}.pc-step{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .pc-step i{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);flex:none;display:grid;place-items:center;font-style:normal;font-size:11px}
 .pc-step.on{color:var(--ink)}.pc-step.on i{border-color:var(--accent);border-top-color:transparent;animation:pcspin .8s linear infinite}
@@ -3450,10 +3452,9 @@ function openStrategy(after){
     close(); if (await saveCfg({ strategy: v })){ toast("Strategy saved"); if (after) after(); } };
 }
 function openPrecheck(){
-  if (!state.settings?.strategy){ toast("Write your strategy first, so the check knows your rules"); openStrategy(() => openPrecheck()); return; }
   let files = [];
   const syms = Object.keys(INSTR), setups = SETUPS();
-  const close = showDrawer(`<div class="drawer" id="pcD"><div class="panel-head"><h2>Pre-trade check</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
+  const close = showDrawer(`<div class="drawer" id="pcD"><div class="panel-head"><h2>Chart analysis</h2><button type="button" class="iconbtn" data-close aria-label="${esc(t("close"))}">✕</button></div>
     <div id="pcBody">
       <div class="fgrid">
         <div class="f"><label for="pcSym">Instrument</label><input id="pcSym" list="pcSymL" value="${esc(sorted().slice(-1)[0]?.symbol || "XAUUSD")}" autocomplete="off"><datalist id="pcSymL">${syms.map(k => `<option value="${esc(k)}">`).join("")}</datalist></div>
@@ -3466,7 +3467,7 @@ function openPrecheck(){
         <div class="f full"><label for="pcShot">Chart screenshots (up to 3)</label><input id="pcShot" type="file" accept="image/png,image/jpeg,image/webp" multiple><span class="hint">Tip: one higher timeframe and one entry timeframe, with the price axis visible.</span><div class="pc-shots" id="pcThumbs"></div></div>
         <div class="f full"><label for="pcCtx">Anything else <span class="opt">(${esc(t("optional"))})</span></label><textarea id="pcCtx" class="ctl" rows="2" maxlength="600" placeholder="e.g. NFP at 1:30pm, current price 3567"></textarea></div>
       </div>
-      <p class="hint" style="margin:8px 0 0">Checked against your saved strategy. <a href="#" id="pcEditS">Edit strategy</a></p>
+      <p class="hint" style="margin:8px 0 0">${state.settings?.strategy ? `Also checked against your saved strategy. <a href="#" id="pcEditS">Edit strategy</a>` : `Tip: <a href="#" id="pcEditS">save your strategy</a> and it also checks the chart against your own rules.`}</p>
       <div class="err" id="pcErr" hidden></div>
       <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" data-close>${esc(t("cancel"))}</button><button type="button" class="btn primary" id="pcRun">Run check</button></div></div>
     </div></div>`);
@@ -3478,24 +3479,26 @@ function openPrecheck(){
     const sample = await getSample(); if (!sample){ err.hidden = false; err.textContent = "The AI coach isn't available here."; return; }
     const sym = $("#pcSym").value.trim().toUpperCase(), dir = $("#pcDir").value, setup = $("#pcSetup")?.value || "", ctx = $("#pcCtx").value.trim();
     const pv = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : null; }, plan = { entry: pv("#pcE"), stop: pv("#pcS"), tp1: pv("#pcT1"), tp2: pv("#pcT2") }, hasPlan = Object.values(plan).some(v => v != null);
-    const steps = ["Reading structure and trend", "Mapping key levels", "Checking your rules", hasPlan ? "Reviewing your plan" : "Building the breakdown", "Pulling your stats"];
-    $("#pcBody").innerHTML = `<div class="pc-steps" id="pcSteps">${steps.map((x, i) => `<div class="pc-step" data-i="${i}"><i></i>${esc(x)}…</div>`).join("")}</div><div class="pc-bar"><b id="pcPct" style="width:4%"></b></div><p class="hint">Keep this open while it checks. Usually 10–20 seconds.</p>`;
-    let cur = 0; const tick = () => { document.querySelectorAll("#pcSteps .pc-step").forEach((el, i) => { el.className = "pc-step" + (i < cur ? " done" : i === cur ? " on" : ""); if (i < cur) el.querySelector("i").textContent = "✓"; }); const p = $("#pcPct"); if (p) p.style.width = Math.min(92, 8 + cur * 20) + "%"; };
+    const steps = ["Reading structure and trend", "Mapping key levels", state.settings?.strategy ? "Checking your rules" : "Scoring the breakdown", hasPlan ? "Reviewing your plan" : "Building both scenarios", "Pulling your stats"];
+    const strat = state.settings?.strategy || "";
+    $("#pcBody").innerHTML = `<div class="pc-prog"><img alt="" src="${URL.createObjectURL(files[0])}"><div class="pc-prog-txt"><b id="pcStage">${esc(steps[0])}</b><span id="pcPctN">4%</span></div></div><div class="pc-steps" id="pcSteps">${steps.map((x, i) => `<div class="pc-step" data-i="${i}"><i></i>${esc(x)}…</div>`).join("")}</div><div class="pc-bar"><b id="pcPct" style="width:4%"></b></div><p class="hint">Keep this open while it checks. Usually 10–20 seconds.</p>`;
+    let cur = 0; const tick = () => { document.querySelectorAll("#pcSteps .pc-step").forEach((el, i) => { el.className = "pc-step" + (i < cur ? " done" : i === cur ? " on" : ""); if (i < cur) el.querySelector("i").textContent = "✓"; }); const pc = Math.min(cur >= steps.length ? 100 : 92, 8 + cur * 20), p = $("#pcPct"); if (p) p.style.width = pc + "%"; const pn = $("#pcPctN"); if (pn) pn.textContent = pc + "%"; const sg = $("#pcStage"); if (sg) sg.textContent = steps[Math.min(cur, steps.length - 1)]; };
     tick(); const timer = setInterval(() => { if (cur < steps.length - 2){ cur++; tick(); } }, 2600);
     const a = S(), bal = ledger().end || +a.balance;
     const prompt = `You are the chart analysis tool inside The Execution Log, a trading journal. A trader has uploaded chart screenshot(s). Your job is ANALYSIS, not signals:
 - Describe what the chart shows: trend on each visible timeframe, structure, and the key levels/zones (with why each one matters).
-- Check the chart against the trader's OWN written strategy below, rule by rule. Do not add rules of your own.
+- ${strat ? "Check the chart against the trader's OWN written strategy below, rule by rule. Do not add rules of your own." : "The trader hasn't saved a strategy, so leave \"rules\" as an empty list."}
+- Give both scenarios as conditions to watch (e.g. "If 1H closes back above 3568…"), never as instructions to trade.
 - ${hasPlan ? `Review the trader's OWN plan (entry ${plan.entry ?? "—"}, stop ${plan.stop ?? "—"}, TP1 ${plan.tp1 ?? "—"}, TP2 ${plan.tp2 ?? "—"}): is the stop beyond structure, do the targets sit sensibly relative to the levels you can see, and does it follow their rules? Comment only; do not replace their levels with yours.` : "The trader has not given levels. Do NOT suggest an entry, stop or target price."}
 - NEVER tell the trader to buy or sell, never give your own entry/stop/target, never predict where price will go. No financial advice.
 TRADER'S STRATEGY:
-${state.settings.strategy}
+${strat || "(none saved)"}
 
 Instrument: ${sym || "unknown"}. ${dir ? `The trader's own idea is to ${dir}.` : "The trader has no direction in mind yet."} ${ctx ? `Extra context from the trader: ${ctx}` : ""} Today is ${localToday()}.
 
 Reply with ONLY one JSON object, no other text, in this shape:
-{"symbol":"","timeframes":"timeframes you can see","trend":"short trend read per timeframe","read":"2-3 sentences: what the chart shows right now","levels":[{"zone":"price or price range as text","type":"support|resistance|level","why":"one sentence"}],"rules":[{"rule":"short name of one of THEIR rules","status":"pass|fail|unclear","note":"one sentence, what you see"}],"factors":[{"name":"e.g. Trend, Level quality, Structure, Chart clarity, Momentum","effect":"for|against|neutral","points":-10..10,"note":"one sentence"}],"planReview":${hasPlan ? `"2-3 sentences reviewing their own levels against the chart and their rules"` : "null"},"score":0-100,"verdict":"matches|partial|breaks|unclear","verdictLine":"one short sentence about whether the chart fits THEIR rules","watch":"what would change the picture, in their terms","lesson":"one short reminder from their own rules"}
-"score" = how well the chart fits their rules (not a prediction). One "rules" entry per rule that can be judged; use "unclear" when the screenshot can't show it (e.g. news). Only quote prices you can actually read from the price axis. British English.`;
+{"symbol":"","timeframes":"timeframes you can see","trend":"short trend read per timeframe","read":"2-3 sentences: what the chart shows right now","levels":[{"zone":"price or price range as text","type":"support|resistance|level","why":"one sentence"}],"rules":[{"rule":"short name of one of THEIR rules","status":"pass|fail|unclear","note":"one sentence, what you see"}],"factors":[{"name":"e.g. Trend, Level quality, Structure, Chart clarity, Momentum","effect":"for|against|neutral","points":-10..10,"note":"one sentence"}],"scenarios":[{"name":"e.g. If sellers stay in control","what":"what you'd expect to see on the chart, conditional"},{"name":"e.g. If buyers reclaim the level","what":"..."}],"context":"1-2 sentences of general market context for this instrument (e.g. sensitive to US data), no predictions","planReview":${hasPlan ? `"2-3 sentences reviewing their own levels against the chart and their rules"` : "null"},"score":0-100,"verdict":"matches|partial|breaks|unclear","verdictLine":"one short sentence: ${strat ? "whether the chart fits THEIR rules" : "how clean and readable the structure is right now"}","watch":"what would invalidate the current read","lesson":"${strat ? "one short reminder from their own rules" : "one short general lesson about reading this kind of structure"}"}
+"score" = ${strat ? "how well the chart fits their rules" : "how clean and clear the structure is"} (never a probability of profit). One "rules" entry per rule that can be judged; use "unclear" when the screenshot can't show it (e.g. news). Only quote prices you can actually read from the price axis. British English.`;
     let res;
     try { res = await sample(prompt, { images: files, mode: "precheck" }); }
     catch (e){ clearInterval(timer); $("#pcBody").innerHTML = `<p class="err">${esc(e?.friendly || e?.message || "The check couldn't run just now. Try again.")}</p>`; return; }
@@ -3515,7 +3518,9 @@ function renderPrecheck(j, { sym, setup, bal, a, close, plan, dir }){
   const riskAmt = bal * (+a.risk || 1) / 100;
   const lots = risk && ins ? riskAmt / (risk * ins.contract * rateFor(ins.quote)) : null;
   const vcls = { matches: "ok", partial: "mid", breaks: "bad", unclear: "mid" }[j.verdict] || "mid";
-  const vtxt = { matches: "Fits your rules", partial: "Partly fits", breaks: "Breaks your rules", unclear: "Not clear yet" }[j.verdict] || "Check it yourself";
+  const hasRules = !!state.settings?.strategy;
+  const vtxt = hasRules ? ({ matches: "Fits your rules", partial: "Partly fits", breaks: "Breaks your rules", unclear: "Not clear yet" }[j.verdict] || "Check it yourself") : ({ matches: "Clean structure", partial: "Mixed picture", breaks: "Messy chart", unclear: "Not clear yet" }[j.verdict] || "Analysis");
+  const scen = Array.isArray(j.scenarios) ? j.scenarios : [];
   const ic = s_ => s_ === "pass" ? "✅" : s_ === "fail" ? "❌" : "❔";
   const rules = Array.isArray(j.rules) ? j.rules : [], fails = rules.filter(x => x.status === "fail").length;
   const levels = Array.isArray(j.levels) ? j.levels : [], factors = Array.isArray(j.factors) ? j.factors : [];
@@ -3526,27 +3531,30 @@ function renderPrecheck(j, { sym, setup, bal, a, close, plan, dir }){
   const ladder = [["sl", "Stop", stop], ["en", "Entry", entry], ["tp", "TP1", tp1], ["tp", "TP2", tp2]].filter(x => x[2] != null);
   if (dir === "sell" || (entry != null && stop != null && stop > entry)) ladder.reverse();
   const score = Math.max(0, Math.min(100, Math.round(+j.score || 0)));
-  const html = `<div class="pc-verdict ${vcls}"><div><div class="big">${esc(vtxt)}</div><div class="hint" style="margin-top:4px">${esc(j.verdictLine || "")}</div></div><div class="pc-conf"><span class="label">Rule fit</span><b>${score}</b></div></div>
-    <div class="section-title">01 The read</div>
+  let sn = 0; const H = (title, extra = "") => `<div class="section-title">${String(++sn).padStart(2, "0")} ${esc(title)}${extra}</div>`;
+  const html = `<div class="pc-verdict ${vcls}"><div><div class="big">${esc(vtxt)}</div><div class="hint" style="margin-top:4px">${esc(j.verdictLine || "")}</div></div><div class="pc-conf"><span class="label">${hasRules ? "Rule fit" : "Clarity"}</span><b>${score}</b></div></div>
+    ${H("The read")}
     <p style="margin:0;line-height:1.5"><b>${esc((sym || "").toUpperCase())}</b>${j.timeframes ? ` <span class="hint">· ${esc(j.timeframes)}</span>` : ""}${j.trend ? `<br><span class="hint">${esc(j.trend)}</span>` : ""}<br>${esc(j.read || "")}</p>
-    ${levels.length ? `<div class="section-title">02 Key levels</div><div class="pc-rules">${levels.map(x => `<div class="pc-rule"><span>${x.type === "support" ? "▲" : x.type === "resistance" ? "▼" : "◆"}</span><span><b class="num">${esc(x.zone || "")}</b> <span class="hint">${esc(x.type || "")}</span><br><span class="n">${esc(x.why || "")}</span></span></div>`).join("")}</div>` : ""}
-    <div class="section-title">03 Your rules${fails ? ` · ${fails} broken` : ""}</div>
-    <div class="pc-rules">${rules.map(x => `<div class="pc-rule"><span>${ic(x.status)}</span><span><b>${esc(x.rule || "")}</b><br><span class="n">${esc(x.note || "")}</span></span></div>`).join("") || `<p class="hint">No rules could be judged from this screenshot.</p>`}</div>
-    ${factors.length ? `<div class="section-title">04 Breakdown</div><div class="pc-rules">${factors.map(x => { const p = Math.round(+x.points || 0); return `<div class="pc-rule"><span class="num" style="font-weight:700;color:var(${p > 0 ? "--win" : p < 0 ? "--loss" : "--muted"})">${p > 0 ? "+" : ""}${p}</span><span><b>${esc(x.name || "")}</b> <span class="hint">${esc(x.effect || "")}</span><br><span class="n">${esc(x.note || "")}</span></span></div>`; }).join("")}</div>` : ""}
-    ${ladder.length ? `<div class="section-title">05 Your plan</div><div class="pc-ladder">${ladder.map(([c, l, v]) => `<div class="pc-lv ${c}"><span class="tag">${l}</span><span class="px">${fx(v)}</span><span class="d">${c === "tp" && rr(v) != null ? `${rr(v).toFixed(2)}R` : c === "sl" && risk ? `${fx(risk)} risk` : ""}</span></div>`).join("")}</div>
+    ${levels.length ? `${H("Key levels")}<div class="pc-rules">${levels.map(x => `<div class="pc-rule"><span>${x.type === "support" ? "▲" : x.type === "resistance" ? "▼" : "◆"}</span><span><b class="num">${esc(x.zone || "")}</b> <span class="hint">${esc(x.type || "")}</span><br><span class="n">${esc(x.why || "")}</span></span></div>`).join("")}</div>` : ""}
+    ${hasRules ? `${H("Your rules", fails ? ` · ${fails} broken` : "")}
+    <div class="pc-rules">${rules.map(x => `<div class="pc-rule"><span>${ic(x.status)}</span><span><b>${esc(x.rule || "")}</b><br><span class="n">${esc(x.note || "")}</span></span></div>`).join("") || `<p class="hint">No rules could be judged from this screenshot.</p>`}</div>` : ""}
+    ${factors.length ? `${H("Breakdown")}<div class="pc-rules">${factors.map(x => { const p = Math.round(+x.points || 0); return `<div class="pc-rule"><span class="num" style="font-weight:700;color:var(${p > 0 ? "--win" : p < 0 ? "--loss" : "--muted"})">${p > 0 ? "+" : ""}${p}</span><span><b>${esc(x.name || "")}</b> <span class="hint">${esc(x.effect || "")}</span><br><span class="n">${esc(x.note || "")}</span></span></div>`; }).join("")}</div>` : ""}
+    ${scen.length ? `${H("Scenarios to watch")}<div class="pc-rules">${scen.map(x => `<div class="pc-rule"><span>↳</span><span><b>${esc(x.name || "")}</b><br><span class="n">${esc(x.what || "")}</span></span></div>`).join("")}</div>` : ""}
+    ${ladder.length ? `${H("Your plan")}<div class="pc-ladder">${ladder.map(([c, l, v]) => `<div class="pc-lv ${c}"><span class="tag">${l}</span><span class="px">${fx(v)}</span><span class="d">${c === "tp" && rr(v) != null ? `${rr(v).toFixed(2)}R` : c === "sl" && risk ? `${fx(risk)} risk` : ""}</span></div>`).join("")}</div>
       ${j.planReview ? `<p style="margin:6px 0 0;line-height:1.5">${esc(j.planReview)}</p>` : ""}
       <div class="pc-kv"><div><span class="label">Risk (${esc(String(+a.risk || 1))}%)</span><b>${money(riskAmt, false, a.ccy)}</b></div><div><span class="label">Lot size</span><b>${lots != null ? lots.toFixed(2) : "—"}</b>${lots == null ? `<span class="hint">${ins ? "needs entry + stop" : "unknown instrument"}</span>` : ""}</div><div><span class="label">R:R to TP1</span><b>${rr(tp1) != null ? "1:" + rr(tp1).toFixed(2) : "—"}</b></div></div>` : ""}
     ${sS || sY ? `<div class="section-title">Your real stats</div><div class="pc-kv">${statBox(`Setup: ${setup}`, sS)}${statBox(`All ${(sym || "").toUpperCase()} trades`, sY)}</div>` : ""}
-    ${j.watch ? `<div class="set-note"><b>What would change the picture:</b> ${esc(j.watch)}</div>` : ""}
-    ${j.lesson ? `<div class="set-note"><b>Your rule:</b> ${esc(j.lesson)}</div>` : ""}
-    <p class="hint" style="margin:0">Chart analysis against your own rules, not a trade signal. Levels are read from your screenshot, so double-check them on the live chart. Not financial advice.</p>
+    ${j.watch ? `<div class="set-note"><b>If it goes wrong:</b> ${esc(j.watch)}</div>` : ""}
+    ${j.context ? `<div class="set-note"><b>Market context:</b> ${esc(j.context)}</div>` : ""}
+    ${j.lesson ? `<div class="set-note"><b>${hasRules ? "Your rule" : "Lesson"}:</b> ${esc(j.lesson)}</div>` : ""}
+    <p class="hint" style="margin:0">Chart analysis${hasRules ? " against your own rules" : ""}, not a trade signal. Levels are read from your screenshot, so double-check them on the live chart. Not financial advice.</p>
     <div class="drawer-foot"><div></div><div class="actions"><button type="button" class="btn" id="pcAgain">New check</button><button type="button" class="btn primary" id="pcSave">Save to notes</button></div></div>`;
   $("#pcBody").innerHTML = html;
   const text = [`${vtxt} (rule fit ${score}/100): ${j.verdictLine || ""}`, `${(sym || "").toUpperCase()}${j.timeframes ? " · " + j.timeframes : ""}`, j.trend || "", j.read || "", "",
     levels.length ? "Key levels:" : "", ...levels.map(x => `- ${x.zone} (${x.type}): ${x.why}`), "", "Your rules:", ...rules.map(x => `${ic(x.status)} ${x.rule}: ${x.note}`), "",
     factors.length ? "Breakdown:" : "", ...factors.map(x => `${(+x.points > 0 ? "+" : "") + Math.round(+x.points || 0)} ${x.name}: ${x.note}`),
     ladder.length ? `\nYour plan: entry ${fx(entry)} · stop ${fx(stop)} · TP1 ${fx(tp1)}${tp2 != null ? " · TP2 " + fx(tp2) : ""} · lots ${lots != null ? lots.toFixed(2) : "—"} · R:R ${rr(tp1) != null ? "1:" + rr(tp1).toFixed(2) : "—"}` : "", j.planReview || "",
-    j.watch ? `What would change the picture: ${j.watch}` : ""].filter(x => x !== "").join("\n");
+    ...scen.map(x => `Scenario, ${x.name}: ${x.what}`), j.watch ? `If it goes wrong: ${j.watch}` : "", j.context ? `Market context: ${j.context}` : ""].filter(x => x !== "").join("\n");
   saveCoachChat({ ask: "precheck", question: `Chart check: ${(sym || "").toUpperCase()} · ${fmtDate(localToday())}`, text });
   $("#pcAgain").onclick = () => { close(); openPrecheck(); };
   $("#pcSave").onclick = async () => { const now = Date.now(), id = "n" + now.toString(36);
@@ -5111,9 +5119,9 @@ function renderElite(){
   const mcR = rs.length >= 10, mcPct = (() => { let bal = +a.balance || 0; return ts.map(x => { const v = bal > 0 ? pnl(x) / bal : null; bal += pnl(x); return v; }).filter(v => v != null && isFinite(v)); })(), mcOk = mcR || mcPct.length >= 10;
   host.dataset.built = key;
   host.innerHTML = `<div class="pro-head"><h2 class="pro-h">Tools</h2><span class="tier-pill elite">Elite</span><span class="hint">${esc(a.name || "")}</span></div>
-    ${hasBeta("precheck") ? `<section class="panel"><div class="panel-head"><h2>◆ Pre-trade check</h2><span class="label">Beta · only on your account</span></div>
-      <p class="hint" style="margin:0">Upload your chart before you trade. The AI breaks down the structure, trend and key levels, checks it against <b>your own strategy</b> rule by rule, reviews your levels if you add them, and shows your real stats. It never tells you what to trade.</p>
-      <div class="actions"><button type="button" class="btn small primary" id="pcOpen">Check a setup</button><button type="button" class="btn small" id="pcStrat">${state.settings?.strategy ? "Edit my strategy" : "Write my strategy"}</button></div></section>` : ""}
+    ${hasBeta("precheck") ? `<section class="panel"><div class="panel-head"><h2>◆ Chart analysis</h2><span class="label">Beta · only on your account</span></div>
+      <p class="hint" style="margin:0">Upload a chart screenshot. You get a full breakdown: the read, key levels, a scored breakdown, both scenarios, what would invalidate the idea and market context. Save your strategy and it also checks the chart against your own rules. It's analysis, so it never tells you what to trade.</p>
+      <div class="actions"><button type="button" class="btn small primary" id="pcOpen">Analyse a chart</button><button type="button" class="btn small" id="pcStrat">${state.settings?.strategy ? "Edit my strategy" : "Write my strategy"}</button></div></section>` : ""}
     <section class="panel"><div class="panel-head"><h2>✦ AI Trading Coach</h2><span class="label">Reads your journal</span></div>
       <div class="actions" id="coachBtns"><button type="button" class="btn small primary" data-coach="last">Review my last trade</button><button type="button" class="btn small" data-coach="week">Weekly review</button><button type="button" class="btn small" data-coach="month">Monthly review</button><button type="button" class="btn small" data-coach="plan">Improvement plan</button><button type="button" class="btn small" id="coachShot">📷 Review a screenshot</button></div>
       <div class="row-flex"><input class="ctl" id="coachQ" placeholder="Ask about your trading, e.g. Why do I lose on Fridays?" maxlength="300"><button type="button" class="btn small" id="coachAsk">Ask</button></div>
